@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   LOLZE · Design Tokens (cores). As fontes vêm de next/font (layout.tsx).
+   ========================================================================== */
+:root {
+  /* Paleta da marca */
+  --cor-verde-floresta: #15803d;
+  --cor-bege-principal: #fafaf7;
+  --cor-cinza-200: #e2ded2;
+  --cor-cinza-600: #5a554c;
+  --cor-escuro-quente: #161412;
+  --cor-verde-suave: #dcfce7;
+
+  /* Tokens semânticos */
+  --fundo: var(--cor-bege-principal);
+  --superficie: #ffffff;
+  --borda: var(--cor-cinza-200);
+  --texto: var(--cor-escuro-quente);
+  --texto-suave: var(--cor-cinza-600);
+  --marca: var(--cor-verde-floresta);
+  --marca-suave: var(--cor-verde-suave);
+  --texto-sobre-marca: var(--cor-bege-principal);
+}
+
+@layer base {
+  body {
+    background-color: var(--fundo);
+    color: var(--texto);
+    font-family: var(--font-corpo), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Marquee (faixa rolante de nichos na landing) */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
