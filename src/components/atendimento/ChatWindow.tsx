@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Send, Paperclip, Zap, Bot, ChevronLeft, PanelRight, Lock } from "lucide-react";
 import type { Conversa } from "@/lib/conversas";
 
@@ -26,6 +26,14 @@ export function ChatWindow({
   onAbrirPainel?: () => void;
 }) {
   const [texto, setTexto] = useState("");
+  const fimRef = useRef<HTMLDivElement>(null);
+
+  // Rola para a última mensagem quando troca de conversa ou chega algo novo.
+  const totalMsgs = conversa?.mensagens.length ?? 0;
+  const conversaId = conversa?.id ?? null;
+  useEffect(() => {
+    fimRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [totalMsgs, conversaId]);
 
   if (!conversa) {
     return (
@@ -136,6 +144,7 @@ export function ChatWindow({
           );
         })}
         {humano && primeiroAtendente === -1 && <Divisor />}
+        <div ref={fimRef} />
       </div>
 
       {/* Caixa de digitação */}
