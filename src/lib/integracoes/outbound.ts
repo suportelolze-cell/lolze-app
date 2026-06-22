@@ -1,9 +1,11 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
+import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
 
 /**
- * Saída: quando o SDR responde no painel, entrega a mensagem ao n8n do cliente
- * (webhook do canal) para ser enviada ao contato. Best-effort: nunca derruba o
- * envio local; se não houver webhook configurado, apenas registra no banco.
+ * Saída: entrega a resposta do SDR ao contato.
+ * - WhatsApp (Opção B): envia DIRETO pela Evolution, sem n8n.
+ * - Outros canais (ou WhatsApp sem instância): cai no webhook do canal (n8n).
+ * Best-effort: nunca derruba o registro local.
  */
 export async function dispatchOutbound(tenantId: string, leadId: number, texto: string) {
   try {
@@ -18,6 +20,21 @@ export async function dispatchOutbound(tenantId: string, leadId: number, texto: 
     if (!lead) return;
 
     const canal = lead.canal || "whatsapp";
+    const destino = lead.canal_user_id || lead.telefone || "";
+
+    // WhatsApp direto pela Evolution (caminho preferido).
+    if (canal === "whatsapp" && destino && temEvolutionConfig()) {
+      const { data: sec } = await admin
+        .from("app_tenant_secrets")
+        .select("evolution_instance")
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (sec?.evolution_instance) {
+        const ok = await enviarTexto(sec.evolution_instance, destino, texto);
+        if (ok) return; // entregue; não precisa do webhook
+      }
+    }
+
     const { data: wh } = await admin
       .from("app_channel_webhooks")
       .select("url")

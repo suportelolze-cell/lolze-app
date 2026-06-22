@@ -78,19 +78,31 @@ function extrairEstado(j: any): string {
 type SecretRow = {
   evolution_instance: string | null;
   n8n_inbound_url: string | null;
+  ingest_token: string | null;
 };
 
 async function lerSecret(tenantId: string): Promise<SecretRow> {
   const admin = getCrmAdmin();
   const { data } = await admin
     .from("app_tenant_secrets")
-    .select("evolution_instance,n8n_inbound_url")
+    .select("evolution_instance,n8n_inbound_url,ingest_token")
     .eq("tenant_id", tenantId)
     .maybeSingle();
   return {
     evolution_instance: data?.evolution_instance ?? null,
     n8n_inbound_url: data?.n8n_inbound_url ?? null,
+    ingest_token: data?.ingest_token ?? null,
   };
+}
+
+/** URL pública do app (Vercel). Fallback no domínio de produção. */
+function appBaseUrl() {
+  return (process.env.APP_PUBLIC_URL || "https://www.app.lolze.com.br").replace(/\/+$/, "");
+}
+
+/** Endpoint de entrada do WhatsApp no próprio app, autenticado pelo token do tenant. */
+function appInboundUrl(ingestToken: string) {
+  return `${appBaseUrl()}/api/whatsapp/inbound?t=${ingestToken}`;
 }
 
 /** Nome determinístico de instância caso o tenant ainda não tenha um. */
@@ -162,9 +174,9 @@ export async function conectarWhatsapp(tenantId: string): Promise<ConexaoResulta
   const sec = await lerSecret(tenantId);
   let instancia = sec.evolution_instance || nomePadrao(tenantId);
 
-  // Sempre (re)garante o webhook de entrada na instância, mesmo se ela já
-  // existir/estiver conectada — é o que faz as mensagens recebidas fluírem.
-  if (sec.n8n_inbound_url) await garantirWebhook(instancia, sec.n8n_inbound_url);
+  // Sempre (re)garante o webhook de entrada apontando pro PRÓPRIO app
+  // (Opção B: o app recebe direto da Evolution, sem n8n).
+  if (sec.ingest_token) await garantirWebhook(instancia, appInboundUrl(sec.ingest_token));
 
   // Já conectado? então não precisa de QR.
   const est = await evo(`/instance/connectionState/${encodeURIComponent(instancia)}`);
@@ -226,9 +238,8 @@ export async function statusWhatsapp(tenantId: string): Promise<ConexaoResultado
   const instancia = sec.evolution_instance;
   if (!instancia) return { ok: true, conectado: false };
 
-  // (Re)garante o webhook de entrada mesmo com a instância já conectada —
-  // cobre o caso em que o usuário nunca passou pelo fluxo de QR.
-  if (sec.n8n_inbound_url) await garantirWebhook(instancia, sec.n8n_inbound_url);
+  // (Re)garante o webhook de entrada (app) mesmo com a instância já conectada.
+  if (sec.ingest_token) await garantirWebhook(instancia, appInboundUrl(sec.ingest_token));
 
   const est = await evo(`/instance/connectionState/${encodeURIComponent(instancia)}`);
   const conectado = est.ok && extrairEstado(est.json) === "open";
@@ -242,6 +253,54 @@ export async function statusWhatsapp(tenantId: string): Promise<ConexaoResultado
   }
   await marcarStatus(tenantId, conectado, numero);
   return { ok: true, conectado, numero };
+}
+
+/** Envia uma mensagem de texto pela Evolution (tolerante a versão). */
+export async function enviarTexto(
+  instancia: string,
+  numero: string,
+  texto: string
+): Promise<boolean> {
+  const dest = numero.replace(/@.*/, ""); // só os dígitos
+  const tentativas: Record<string, unknown>[] = [
+    { number: dest, text: texto },
+    { number: dest, textMessage: { text: texto } },
+    { number: dest, options: { delay: 0, presence: "composing" }, text: texto },
+  ];
+  for (const body of tentativas) {
+    const r = await evo(`/message/sendText/${encodeURIComponent(instancia)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (r.ok) return true;
+  }
+  return false;
+}
+
+/**
+ * Baixa a mídia de uma mensagem (áudio/imagem/documento) como base64.
+ * Recebe o objeto `message` cru vindo do webhook da Evolution.
+ */
+export async function baixarMidiaBase64(
+  instancia: string,
+  message: unknown
+): Promise<{ base64: string; mime: string } | null> {
+  const tentativas: Record<string, unknown>[] = [
+    { message },
+    { message, convertToMp4: false },
+  ];
+  for (const body of tentativas) {
+    const r = await evo(`/chat/getBase64FromMediaMessage/${encodeURIComponent(instancia)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (r.ok) {
+      const base64 = r.json?.base64 ?? r.json?.media ?? r.json?.buffer ?? null;
+      const mime = r.json?.mimetype ?? r.json?.mimeType ?? "";
+      if (base64 && typeof base64 === "string") return { base64, mime };
+    }
+  }
+  return null;
 }
 
 /** Desconecta (logout) a instância do WhatsApp do tenant. */
