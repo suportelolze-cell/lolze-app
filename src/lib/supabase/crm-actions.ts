@@ -2,8 +2,15 @@
 
 import { getCrmServer } from "./server";
 import { getSessao, getTenantId } from "./tenant";
+import { getConversas } from "./crm-data";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import type { ColunaId } from "@/lib/leads";
+import type { Conversa } from "@/lib/conversas";
+
+/** Recarrega as conversas do tenant (usado pelo chat ao vivo). */
+export async function recarregarConversas(): Promise<Conversa[]> {
+  return getConversas();
+}
 
 const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
 

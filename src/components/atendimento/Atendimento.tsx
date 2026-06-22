@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X, AlertTriangle } from "lucide-react";
 import { type Conversa } from "@/lib/conversas";
 import {
   assumirConversa,
   devolverConversa,
   enviarMensagem,
+  recarregarConversas,
 } from "@/lib/supabase/crm-actions";
+import { crmBrowser } from "@/lib/supabase/browser";
 import { ConversaList, type Filtro } from "./ConversaList";
 import { ChatWindow } from "./ChatWindow";
 import { LeadPanel } from "./LeadPanel";
@@ -36,6 +38,36 @@ export function Atendimento({
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [painelAberto, setPainelAberto] = useState(false); // Raio-X no mobile
   const [aviso, setAviso] = useState("");
+  const enviando = useRef(false); // evita sobrescrever envio otimista em andamento
+
+  // Atualiza a lista preservando seleção (chamado pelo realtime e pelo poll).
+  const recarregar = useCallback(async () => {
+    if (enviando.current) return;
+    try {
+      const frescas = await recarregarConversas();
+      setConversas(frescas);
+    } catch {
+      /* silencioso: o poll tenta de novo */
+    }
+  }, []);
+
+  // Chat ao vivo: Realtime (instantâneo) + poll de segurança a cada 8s.
+  useEffect(() => {
+    const canal = crmBrowser
+      .channel("atendimento-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "app_mensagens" }, () =>
+        recarregar()
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "app_leads" }, () =>
+        recarregar()
+      )
+      .subscribe();
+    const intervalo = setInterval(recarregar, 8000);
+    return () => {
+      clearInterval(intervalo);
+      crmBrowser.removeChannel(canal);
+    };
+  }, [recarregar]);
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -90,15 +122,19 @@ export function Atendimento({
     if (!selecionada) return;
     const id = selecionada.id;
     const tempId = Date.now();
+    enviando.current = true;
     patch(id, (c) => ({
       ...c,
       mensagens: [...c.mensagens, { id: tempId, autor: "atendente", texto, hora: agora() }],
     }));
     const r = await enviarMensagem(id, texto);
+    enviando.current = false;
     if (!r.ok) {
       // desfaz a mensagem otimista e avisa
       patch(id, (c) => ({ ...c, mensagens: c.mensagens.filter((m) => m.id !== tempId) }));
       setAviso(r.erro ?? "Não foi possível enviar.");
+    } else {
+      recarregar(); // sincroniza com o servidor (id real da mensagem)
     }
   }
 
