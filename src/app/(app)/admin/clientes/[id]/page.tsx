@@ -1,15 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { ArrowLeft, Eye, KanbanSquare, Users } from "lucide-react";
-import { getCliente, getPlanos, getWebhooks, getIngestToken, getPersona, getEvolutionCfg, getMetaAdsCfg } from "@/lib/admin/data";
+import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg } from "@/lib/admin/data";
 import { entrarComo } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
 import { PersonaForm } from "@/components/admin/PersonaForm";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
 import { MetaAdsForm } from "@/components/admin/MetaAdsForm";
-import { WebhooksForm } from "@/components/admin/WebhooksForm";
-import { IngestForm } from "@/components/admin/IngestForm";
 import { KbForm } from "@/components/admin/KbForm";
 import { listarDocs } from "@/lib/kb/data";
 import { temOpenAIKey } from "@/lib/kb/embed";
@@ -17,11 +14,9 @@ import { temOpenAIKey } from "@/lib/kb/embed";
 export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: { id: string } }) {
-  const [cliente, planos, webhooks, ingestToken, docs, persona, evolutionCfg, metaAdsCfg] = await Promise.all([
+  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg] = await Promise.all([
     getCliente(params.id),
     getPlanos(),
-    getWebhooks(params.id),
-    getIngestToken(params.id),
     listarDocs(params.id),
     getPersona(params.id),
     getEvolutionCfg(params.id),
@@ -29,11 +24,6 @@ export default async function ClientePage({ params }: { params: { id: string } }
   ]);
   if (!cliente) notFound();
   const semOpenAI = !temOpenAIKey();
-
-  const h = headers();
-  const host = h.get("host") ?? "localhost:3100";
-  const proto = h.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const endpoint = `${proto}://${host}/api/ingest`;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -89,14 +79,6 @@ export default async function ClientePage({ params }: { params: { id: string } }
 
       <div className="mt-6">
         <MetaAdsForm tenantId={cliente.id} cfg={metaAdsCfg} />
-      </div>
-
-      <div className="mt-6">
-        <WebhooksForm tenantId={cliente.id} urlsIniciais={webhooks} />
-      </div>
-
-      <div className="mt-6">
-        <IngestForm tenantId={cliente.id} endpoint={endpoint} tokenInicial={ingestToken} />
       </div>
 
       <div className="mt-6">

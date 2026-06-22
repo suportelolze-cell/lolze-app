@@ -15,41 +15,6 @@ async function exigirSuper() {
 
 export type ResultadoCriar = { ok: boolean; erro?: string; senha?: string; email?: string };
 
-/** Gera um novo token de ingestão para o cliente (invalida o anterior). */
-export async function regenerarToken(tenantId: string): Promise<string> {
-  await exigirSuper();
-  const novo =
-    crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-  const sb = getCrmServer();
-  const { error } = await sb
-    .from("app_tenant_secrets")
-    .upsert(
-      { tenant_id: tenantId, ingest_token: novo, updated_at: new Date().toISOString() },
-      { onConflict: "tenant_id" }
-    );
-  if (error) throw error;
-  revalidatePath(`/admin/clientes/${tenantId}`);
-  return novo;
-}
-
-/** Salva/atualiza os webhooks n8n por canal de um cliente. Somente superadmin. */
-export async function salvarWebhooks(tenantId: string, urls: Record<string, string>) {
-  await exigirSuper();
-  const sb = getCrmServer();
-  const rows = Object.entries(urls).map(([canal, url]) => ({
-    tenant_id: tenantId,
-    canal,
-    url: (url ?? "").trim(),
-    updated_at: new Date().toISOString(),
-  }));
-  if (rows.length === 0) return;
-  const { error } = await sb
-    .from("app_channel_webhooks")
-    .upsert(rows, { onConflict: "tenant_id,canal" });
-  if (error) throw error;
-  revalidatePath(`/admin/clientes/${tenantId}`);
-}
-
 /** Salva a conexão Meta Ads do cliente. Token só é atualizado se enviado. */
 export async function salvarMetaAdsCfg(
   tenantId: string,
@@ -69,18 +34,14 @@ export async function salvarMetaAdsCfg(
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
-/** Salva a config da Evolution/WhatsApp do cliente. Somente superadmin. */
-export async function salvarEvolutionCfg(
-  tenantId: string,
-  cfg: { instance: string; n8nInbound: string }
-) {
+/** Salva o nome da instância Evolution do cliente. Somente superadmin. */
+export async function salvarEvolutionCfg(tenantId: string, cfg: { instance: string }) {
   await exigirSuper();
   const sb = getCrmServer();
   const { error } = await sb.from("app_tenant_secrets").upsert(
     {
       tenant_id: tenantId,
       evolution_instance: cfg.instance.trim() || null,
-      n8n_inbound_url: cfg.n8nInbound.trim() || null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "tenant_id" }
@@ -133,7 +94,6 @@ export async function criarCliente(form: {
   senha: string;
   telefone?: string;
   canais?: string[];
-  webhooks?: Record<string, string>;
 }): Promise<ResultadoCriar> {
   await exigirSuper();
 
@@ -205,16 +165,8 @@ export async function criarCliente(form: {
     email: emailDono,
   });
 
-  // 5. Token de ingestão (entrada n8n) — gerado pelo default da tabela
+  // 5. Token de integração (usado internamente pelo webhook do app) — default da tabela
   await admin.from("app_tenant_secrets").insert({ tenant_id: tenant.id });
-
-  // 6. Webhooks n8n por canal (se informados)
-  if (form.webhooks) {
-    const rows = Object.entries(form.webhooks)
-      .filter(([, url]) => (url ?? "").trim())
-      .map(([canal, url]) => ({ tenant_id: tenant.id, canal, url: url.trim() }));
-    if (rows.length) await admin.from("app_channel_webhooks").insert(rows);
-  }
 
   revalidatePath("/admin");
   return { ok: true, email: emailDono, senha: form.senha };

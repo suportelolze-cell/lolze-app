@@ -12,7 +12,6 @@ const inputCls =
 export function EvolutionForm({ tenantId, cfg }: { tenantId: string; cfg: EvolutionCfg }) {
   const router = useRouter();
   const [instance, setInstance] = useState(cfg.instance);
-  const [n8nInbound, setN8nInbound] = useState(cfg.n8nInbound);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState("");
@@ -23,7 +22,7 @@ export function EvolutionForm({ tenantId, cfg }: { tenantId: string; cfg: Evolut
     setSalvando(true);
     setSalvo(false);
     try {
-      await salvarEvolutionCfg(tenantId, { instance, n8nInbound });
+      await salvarEvolutionCfg(tenantId, { instance });
       setSalvo(true);
       router.refresh();
     } catch (err) {
@@ -40,8 +39,8 @@ export function EvolutionForm({ tenantId, cfg }: { tenantId: string; cfg: Evolut
         <h2 className="font-corpo text-lg font-bold text-texto">WhatsApp (Evolution)</h2>
       </div>
       <p className="mt-1 text-sm text-texto-suave">
-        O cliente conecta o WhatsApp sozinho (QR) em Configurações. Aqui você define a instância e a
-        entrada do n8n.
+        O cliente conecta o WhatsApp sozinho (QR) em Configurações — o app cria a instância e
+        configura tudo automaticamente. Normalmente você não precisa mexer aqui.
       </p>
 
       <div className="mt-4 space-y-4">
@@ -54,23 +53,8 @@ export function EvolutionForm({ tenantId, cfg }: { tenantId: string; cfg: Evolut
             className={inputCls}
           />
           <p className="mt-1 text-xs text-texto-suave">
-            Para reusar uma instância existente, digite o nome dela (ex.: <code>agenteia</code>).
-            Vazio = o app cria uma nova no primeiro QR.
-          </p>
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-texto">
-            URL de entrada do n8n (Gatilho WPP)
-          </span>
-          <input
-            value={n8nInbound}
-            onChange={(e) => setN8nInbound(e.target.value)}
-            placeholder="https://seu-n8n/webhook/agente_mestre"
-            className={inputCls}
-          />
-          <p className="mt-1 text-xs text-texto-suave">
-            Production URL do nó <b>Gatilho [WPP]</b>. O app configura esse webhook ao criar a
-            instância, para as mensagens recebidas fluírem pro n8n.
+            Vazio = o app cria uma nova no primeiro QR. Preencha só para reusar uma instância
+            existente (ex.: <code>agenteia</code>).
           </p>
         </label>
       </div>

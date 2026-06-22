@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, CheckCircle2, Copy, Webhook, Lock } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, Copy } from "lucide-react";
 import { criarCliente } from "@/lib/admin/actions";
-import { CANAIS_WEBHOOK } from "@/lib/admin/canais";
 
 type PlanoOpt = { id: string; nome: string; canaisMax: number };
 
@@ -32,7 +31,6 @@ export function NovoClienteForm({ planos, semKey }: { planos: PlanoOpt[]; semKey
   const [telefone, setTelefone] = useState("");
   const [senha, setSenha] = useState(gerarSenha());
   const [canais, setCanais] = useState<string[]>(["whatsapp"]);
-  const [webhooks, setWebhooks] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState<{ email: string; senha: string } | null>(null);
@@ -54,7 +52,6 @@ export function NovoClienteForm({ planos, semKey }: { planos: PlanoOpt[]; semKey
         telefone,
         senha,
         canais,
-        webhooks,
       });
       if (!r.ok) {
         setErro(r.erro ?? "Não foi possível cadastrar.");
@@ -203,32 +200,6 @@ export function NovoClienteForm({ planos, semKey }: { planos: PlanoOpt[]; semKey
           </button>
         </div>
       </Campo>
-
-      {/* Webhooks n8n (somente admin) */}
-      <div className="rounded-lg border border-borda bg-fundo p-4">
-        <div className="flex items-center gap-2">
-          <Webhook size={16} className="text-marca" />
-          <h3 className="text-sm font-bold text-texto">Webhooks n8n (agente IA)</h3>
-        </div>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-texto-suave">
-          <Lock size={12} /> Opcional agora. Só você (admin) vê e edita. Dá para preencher
-          depois em Gerenciar cliente.
-        </p>
-        <div className="mt-3 space-y-3">
-          {CANAIS_WEBHOOK.map((c) => (
-            <label key={c.id} className="block">
-              <span className="mb-1 block text-xs font-medium text-texto-suave">{c.label}</span>
-              <input
-                type="url"
-                value={webhooks[c.id] ?? ""}
-                onChange={(e) => setWebhooks((w) => ({ ...w, [c.id]: e.target.value }))}
-                placeholder="https://n8n.seudominio.com/webhook/..."
-                className={inputCls}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
 
       {erro && <p className="text-sm font-medium text-red-600">{erro}</p>}
 

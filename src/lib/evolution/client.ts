@@ -77,7 +77,6 @@ function extrairEstado(j: any): string {
 
 type SecretRow = {
   evolution_instance: string | null;
-  n8n_inbound_url: string | null;
   ingest_token: string | null;
 };
 
@@ -85,12 +84,11 @@ async function lerSecret(tenantId: string): Promise<SecretRow> {
   const admin = getCrmAdmin();
   const { data } = await admin
     .from("app_tenant_secrets")
-    .select("evolution_instance,n8n_inbound_url,ingest_token")
+    .select("evolution_instance,ingest_token")
     .eq("tenant_id", tenantId)
     .maybeSingle();
   return {
     evolution_instance: data?.evolution_instance ?? null,
-    n8n_inbound_url: data?.n8n_inbound_url ?? null,
     ingest_token: data?.ingest_token ?? null,
   };
 }

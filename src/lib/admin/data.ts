@@ -108,31 +108,6 @@ export async function getCliente(id: string): Promise<Cliente | null> {
   };
 }
 
-/** Webhooks n8n por canal (somente superadmin enxerga; RLS reforça). */
-export async function getWebhooks(tenantId: string): Promise<Record<string, string>> {
-  await exigirSuperadmin();
-  const sb = getCrmServer();
-  const { data } = await sb
-    .from("app_channel_webhooks")
-    .select("canal,url")
-    .eq("tenant_id", tenantId);
-  const map: Record<string, string> = {};
-  (data ?? []).forEach((r) => (map[r.canal] = r.url ?? ""));
-  return map;
-}
-
-/** Token de ingestão (entrada n8n) do cliente. Somente superadmin. */
-export async function getIngestToken(tenantId: string): Promise<string> {
-  await exigirSuperadmin();
-  const sb = getCrmServer();
-  const { data } = await sb
-    .from("app_tenant_secrets")
-    .select("ingest_token")
-    .eq("tenant_id", tenantId)
-    .maybeSingle();
-  return data?.ingest_token ?? "";
-}
-
 export type MetaAdsCfg = { adAccountId: string; tokenSet: boolean };
 
 /** Conexão Meta Ads do cliente. Não devolve o token (só se está setado). */
@@ -150,21 +125,18 @@ export async function getMetaAdsCfg(tenantId: string): Promise<MetaAdsCfg> {
   };
 }
 
-export type EvolutionCfg = { instance: string; n8nInbound: string };
+export type EvolutionCfg = { instance: string };
 
-/** Config da Evolution/WhatsApp do cliente (instância + URL de entrada n8n). */
+/** Nome da instância Evolution do cliente (normalmente criado pelo app). */
 export async function getEvolutionCfg(tenantId: string): Promise<EvolutionCfg> {
   await exigirSuperadmin();
   const sb = getCrmServer();
   const { data } = await sb
     .from("app_tenant_secrets")
-    .select("evolution_instance,n8n_inbound_url")
+    .select("evolution_instance")
     .eq("tenant_id", tenantId)
     .maybeSingle();
-  return {
-    instance: data?.evolution_instance ?? "",
-    n8nInbound: data?.n8n_inbound_url ?? "",
-  };
+  return { instance: data?.evolution_instance ?? "" };
 }
 
 export type Persona = {
