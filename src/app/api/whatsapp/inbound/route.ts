@@ -61,6 +61,23 @@ export async function POST(req: NextRequest) {
   const nome = String(data?.pushName || canalUserId);
   const msg = data?.message ?? {};
 
+  // Detecta se o lead veio de um anúncio Click-to-WhatsApp (tráfego pago).
+  // O WhatsApp embute o anúncio em contextInfo.externalAdReply na 1ª mensagem.
+  const anuncioRef = (() => {
+    const ctxs = [
+      msg?.extendedTextMessage?.contextInfo,
+      msg?.imageMessage?.contextInfo,
+      msg?.videoMessage?.contextInfo,
+      msg?.contextInfo,
+      data?.contextInfo,
+    ];
+    for (const c of ctxs) {
+      const ad = c?.externalAdReply;
+      if (ad) return String(ad.title || ad.sourceId || ad.sourceUrl || "anúncio");
+    }
+    return null;
+  })();
+
   // Determina texto direto ou mídia a baixar.
   let texto = String(msg?.conversation || msg?.extendedTextMessage?.text || "").trim();
   let mediaTipo: TipoMidia | null = null;
@@ -118,7 +135,9 @@ export async function POST(req: NextRequest) {
         tenant_id: tenantId,
         nome,
         telefone: canalUserId,
-        origem: "whatsapp",
+        origem: anuncioRef ? "trafego_pago" : "whatsapp",
+        aquisicao: anuncioRef ? "pago" : "organico",
+        anuncio: anuncioRef,
         canal: "whatsapp",
         canal_user_id: canalUserId,
         temperatura: "frio",

@@ -68,10 +68,11 @@ export async function getLeads(): Promise<Lead[]> {
 /** Métricas do Dashboard (Tela 1). */
 export async function getDashboard() {
   const tid = await getTenantId();
-  if (!tid) return { investimento: 0, totalLeads: 0, qualificados: 0, agendamentos: 0, cpa: 0 };
+  if (!tid)
+    return { investimento: 0, totalLeads: 0, qualificados: 0, agendamentos: 0, cpa: 0, pagos: 0, organicos: 0 };
   const sb = getCrmServer();
   const [{ data: leads }, { data: trafego }] = await Promise.all([
-    sb.from("app_leads").select("coluna,temperatura").eq("tenant_id", tid),
+    sb.from("app_leads").select("coluna,temperatura,aquisicao").eq("tenant_id", tid),
     sb.from("app_trafego").select("investimento_cents,cliques").eq("tenant_id", tid),
   ]);
 
@@ -80,10 +81,12 @@ export async function getDashboard() {
     leads?.filter((l) => l.coluna === "atencao" || l.coluna === "agendado" || l.coluna === "ganho").length ?? 0;
   const agendamentos =
     leads?.filter((l) => l.coluna === "agendado" || l.coluna === "ganho").length ?? 0;
+  const pagos = leads?.filter((l) => l.aquisicao === "pago").length ?? 0;
+  const organicos = totalLeads - pagos;
   const investimento = (trafego?.reduce((s, t) => s + (t.investimento_cents ?? 0), 0) ?? 0) / 100;
   const cpa = agendamentos > 0 ? Math.round(investimento / agendamentos) : 0;
 
-  return { investimento, totalLeads, qualificados, agendamentos, cpa };
+  return { investimento, totalLeads, qualificados, agendamentos, cpa, pagos, organicos };
 }
 
 /** Série diária (30 dias) para o gráfico "Velocidade de Tração". */

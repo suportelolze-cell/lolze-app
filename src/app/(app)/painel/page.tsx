@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TracaoChart } from "@/components/dashboard/TracaoChart";
 import { PulsoFeed } from "@/components/dashboard/PulsoFeed";
+import { OrigemLeads } from "@/components/dashboard/OrigemLeads";
 import {
   getDashboard,
   getPerfil,
@@ -97,7 +98,8 @@ export default async function PainelPage() {
         <div className="lg:col-span-2">
           <TracaoChart dados={tracao} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="flex flex-col gap-4 lg:col-span-1">
+          <OrigemLeads pagos={m.pagos} organicos={m.organicos} />
           <PulsoFeed eventos={pulso} />
         </div>
       </section>
