@@ -17,7 +17,11 @@ export const maxDuration = 60; // baixar mídia + transcrever + rodar o SDR
  *   /api/whatsapp/inbound?t=<ingest_token do tenant>
  */
 export async function POST(req: NextRequest) {
-  const token = (req.nextUrl.searchParams.get("t") || "").trim();
+  // Quando a Evolution está com webhookByEvents=true, ela anexa o nome do
+  // evento na URL (ex.: ...?t=TOKEN/messages-upsert). Extraímos o token de 64
+  // hex de forma tolerante para não falhar a autenticação.
+  const rawT = req.nextUrl.searchParams.get("t") || "";
+  const token = (rawT.match(/[a-fA-F0-9]{64}/)?.[0] || rawT).trim();
   if (!token) return NextResponse.json({ erro: "token ausente" }, { status: 401 });
 
   let admin;
