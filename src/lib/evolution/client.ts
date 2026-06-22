@@ -120,6 +120,29 @@ async function marcarStatus(tenantId: string, conectado: boolean, numero: string
     .eq("tenant_id", tenantId);
 }
 
+/**
+ * Garante que a instância está com o webhook de entrada (n8n) configurado.
+ * Best-effort e tolerante a versão: tenta os formatos de body mais comuns da
+ * Evolution até um responder OK. Assim o cliente nunca precisa mexer na
+ * Evolution na mão.
+ */
+async function garantirWebhook(instancia: string, url: string) {
+  const events = ["MESSAGES_UPSERT"];
+  const tentativas: Record<string, unknown>[] = [
+    { webhook: { enabled: true, url, webhookByEvents: false, webhookBase64: false, events } },
+    { enabled: true, url, webhookByEvents: false, events },
+    { url, webhook_by_events: false, events },
+  ];
+  for (const body of tentativas) {
+    const r = await evo(`/webhook/set/${encodeURIComponent(instancia)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (r.ok) return true;
+  }
+  return false;
+}
+
 export type ConexaoResultado = {
   ok: boolean;
   conectado: boolean;
@@ -138,6 +161,10 @@ export async function conectarWhatsapp(tenantId: string): Promise<ConexaoResulta
 
   const sec = await lerSecret(tenantId);
   let instancia = sec.evolution_instance || nomePadrao(tenantId);
+
+  // Sempre (re)garante o webhook de entrada na instância, mesmo se ela já
+  // existir/estiver conectada — é o que faz as mensagens recebidas fluírem.
+  if (sec.n8n_inbound_url) await garantirWebhook(instancia, sec.n8n_inbound_url);
 
   // Já conectado? então não precisa de QR.
   const est = await evo(`/instance/connectionState/${encodeURIComponent(instancia)}`);
