@@ -132,3 +132,33 @@ export async function getIngestToken(tenantId: string): Promise<string> {
     .maybeSingle();
   return data?.ingest_token ?? "";
 }
+
+export type Persona = {
+  oferta: string;
+  publico: string;
+  tom: string;
+  objecoes: string;
+  faq: string;
+  regras: string;
+  agenteAtivo: boolean;
+};
+
+/** Persona/cérebro do SDR de um cliente (gerenciado só pelo admin). */
+export async function getPersona(tenantId: string): Promise<Persona> {
+  await exigirSuperadmin();
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_config")
+    .select("oferta,publico,tom,objecoes,faq,regras,agente_ativo")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return {
+    oferta: data?.oferta ?? "",
+    publico: data?.publico ?? "",
+    tom: data?.tom ?? "",
+    objecoes: data?.objecoes ?? "",
+    faq: data?.faq ?? "",
+    regras: data?.regras ?? "",
+    agenteAtivo: data?.agente_ativo ?? true,
+  };
+}

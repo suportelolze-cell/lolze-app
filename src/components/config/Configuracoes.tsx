@@ -12,18 +12,16 @@ import {
   CalendarSync,
   Target,
   FileDown,
-  Bot,
 } from "lucide-react";
 import { salvarConfig } from "@/lib/supabase/crm-actions";
 import type { Config } from "@/lib/supabase/crm-data";
 import type { EquipeInfo } from "@/lib/team/data";
 import { EquipeManager } from "./EquipeManager";
 
-type Aba = "identidade" | "persona" | "integracoes" | "equipe" | "faturamento";
+type Aba = "identidade" | "integracoes" | "equipe" | "faturamento";
 
 const abas: { id: Aba; rotulo: string; icon: typeof Building2 }[] = [
   { id: "identidade", rotulo: "Identidade do Negócio", icon: Building2 },
-  { id: "persona", rotulo: "Persona da IA (SDR)", icon: Bot },
   { id: "integracoes", rotulo: "Integrações e APIs", icon: Plug },
   { id: "equipe", rotulo: "Gestão de Equipe", icon: Users },
   { id: "faturamento", rotulo: "Faturamento e Plano", icon: CreditCard },
@@ -32,19 +30,13 @@ const abas: { id: Aba; rotulo: string; icon: typeof Building2 }[] = [
 export function Configuracoes({
   config,
   equipeInfo,
-  ehAdmin = false,
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
-  ehAdmin?: boolean;
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
   const [salvo, setSalvo] = useState(false);
-
-  // A Persona (cérebro do SDR) é gerenciada só pelo admin — o cliente não vê
-  // (evita alterações indevidas). O admin edita ao "Entrar como" o cliente.
-  const abasVisiveis = abas.filter((a) => a.id !== "persona" || ehAdmin);
 
   async function salvar() {
     await salvarConfig(cfg).catch(() => {});
@@ -81,7 +73,7 @@ export function Configuracoes({
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Menu interno */}
         <nav className="flex shrink-0 gap-1 md:w-60 md:flex-col">
-          {abasVisiveis.map(({ id, rotulo, icon: Icon }) => (
+          {abas.map(({ id, rotulo, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setAba(id)}
@@ -99,7 +91,6 @@ export function Configuracoes({
         {/* Conteúdo */}
         <div className="min-w-0 flex-1">
           {aba === "identidade" && <Identidade cfg={cfg} setCfg={setCfg} />}
-          {aba === "persona" && ehAdmin && <Persona cfg={cfg} setCfg={setCfg} />}
           {aba === "integracoes" && <Integracoes />}
           {aba === "equipe" && <EquipeManager info={equipeInfo} />}
           {aba === "faturamento" && <Faturamento />}
@@ -167,124 +158,7 @@ function Identidade({
   );
 }
 
-/* ---------- Aba 2: Persona da IA ---------- */
-function CampoArea({
-  label,
-  valor,
-  onChange,
-  micro,
-  placeholder,
-  linhas = 4,
-}: {
-  label: string;
-  valor: string;
-  onChange: (v: string) => void;
-  micro?: string;
-  placeholder?: string;
-  linhas?: number;
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-sm font-semibold text-texto">{label}</label>
-      <textarea
-        value={valor}
-        onChange={(e) => onChange(e.target.value)}
-        rows={linhas}
-        placeholder={placeholder}
-        className="w-full resize-y rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm leading-relaxed text-texto outline-none placeholder:text-texto-suave/60 focus:border-marca"
-      />
-      {micro && <p className="mt-1 text-xs text-texto-suave">{micro}</p>}
-    </div>
-  );
-}
-
-function Persona({ cfg, setCfg }: { cfg: Config; setCfg: (c: Config) => void }) {
-  const set = (k: keyof Config) => (v: string) => setCfg({ ...cfg, [k]: v });
-  return (
-    <div className="space-y-6">
-      <Painel
-        titulo="Cérebro do seu SDR de IA"
-        micro="Tudo aqui vira o roteiro que a inteligência usa para atender, qualificar e quebrar objeções dos seus leads. Quanto mais específico, mais afiada a venda."
-      >
-        {/* Interruptor mestre */}
-        <div className="mb-5 flex items-center justify-between rounded-lg border border-borda bg-fundo p-4">
-          <div>
-            <p className="text-sm font-bold text-texto">Atendimento automático</p>
-            <p className="text-xs text-texto-suave">
-              {cfg.agenteAtivo
-                ? "A IA está atendendo os leads que chegam. Desligue para responder só no manual."
-                : "A IA está pausada. Os leads ficam aguardando atendimento humano."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setCfg({ ...cfg, agenteAtivo: !cfg.agenteAtivo })}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-              cfg.agenteAtivo ? "bg-marca" : "bg-borda"
-            }`}
-            aria-pressed={cfg.agenteAtivo}
-            aria-label="Ativar atendimento automático"
-          >
-            <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-bege-principal transition-transform ${
-                cfg.agenteAtivo ? "translate-x-5" : "translate-x-0.5"
-              }`}
-            />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5">
-          <CampoArea
-            label="Oferta principal"
-            valor={cfg.oferta}
-            onChange={set("oferta")}
-            placeholder="O que você vende, para quem, e o principal benefício. Ex: Harmonização facial a partir de R$ 1.200, foco em resultado natural e sem dor."
-            micro="A IA usa isto para conectar a dor do lead ao seu serviço. Não inclua preços que você não quer que ela cite."
-          />
-          <CampoArea
-            label="Público-alvo"
-            valor={cfg.publico}
-            onChange={set("publico")}
-            linhas={3}
-            placeholder="Quem é o cliente ideal e o que ele costuma buscar. Ex: mulheres 30–50 anos preocupadas com sinais de idade, que valorizam discrição."
-          />
-          <CampoArea
-            label="Tom de voz"
-            valor={cfg.tom}
-            onChange={set("tom")}
-            linhas={3}
-            placeholder="Como a IA deve soar. Ex: acolhedora e consultiva, trata por você, sem gírias, sem pressão. Usa o primeiro nome do lead."
-          />
-          <CampoArea
-            label="Objeções comuns e como responder"
-            valor={cfg.objecoes}
-            onChange={set("objecoes")}
-            linhas={5}
-            placeholder={'"Está caro" → mostrar valor e parcelamento.\n"Vou pensar" → criar urgência leve e oferecer agendar uma avaliação sem compromisso.\n"Tenho medo de doer" → explicar o protocolo de conforto.'}
-            micro="Uma objeção por linha, com a resposta que converte. É aqui que o SDR ganha ou perde a venda."
-          />
-          <CampoArea
-            label="Perguntas frequentes"
-            valor={cfg.faq}
-            onChange={set("faq")}
-            linhas={4}
-            placeholder={"Onde fica? → Endereço.\nQuanto tempo dura? → ...\nTem garantia? → ..."}
-          />
-          <CampoArea
-            label="Regras e limites (o que NÃO fazer)"
-            valor={cfg.regras}
-            onChange={set("regras")}
-            linhas={3}
-            placeholder="Ex: nunca prometer resultado garantido; nunca passar preço de procedimento X; se perguntarem de convênio, dizer que não atendemos."
-            micro="Guardrails do seu negócio. A IA já é proibida de inventar preço ou fazer promessa médica garantida."
-          />
-        </div>
-      </Painel>
-    </div>
-  );
-}
-
-/* ---------- Aba 3: Integrações ---------- */
+/* ---------- Aba 2: Integrações ---------- */
 function StatusBadge({ on, texto }: { on: boolean; texto: string }) {
   return (
     <span

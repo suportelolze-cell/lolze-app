@@ -50,6 +50,38 @@ export async function salvarWebhooks(tenantId: string, urls: Record<string, stri
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+/** Salva a persona/cérebro do SDR de um cliente. Somente superadmin. */
+export async function salvarPersona(
+  tenantId: string,
+  p: {
+    oferta: string;
+    publico: string;
+    tom: string;
+    objecoes: string;
+    faq: string;
+    regras: string;
+    agenteAtivo: boolean;
+  }
+) {
+  await exigirSuper();
+  const sb = getCrmServer();
+  const { error } = await sb
+    .from("app_config")
+    .update({
+      oferta: p.oferta,
+      publico: p.publico,
+      tom: p.tom,
+      objecoes: p.objecoes,
+      faq: p.faq,
+      regras: p.regras,
+      agente_ativo: p.agenteAtivo,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("tenant_id", tenantId);
+  if (error) throw error;
+  revalidatePath(`/admin/clientes/${tenantId}`);
+}
+
 /**
  * Cadastra um cliente novo: cria o tenant, o usuário de auth (owner),
  * o perfil e a configuração inicial. Requer service_role do CRM.
