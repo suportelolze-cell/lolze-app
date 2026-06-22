@@ -125,7 +125,13 @@ export function ChatWindow({
           return (
             <div key={m.id}>
               {divisorAqui && <Divisor />}
-              <Balao autor={m.autor} texto={m.texto} hora={m.hora} />
+              <Balao
+                autor={m.autor}
+                texto={m.texto}
+                hora={m.hora}
+                midiaUrl={m.midiaUrl}
+                midiaTipo={m.midiaTipo}
+              />
             </div>
           );
         })}
@@ -191,20 +197,67 @@ function Divisor() {
   );
 }
 
+function MidiaLead({
+  midiaUrl,
+  midiaTipo,
+  texto,
+}: {
+  midiaUrl?: string | null;
+  midiaTipo?: "imagem" | "audio" | "documento" | null;
+  texto: string;
+}) {
+  if (!midiaUrl) return <p className="text-sm text-texto">{texto}</p>;
+  if (midiaTipo === "imagem") {
+    return (
+      <a href={midiaUrl} target="_blank" rel="noopener noreferrer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={midiaUrl}
+          alt="Imagem enviada pelo cliente"
+          className="max-h-64 w-full rounded-lg object-cover"
+        />
+      </a>
+    );
+  }
+  if (midiaTipo === "audio") {
+    return (
+      <div>
+        <audio controls src={midiaUrl} className="w-56 max-w-full" />
+        {texto && <p className="mt-1 text-xs italic text-texto-suave">📝 {texto}</p>}
+      </div>
+    );
+  }
+  // documento
+  return (
+    <a
+      href={midiaUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 text-sm font-medium text-marca underline"
+    >
+      📄 Abrir documento
+    </a>
+  );
+}
+
 function Balao({
   autor,
   texto,
   hora,
+  midiaUrl,
+  midiaTipo,
 }: {
   autor: "ia" | "lead" | "atendente";
   texto: string;
   hora: string;
+  midiaUrl?: string | null;
+  midiaTipo?: "imagem" | "audio" | "documento" | null;
 }) {
   if (autor === "lead") {
     return (
       <div className="flex justify-start">
         <div className="max-w-[75%] rounded-2xl rounded-tl-sm bg-superficie px-4 py-2 shadow-sm">
-          <p className="text-sm text-texto">{texto}</p>
+          <MidiaLead midiaUrl={midiaUrl} midiaTipo={midiaTipo} texto={texto} />
           <span className="mt-1 block text-right text-[10px] text-texto-suave">
             {hora}
           </span>

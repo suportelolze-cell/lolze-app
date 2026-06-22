@@ -1,5 +1,6 @@
 import { getCrmServer } from "./server";
 import { getTenantId } from "./tenant";
+import { urlsAssinadasMidia } from "@/lib/evolution/client";
 import { ORIGEM_LABEL, type Lead, type ColunaId } from "@/lib/leads";
 import type { Conversa } from "@/lib/conversas";
 import type { DadosFunil, Periodo } from "@/lib/funil";
@@ -187,7 +188,7 @@ export async function getConversas(): Promise<Conversa[]> {
     sb
       .from("app_leads")
       .select(
-        "id,nome,telefone,origem,temperatura,comando,precisa_humano,diagnostico,atendente_id,app_mensagens(id,autor,texto,created_at)"
+        "id,nome,telefone,origem,temperatura,comando,precisa_humano,diagnostico,atendente_id,app_mensagens(id,autor,texto,created_at,midia_url,midia_tipo)"
       )
       .eq("tenant_id", tid)
       .order("id"),
@@ -197,10 +198,26 @@ export async function getConversas(): Promise<Conversa[]> {
 
   const nomePorId = new Map((perfis ?? []).map((p) => [p.id, p.nome as string]));
 
+  // Gera URLs assinadas para todas as mídias de uma vez (1 chamada).
+  const caminhos: string[] = [];
+  (data ?? []).forEach((l) =>
+    (l.app_mensagens as { midia_url: string | null }[] | null)?.forEach((m) => {
+      if (m.midia_url) caminhos.push(m.midia_url);
+    })
+  );
+  const urlPorCaminho = await urlsAssinadasMidia(caminhos);
+
   return (data ?? [])
     .filter((l) => (l.app_mensagens as unknown[])?.length > 0)
     .map((l) => {
-      const msgs = (l.app_mensagens as { id: number; autor: "ia" | "lead" | "atendente"; texto: string; created_at: string }[])
+      const msgs = (l.app_mensagens as {
+        id: number;
+        autor: "ia" | "lead" | "atendente";
+        texto: string;
+        created_at: string;
+        midia_url: string | null;
+        midia_tipo: string | null;
+      }[])
         .slice()
         .sort((a, b) => a.id - b.id);
       return {
@@ -219,6 +236,8 @@ export async function getConversas(): Promise<Conversa[]> {
           autor: m.autor,
           texto: m.texto,
           hora: hhmm(m.created_at),
+          midiaUrl: m.midia_url ? urlPorCaminho.get(m.midia_url) ?? null : null,
+          midiaTipo: (m.midia_tipo as "imagem" | "audio" | "documento" | null) ?? null,
         })),
       } as Conversa;
     });

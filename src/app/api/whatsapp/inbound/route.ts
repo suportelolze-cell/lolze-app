@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
-import { baixarMidiaBase64 } from "@/lib/evolution/client";
+import { baixarMidiaBase64, uploadMidia } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 
 export const dynamic = "force-dynamic";
@@ -96,11 +96,28 @@ export async function POST(req: NextRequest) {
     texto = texto || caption || "(o cliente enviou um vídeo)";
   }
 
+  let midiaPath: string | null = null;
   if (mediaTipo && instancia) {
     const midia = await baixarMidiaBase64(instancia, data);
     if (midia) {
+      // descrição/transcrição para a IA
       const t = await midiaParaTexto(mediaTipo, midia.base64, midia.mime);
       texto = [caption, t].filter(Boolean).join(" — ").trim();
+      // guarda o arquivo original para o atendente ver/ouvir
+      const ext = midia.mime.includes("png")
+        ? "png"
+        : midia.mime.includes("webp")
+          ? "webp"
+          : mediaTipo === "audio"
+            ? "ogg"
+            : mediaTipo === "documento"
+              ? "pdf"
+              : "jpg";
+      midiaPath = await uploadMidia(
+        `${tenantId}/${canalUserId}/${Date.now()}.${ext}`,
+        midia.base64,
+        midia.mime
+      );
     } else if (caption) {
       texto = caption;
     }
@@ -150,9 +167,14 @@ export async function POST(req: NextRequest) {
     lead = data as LeadRow;
   }
 
-  const { error: errM } = await admin
-    .from("app_mensagens")
-    .insert({ tenant_id: tenantId, lead_id: lead!.id, autor: "lead", texto });
+  const { error: errM } = await admin.from("app_mensagens").insert({
+    tenant_id: tenantId,
+    lead_id: lead!.id,
+    autor: "lead",
+    texto,
+    midia_url: midiaPath,
+    midia_tipo: midiaPath ? mediaTipo : null,
+  });
   if (errM) return NextResponse.json({ erro: errM.message }, { status: 500 });
 
   // Dispara o SDR (ele respeita handoff/agente_ativo e entrega a resposta).

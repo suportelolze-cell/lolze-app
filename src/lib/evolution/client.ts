@@ -304,6 +304,40 @@ export async function baixarMidiaBase64(
   return null;
 }
 
+/** Sobe uma mídia (base64) para o bucket 'midias'. Devolve o caminho salvo. */
+export async function uploadMidia(
+  path: string,
+  base64: string,
+  mime: string
+): Promise<string | null> {
+  try {
+    const admin = getCrmAdmin();
+    const buf = Buffer.from(base64, "base64");
+    const { error } = await admin.storage
+      .from("midias")
+      .upload(path, buf, { contentType: mime || "application/octet-stream", upsert: true });
+    return error ? null : path;
+  } catch {
+    return null;
+  }
+}
+
+/** Gera URLs assinadas (1h) para caminhos do bucket 'midias'. */
+export async function urlsAssinadasMidia(paths: string[]): Promise<Map<string, string>> {
+  const mapa = new Map<string, string>();
+  if (paths.length === 0) return mapa;
+  try {
+    const admin = getCrmAdmin();
+    const { data } = await admin.storage.from("midias").createSignedUrls(paths, 3600);
+    (data ?? []).forEach((d) => {
+      if (d.path && d.signedUrl) mapa.set(d.path, d.signedUrl);
+    });
+  } catch {
+    /* best-effort */
+  }
+  return mapa;
+}
+
 /** Desconecta (logout) a instância do WhatsApp do tenant. */
 export async function desconectarWhatsapp(tenantId: string): Promise<{ ok: boolean; erro?: string }> {
   if (!temEvolutionConfig()) return { ok: false, erro: "Evolution não configurada." };

@@ -4,11 +4,15 @@ import type { Temperatura, Origem } from "@/lib/leads";
 
 export type Autor = "ia" | "lead" | "atendente";
 
+export type MidiaTipo = "imagem" | "audio" | "documento";
+
 export type Mensagem = {
   id: number;
   autor: Autor;
   texto: string;
   hora: string;
+  midiaUrl?: string | null; // URL assinada da mídia original (atendente vê/ouve)
+  midiaTipo?: MidiaTipo | null;
 };
 
 export type Comando = "ia" | "humano";
