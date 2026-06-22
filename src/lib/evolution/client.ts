@@ -193,9 +193,9 @@ export async function conectarWhatsapp(tenantId: string): Promise<ConexaoResulta
       qrcode: true,
       integration: "WHATSAPP-BAILEYS",
     };
-    if (sec.n8n_inbound_url) {
+    if (sec.ingest_token) {
       body.webhook = {
-        url: sec.n8n_inbound_url,
+        url: appInboundUrl(sec.ingest_token),
         enabled: true,
         webhookByEvents: false,
         events: ["MESSAGES_UPSERT"],
@@ -216,6 +216,9 @@ export async function conectarWhatsapp(tenantId: string): Promise<ConexaoResulta
   } else {
     await salvarInstancia(tenantId, instancia);
   }
+
+  // Garante o webhook agora que a instância existe (cobre instância recém-criada).
+  if (sec.ingest_token) await garantirWebhook(instancia, appInboundUrl(sec.ingest_token));
 
   // Pede um QR novo.
   const conn = await evo(`/instance/connect/${encodeURIComponent(instancia)}`);
