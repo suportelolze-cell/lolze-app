@@ -99,7 +99,7 @@ export default async function PainelPage() {
           <TracaoChart dados={tracao} />
         </div>
         <div className="flex flex-col gap-4 lg:col-span-1">
-          <OrigemLeads pagos={m.pagos} organicos={m.organicos} />
+          <OrigemLeads pagos={m.pagos} organicos={m.organicos} topAnuncios={m.topAnuncios} />
           <PulsoFeed eventos={pulso} />
         </div>
       </section>

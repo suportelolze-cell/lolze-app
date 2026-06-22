@@ -133,6 +133,23 @@ export async function getIngestToken(tenantId: string): Promise<string> {
   return data?.ingest_token ?? "";
 }
 
+export type MetaAdsCfg = { adAccountId: string; tokenSet: boolean };
+
+/** Conexão Meta Ads do cliente. Não devolve o token (só se está setado). */
+export async function getMetaAdsCfg(tenantId: string): Promise<MetaAdsCfg> {
+  await exigirSuperadmin();
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_tenant_secrets")
+    .select("meta_ad_account_id,meta_access_token")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return {
+    adAccountId: data?.meta_ad_account_id ?? "",
+    tokenSet: Boolean(data?.meta_access_token),
+  };
+}
+
 export type EvolutionCfg = { instance: string; n8nInbound: string };
 
 /** Config da Evolution/WhatsApp do cliente (instância + URL de entrada n8n). */

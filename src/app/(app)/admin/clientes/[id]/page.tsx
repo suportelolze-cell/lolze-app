@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { ArrowLeft, Eye, KanbanSquare, Users } from "lucide-react";
-import { getCliente, getPlanos, getWebhooks, getIngestToken, getPersona, getEvolutionCfg } from "@/lib/admin/data";
+import { getCliente, getPlanos, getWebhooks, getIngestToken, getPersona, getEvolutionCfg, getMetaAdsCfg } from "@/lib/admin/data";
 import { entrarComo } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
 import { PersonaForm } from "@/components/admin/PersonaForm";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
+import { MetaAdsForm } from "@/components/admin/MetaAdsForm";
 import { WebhooksForm } from "@/components/admin/WebhooksForm";
 import { IngestForm } from "@/components/admin/IngestForm";
 import { KbForm } from "@/components/admin/KbForm";
@@ -16,7 +17,7 @@ import { temOpenAIKey } from "@/lib/kb/embed";
 export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: { id: string } }) {
-  const [cliente, planos, webhooks, ingestToken, docs, persona, evolutionCfg] = await Promise.all([
+  const [cliente, planos, webhooks, ingestToken, docs, persona, evolutionCfg, metaAdsCfg] = await Promise.all([
     getCliente(params.id),
     getPlanos(),
     getWebhooks(params.id),
@@ -24,6 +25,7 @@ export default async function ClientePage({ params }: { params: { id: string } }
     listarDocs(params.id),
     getPersona(params.id),
     getEvolutionCfg(params.id),
+    getMetaAdsCfg(params.id),
   ]);
   if (!cliente) notFound();
   const semOpenAI = !temOpenAIKey();
@@ -83,6 +85,10 @@ export default async function ClientePage({ params }: { params: { id: string } }
 
       <div className="mt-6">
         <EvolutionForm tenantId={cliente.id} cfg={evolutionCfg} />
+      </div>
+
+      <div className="mt-6">
+        <MetaAdsForm tenantId={cliente.id} cfg={metaAdsCfg} />
       </div>
 
       <div className="mt-6">

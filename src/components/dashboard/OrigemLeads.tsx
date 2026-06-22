@@ -1,10 +1,20 @@
-import { Megaphone, Sprout } from "lucide-react";
+import { Megaphone, Sprout, TrendingUp } from "lucide-react";
+
+type Anuncio = { anuncio: string; leads: number };
 
 /**
  * Origem dos leads: tráfego pago (clicaram num anúncio Click-to-WhatsApp)
  * vs orgânico (chegaram sozinhos). Classificação automática na entrada.
  */
-export function OrigemLeads({ pagos, organicos }: { pagos: number; organicos: number }) {
+export function OrigemLeads({
+  pagos,
+  organicos,
+  topAnuncios = [],
+}: {
+  pagos: number;
+  organicos: number;
+  topAnuncios?: Anuncio[];
+}) {
   const total = pagos + organicos;
   const pctPago = total > 0 ? Math.round((pagos / total) * 100) : 0;
   const pctOrg = 100 - pctPago;
@@ -40,6 +50,28 @@ export function OrigemLeads({ pagos, organicos }: { pagos: number; organicos: nu
           <p className="text-xs text-texto-suave">{pctOrg}% • sem anúncio</p>
         </div>
       </div>
+
+      {/* Ranking de anúncios que mais trazem leads */}
+      {topAnuncios.length > 0 && (
+        <div className="mt-4 border-t border-borda pt-3">
+          <div className="mb-2 flex items-center gap-1.5 text-texto-suave">
+            <TrendingUp size={14} />
+            <span className="text-xs font-semibold">Anúncios que mais trazem clientes</span>
+          </div>
+          <ul className="space-y-1.5">
+            {topAnuncios.map((a) => (
+              <li key={a.anuncio} className="flex items-center justify-between gap-2 text-xs">
+                <span className="truncate text-texto" title={a.anuncio}>
+                  {a.anuncio}
+                </span>
+                <span className="shrink-0 rounded-full bg-marca-suave px-2 py-0.5 font-semibold text-marca">
+                  {a.leads} {a.leads === 1 ? "lead" : "leads"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

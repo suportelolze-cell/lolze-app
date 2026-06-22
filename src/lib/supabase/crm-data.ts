@@ -69,10 +69,10 @@ export async function getLeads(): Promise<Lead[]> {
 export async function getDashboard() {
   const tid = await getTenantId();
   if (!tid)
-    return { investimento: 0, totalLeads: 0, qualificados: 0, agendamentos: 0, cpa: 0, pagos: 0, organicos: 0 };
+    return { investimento: 0, totalLeads: 0, qualificados: 0, agendamentos: 0, cpa: 0, pagos: 0, organicos: 0, topAnuncios: [] };
   const sb = getCrmServer();
   const [{ data: leads }, { data: trafego }] = await Promise.all([
-    sb.from("app_leads").select("coluna,temperatura,aquisicao").eq("tenant_id", tid),
+    sb.from("app_leads").select("coluna,temperatura,aquisicao,anuncio").eq("tenant_id", tid),
     sb.from("app_trafego").select("investimento_cents,cliques").eq("tenant_id", tid),
   ]);
 
@@ -86,7 +86,18 @@ export async function getDashboard() {
   const investimento = (trafego?.reduce((s, t) => s + (t.investimento_cents ?? 0), 0) ?? 0) / 100;
   const cpa = agendamentos > 0 ? Math.round(investimento / agendamentos) : 0;
 
-  return { investimento, totalLeads, qualificados, agendamentos, cpa, pagos, organicos };
+  // Ranking: qual anúncio trouxe mais leads (só os pagos, com anúncio identificado).
+  const contagem = new Map<string, number>();
+  (leads ?? []).forEach((l) => {
+    if (l.aquisicao === "pago" && l.anuncio)
+      contagem.set(l.anuncio, (contagem.get(l.anuncio) ?? 0) + 1);
+  });
+  const topAnuncios = Array.from(contagem.entries())
+    .map(([anuncio, leads]) => ({ anuncio, leads }))
+    .sort((a, b) => b.leads - a.leads)
+    .slice(0, 5);
+
+  return { investimento, totalLeads, qualificados, agendamentos, cpa, pagos, organicos, topAnuncios };
 }
 
 /** Série diária (30 dias) para o gráfico "Velocidade de Tração". */

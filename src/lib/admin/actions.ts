@@ -50,6 +50,25 @@ export async function salvarWebhooks(tenantId: string, urls: Record<string, stri
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+/** Salva a conexão Meta Ads do cliente. Token só é atualizado se enviado. */
+export async function salvarMetaAdsCfg(
+  tenantId: string,
+  cfg: { adAccountId: string; accessToken: string }
+) {
+  await exigirSuper();
+  const sb = getCrmServer();
+  const patch: Record<string, unknown> = {
+    tenant_id: tenantId,
+    meta_ad_account_id: cfg.adAccountId.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  // Só sobrescreve o token se um novo foi digitado (campo vazio = manter atual).
+  if (cfg.accessToken.trim()) patch.meta_access_token = cfg.accessToken.trim();
+  const { error } = await sb.from("app_tenant_secrets").upsert(patch, { onConflict: "tenant_id" });
+  if (error) throw error;
+  revalidatePath(`/admin/clientes/${tenantId}`);
+}
+
 /** Salva a config da Evolution/WhatsApp do cliente. Somente superadmin. */
 export async function salvarEvolutionCfg(
   tenantId: string,
