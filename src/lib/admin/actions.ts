@@ -15,6 +15,24 @@ async function exigirSuper() {
 
 export type ResultadoCriar = { ok: boolean; erro?: string; senha?: string; email?: string };
 
+/** Salva a conexão Instagram do cliente. Token só é atualizado se enviado. */
+export async function salvarInstagramCfg(
+  tenantId: string,
+  cfg: { igAccountId: string; accessToken: string }
+) {
+  await exigirSuper();
+  const sb = getCrmServer();
+  const patch: Record<string, unknown> = {
+    tenant_id: tenantId,
+    ig_account_id: cfg.igAccountId.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  if (cfg.accessToken.trim()) patch.ig_access_token = cfg.accessToken.trim();
+  const { error } = await sb.from("app_tenant_secrets").upsert(patch, { onConflict: "tenant_id" });
+  if (error) throw error;
+  revalidatePath(`/admin/clientes/${tenantId}`);
+}
+
 /** Salva a conexão Meta Ads do cliente. Token só é atualizado se enviado. */
 export async function salvarMetaAdsCfg(
   tenantId: string,

@@ -108,6 +108,23 @@ export async function getCliente(id: string): Promise<Cliente | null> {
   };
 }
 
+export type InstagramCfg = { igAccountId: string; tokenSet: boolean };
+
+/** Conexão Instagram do cliente. Não devolve o token (só se está setado). */
+export async function getInstagramCfg(tenantId: string): Promise<InstagramCfg> {
+  await exigirSuperadmin();
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_tenant_secrets")
+    .select("ig_account_id,ig_access_token")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return {
+    igAccountId: data?.ig_account_id ?? "",
+    tokenSet: Boolean(data?.ig_access_token),
+  };
+}
+
 export type MetaAdsCfg = { adAccountId: string; tokenSet: boolean };
 
 /** Conexão Meta Ads do cliente. Não devolve o token (só se está setado). */
