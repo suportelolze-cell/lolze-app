@@ -56,6 +56,17 @@ export function WhatsAppCard() {
     return pararPoll;
   }, []);
 
+  // Quando conectado, re-checa a cada 20s pra detectar queda de sessão.
+  useEffect(() => {
+    if (estado !== "conectado") return;
+    const id = setInterval(async () => {
+      const r = await acaoStatusWhatsapp();
+      if (r.ok && !r.conectado) setEstado("desconectado");
+      else if (r.conectado) setNumero(r.numero ?? null);
+    }, 20000);
+    return () => clearInterval(id);
+  }, [estado]);
+
   // Enquanto exibe QR, fica perguntando se já conectou
   function iniciarPoll() {
     pararPoll();
