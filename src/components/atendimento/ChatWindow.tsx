@@ -26,13 +26,21 @@ export function ChatWindow({
   onAbrirPainel?: () => void;
 }) {
   const [texto, setTexto] = useState("");
-  const fimRef = useRef<HTMLDivElement>(null);
+  const listaRef = useRef<HTMLDivElement>(null);
 
-  // Rola para a última mensagem quando troca de conversa ou chega algo novo.
+  // Rola o container das mensagens até o fim quando troca de conversa ou
+  // chega algo novo. Usa rAF + um respiro para esperar o layout/mídia.
   const totalMsgs = conversa?.mensagens.length ?? 0;
   const conversaId = conversa?.id ?? null;
   useEffect(() => {
-    fimRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const el = listaRef.current;
+    if (!el) return;
+    const desce = () => {
+      el.scrollTop = el.scrollHeight;
+    };
+    requestAnimationFrame(desce);
+    const t = setTimeout(desce, 150); // reforço (imagens/áudio mudam a altura)
+    return () => clearTimeout(t);
   }, [totalMsgs, conversaId]);
 
   if (!conversa) {
@@ -126,7 +134,7 @@ export function ChatWindow({
       </div>
 
       {/* Mensagens */}
-      <div className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
+      <div ref={listaRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
         {conversa.mensagens.map((m, i) => {
           const divisorAqui =
             primeiroAtendente !== -1 && i === primeiroAtendente;
@@ -144,7 +152,6 @@ export function ChatWindow({
           );
         })}
         {humano && primeiroAtendente === -1 && <Divisor />}
-        <div ref={fimRef} />
       </div>
 
       {/* Caixa de digitação */}
