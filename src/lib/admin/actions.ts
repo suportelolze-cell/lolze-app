@@ -50,6 +50,26 @@ export async function salvarWebhooks(tenantId: string, urls: Record<string, stri
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+/** Salva a config da Evolution/WhatsApp do cliente. Somente superadmin. */
+export async function salvarEvolutionCfg(
+  tenantId: string,
+  cfg: { instance: string; n8nInbound: string }
+) {
+  await exigirSuper();
+  const sb = getCrmServer();
+  const { error } = await sb.from("app_tenant_secrets").upsert(
+    {
+      tenant_id: tenantId,
+      evolution_instance: cfg.instance.trim() || null,
+      n8n_inbound_url: cfg.n8nInbound.trim() || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "tenant_id" }
+  );
+  if (error) throw error;
+  revalidatePath(`/admin/clientes/${tenantId}`);
+}
+
 /** Salva a persona/cérebro do SDR de um cliente. Somente superadmin. */
 export async function salvarPersona(
   tenantId: string,

@@ -133,6 +133,23 @@ export async function getIngestToken(tenantId: string): Promise<string> {
   return data?.ingest_token ?? "";
 }
 
+export type EvolutionCfg = { instance: string; n8nInbound: string };
+
+/** Config da Evolution/WhatsApp do cliente (instância + URL de entrada n8n). */
+export async function getEvolutionCfg(tenantId: string): Promise<EvolutionCfg> {
+  await exigirSuperadmin();
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_tenant_secrets")
+    .select("evolution_instance,n8n_inbound_url")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return {
+    instance: data?.evolution_instance ?? "",
+    n8nInbound: data?.n8n_inbound_url ?? "",
+  };
+}
+
 export type Persona = {
   oferta: string;
   publico: string;

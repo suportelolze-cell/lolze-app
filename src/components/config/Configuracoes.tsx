@@ -17,6 +17,7 @@ import { salvarConfig } from "@/lib/supabase/crm-actions";
 import type { Config } from "@/lib/supabase/crm-data";
 import type { EquipeInfo } from "@/lib/team/data";
 import { EquipeManager } from "./EquipeManager";
+import { WhatsAppCard } from "./WhatsAppCard";
 
 type Aba = "identidade" | "integracoes" | "equipe" | "faturamento";
 
@@ -204,20 +205,7 @@ function Integracoes() {
     >
       <div className="space-y-4">
         <CardIntegracao icon={MessageSquare} titulo="WhatsApp Oficial">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <StatusBadge on texto="Conectado e Operante" />
-              <p className="mt-1.5 text-sm text-texto">+55 11 99999-9999</p>
-            </div>
-            <div className="flex gap-2">
-              <button className="rounded-md border border-borda px-3 py-1.5 text-xs font-semibold text-texto hover:bg-superficie">
-                Ler Novo QR Code
-              </button>
-              <button className="rounded-md border border-borda px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">
-                Desconectar
-              </button>
-            </div>
-          </div>
+          <WhatsAppCard />
         </CardIntegracao>
 
         <CardIntegracao icon={CalendarSync} titulo="Sincronização de Agenda">
