@@ -226,6 +226,10 @@ export async function statusWhatsapp(tenantId: string): Promise<ConexaoResultado
   const instancia = sec.evolution_instance;
   if (!instancia) return { ok: true, conectado: false };
 
+  // (Re)garante o webhook de entrada mesmo com a instância já conectada —
+  // cobre o caso em que o usuário nunca passou pelo fluxo de QR.
+  if (sec.n8n_inbound_url) await garantirWebhook(instancia, sec.n8n_inbound_url);
+
   const est = await evo(`/instance/connectionState/${encodeURIComponent(instancia)}`);
   const conectado = est.ok && extrairEstado(est.json) === "open";
   let numero: string | null = null;
