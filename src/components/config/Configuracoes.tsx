@@ -32,13 +32,19 @@ const abas: { id: Aba; rotulo: string; icon: typeof Building2 }[] = [
 export function Configuracoes({
   config,
   equipeInfo,
+  ehAdmin = false,
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
+  ehAdmin?: boolean;
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
   const [salvo, setSalvo] = useState(false);
+
+  // A Persona (cérebro do SDR) é gerenciada só pelo admin — o cliente não vê
+  // (evita alterações indevidas). O admin edita ao "Entrar como" o cliente.
+  const abasVisiveis = abas.filter((a) => a.id !== "persona" || ehAdmin);
 
   async function salvar() {
     await salvarConfig(cfg).catch(() => {});
@@ -75,7 +81,7 @@ export function Configuracoes({
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Menu interno */}
         <nav className="flex shrink-0 gap-1 md:w-60 md:flex-col">
-          {abas.map(({ id, rotulo, icon: Icon }) => (
+          {abasVisiveis.map(({ id, rotulo, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setAba(id)}
@@ -93,7 +99,7 @@ export function Configuracoes({
         {/* Conteúdo */}
         <div className="min-w-0 flex-1">
           {aba === "identidade" && <Identidade cfg={cfg} setCfg={setCfg} />}
-          {aba === "persona" && <Persona cfg={cfg} setCfg={setCfg} />}
+          {aba === "persona" && ehAdmin && <Persona cfg={cfg} setCfg={setCfg} />}
           {aba === "integracoes" && <Integracoes />}
           {aba === "equipe" && <EquipeManager info={equipeInfo} />}
           {aba === "faturamento" && <Faturamento />}
