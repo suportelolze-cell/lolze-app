@@ -21,6 +21,7 @@ export type Conversa = {
   id: number;
   nome: string;
   telefone: string;
+  canal: string; // whatsapp | instagram | ...
   origem: Origem;
   temperatura: Temperatura;
   comando: Comando;

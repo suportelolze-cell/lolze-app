@@ -5,6 +5,20 @@ import type { Conversa } from "@/lib/conversas";
 
 export type Filtro = "quentes" | "ia" | "comigo" | "todas";
 
+/** Selo visual do canal de origem da conversa. */
+function canalSelo(canal: string): { rotulo: string; classe: string } {
+  switch (canal) {
+    case "instagram":
+      return { rotulo: "📷 Instagram", classe: "bg-pink-100 text-pink-700" };
+    case "facebook":
+      return { rotulo: "f Facebook", classe: "bg-blue-100 text-blue-700" };
+    case "telegram":
+      return { rotulo: "✈️ Telegram", classe: "bg-sky-100 text-sky-700" };
+    default:
+      return { rotulo: "🟢 WhatsApp", classe: "bg-marca-suave text-marca" };
+  }
+}
+
 const filtros: { id: Filtro; rotulo: string }[] = [
   { id: "quentes", rotulo: "🔥 Quentes" },
   { id: "ia", rotulo: "🤖 Com a IA" },
@@ -94,7 +108,14 @@ export function ConversaList({
                     <span className="truncate text-sm font-semibold text-texto">
                       {c.nome}
                     </span>
-                    {c.temperatura === "quente" && <span className="text-xs">🔥</span>}
+                    <span className="flex shrink-0 items-center gap-1">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${canalSelo(c.canal).classe}`}
+                      >
+                        {canalSelo(c.canal).rotulo}
+                      </span>
+                      {c.temperatura === "quente" && <span className="text-xs">🔥</span>}
+                    </span>
                   </div>
                   <p className="truncate text-xs text-texto-suave">
                     {ultima?.autor === "lead" ? "" : "Você: "}

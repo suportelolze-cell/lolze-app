@@ -188,7 +188,7 @@ export async function getConversas(): Promise<Conversa[]> {
     sb
       .from("app_leads")
       .select(
-        "id,nome,telefone,origem,temperatura,comando,precisa_humano,diagnostico,atendente_id,app_mensagens(id,autor,texto,created_at,midia_url,midia_tipo)"
+        "id,nome,telefone,canal,origem,temperatura,comando,precisa_humano,diagnostico,atendente_id,app_mensagens(id,autor,texto,created_at,midia_url,midia_tipo)"
       )
       .eq("tenant_id", tid)
       .order("id"),
@@ -224,6 +224,7 @@ export async function getConversas(): Promise<Conversa[]> {
         id: l.id,
         nome: l.nome,
         telefone: l.telefone ?? "",
+        canal: l.canal ?? "whatsapp",
         origem: ORIGEM_LABEL[l.origem] ?? "Site",
         temperatura: l.temperatura,
         comando: l.comando,
