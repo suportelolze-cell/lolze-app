@@ -8,6 +8,7 @@ import { montarSystemSDR } from "./prompt";
 import { SDR_TOOLS, aplicarToolSDR, type SdrPatch } from "./tools";
 import { buscarConhecimento } from "@/lib/kb/search";
 import { agendarReuniao } from "./agendar";
+import { primeiroFollowup } from "../followup";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
 
@@ -197,6 +198,24 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
       latenciaMs: Date.now() - inicio,
     });
     return { ok: false, resposta: "", acoes: acc.acoes, erro };
+  }
+
+  // Follow-up automático: se a IA respondeu e o lead segue aberto, agenda o
+  // próximo toque (a menos que uma tool já tenha definido adiar/encerrar/escalar).
+  if (!acc.followupDefinido && resposta) {
+    const colFinal = (acc.patch.coluna as string | undefined) ?? lead.coluna;
+    const aberto =
+      colFinal !== "ganho" &&
+      colFinal !== "perdido" &&
+      colFinal !== "atencao" &&
+      colFinal !== "agendado" &&
+      !acc.patch.precisa_humano;
+    if (aberto) {
+      const fu = primeiroFollowup();
+      acc.patch.proximo_followup = fu.proximo;
+      acc.patch.followup_modo = fu.modo;
+      acc.patch.followup_count = fu.count;
+    }
   }
 
   // Aplica mutações no lead (temperatura/etapa/diagnóstico/escala) num único update.

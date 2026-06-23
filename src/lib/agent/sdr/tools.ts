@@ -95,6 +95,36 @@ export const SDR_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "adiar_contato",
+    description:
+      "Use quando o lead demonstrar interesse mas pedir para falar depois ('agora não', " +
+      "'me chama mês que vem', 'estou sem caixa', 'depois eu vejo'). NÃO é uma recusa. " +
+      "Agenda uma reativação automática para voltar a falar com ele no futuro. Informe " +
+      "'dias' (ex.: 15, 30) conforme o que o lead disser; se ele não der prazo, use 15.",
+    input_schema: {
+      type: "object",
+      properties: {
+        dias: { type: "number", description: "Em quantos dias retomar o contato (padrão 15)." },
+        motivo: { type: "string", description: "O que o lead disse (1 frase)." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "encerrar_lead",
+    description:
+      "Use SOMENTE quando o lead recusar de forma definitiva ('não quero', 'não tenho " +
+      "interesse', 'pare de me mandar mensagem', 'descadastrar'). Encerra o lead e para " +
+      "qualquer follow-up automático. Não use para 'depois' ou 'estou ocupado' (use adiar_contato).",
+    input_schema: {
+      type: "object",
+      properties: {
+        motivo: { type: "string", description: "Motivo da recusa (1 frase)." },
+      },
+      required: [],
+    },
+  },
+  {
     name: "buscar_conhecimento",
     description:
       "Consulta a base de conhecimento da empresa (documentos, tabela de preços, FAQ, " +
@@ -119,6 +149,8 @@ export const SDR_TOOLS: Anthropic.Tool[] = [
 export type SdrPatch = {
   patch: Record<string, unknown>;
   acoes: AcaoSDR[];
+  /** true quando uma tool já decidiu o follow-up (adiar/encerrar/escalar). */
+  followupDefinido?: boolean;
 };
 
 /** Aplica uma chamada de ferramenta ao acumulador. Retorna a confirmação p/ o modelo. */
@@ -152,8 +184,28 @@ export function aplicarToolSDR(
     case "escalar_humano": {
       acc.patch.precisa_humano = true;
       acc.patch.coluna = "atencao";
+      acc.patch.proximo_followup = null; // humano assume → para o follow-up automático
+      acc.followupDefinido = true;
       acc.acoes.push({ tipo: "escalar_humano", motivo: input.motivo as string });
       return "Atendente humano acionado. Envie uma mensagem curta de transição ao lead.";
+    }
+    case "adiar_contato": {
+      const dias = Math.max(1, Math.round(Number(input.dias) || 15));
+      acc.patch.proximo_followup = new Date(Date.now() + dias * 86400000).toISOString();
+      acc.patch.followup_modo = "reativacao";
+      acc.patch.followup_count = 0;
+      acc.patch.temperatura = "frio";
+      acc.followupDefinido = true;
+      acc.acoes.push({ tipo: "registrar_diagnostico", resumo: `Adiado ${dias}d: ${String(input.motivo ?? "")}` });
+      return `Contato adiado por ${dias} dias (reativação automática agendada).`;
+    }
+    case "encerrar_lead": {
+      acc.patch.coluna = "perdido";
+      acc.patch.proximo_followup = null;
+      acc.patch.followup_modo = null;
+      acc.followupDefinido = true;
+      acc.acoes.push({ tipo: "mover_etapa", etapa: "perdido", motivo: input.motivo as string });
+      return "Lead encerrado. Nenhum follow-up será enviado.";
     }
     default:
       return `Erro: ferramenta desconhecida (${nome}).`;

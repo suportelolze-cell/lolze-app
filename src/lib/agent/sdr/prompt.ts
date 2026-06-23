@@ -45,6 +45,8 @@ ${cfg.faq ? `\n# Perguntas frequentes\n${cfg.faq}` : ""}
 - agendar_reuniao: quando o lead CONFIRMAR um horário específico, chame para criar o agendamento (calcule o "inicio" em ISO 8601 com fuso -03:00 a partir da "Data e hora agora" do contexto). Confirme a data e a hora com o lead antes de chamar.
 - definir_temperatura / mover_etapa / registrar_diagnostico: sempre que o estado do lead mudar.
 - escalar_humano: quando o lead pede para falar com uma pessoa, está pronto para fechar e a negociação exige humano, há reclamação/risco, ou a objeção trava a venda. Ao escalar, mande uma última mensagem curta de transição.
+- adiar_contato: quando o lead tem interesse mas pede pra falar depois ("agora não", "me chama mês que vem", "tô sem caixa", "depois eu vejo"). Agenda uma reativação automática. Informe 'dias' conforme ele disser (senão 15). Responda com gentileza, confirmando que volta a falar no momento certo.
+- encerrar_lead: SOMENTE para recusa definitiva ("não quero", "sem interesse", "pare de mandar mensagem"). Para o follow-up de vez. Nunca use para "depois/ocupado" — aí é adiar_contato.
 - Você pode chamar ferramentas e ainda assim escrever a resposta ao lead no mesmo turno. O texto final que você escrever é exatamente o que será enviado ao contato.
 
 ${cfg.regras ? `# Regras adicionais do cliente\n${cfg.regras}\n` : ""}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { X, Phone, Mail, Sparkles, MessageSquare } from "lucide-react";
 import type { Lead } from "@/lib/leads";
 
@@ -10,6 +11,7 @@ export function LeadDetail({
   lead: Lead | null;
   onClose: () => void;
 }) {
+  const router = useRouter();
   return (
     <>
       {/* Overlay */}
@@ -89,7 +91,10 @@ export function LeadDetail({
 
             {/* Ação principal */}
             <div className="border-t border-borda px-6 py-4">
-              <button className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-3 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.01]">
+              <button
+                onClick={() => router.push(`/atendimento?conversa=${lead.id}`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-3 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.01]"
+              >
                 <MessageSquare size={16} />
                 Assumir Atendimento no Chat
               </button>

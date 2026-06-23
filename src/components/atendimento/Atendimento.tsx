@@ -52,15 +52,19 @@ export function Atendimento({
   currentUserId,
   podeOverride = false,
   respostasRapidas = [],
+  conversaInicial = null,
 }: {
   initialConversas: Conversa[];
   currentUserId: string;
   podeOverride?: boolean;
   respostasRapidas?: string[];
+  conversaInicial?: number | null;
 }) {
   const [conversas, setConversas] = useState<Conversa[]>(initialConversas);
   const [selecionadaId, setSelecionadaId] = useState<number | null>(
-    initialConversas[0]?.id ?? null
+    (conversaInicial && initialConversas.some((c) => c.id === conversaInicial)
+      ? conversaInicial
+      : initialConversas[0]?.id) ?? null
   );
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todas");

@@ -2,6 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { useRouter } from "next/navigation";
 import { MessageSquare, User } from "lucide-react";
 import type { Lead, Temperatura } from "@/lib/leads";
 
@@ -20,6 +21,7 @@ export function LeadCard({
   onPerfil?: (lead: Lead) => void;
   arrastando?: boolean;
 }) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: lead.id });
 
@@ -67,7 +69,11 @@ export function LeadCard({
 
       <div className="flex gap-2">
         <button
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/atendimento?conversa=${lead.id}`);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="flex flex-1 items-center justify-center gap-1 rounded bg-marca px-2 py-1.5 text-[11px] font-semibold text-bege-principal"
         >
           <MessageSquare size={12} /> Abrir Chat
