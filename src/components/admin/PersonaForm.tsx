@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Loader2, Check } from "lucide-react";
+import { Bot, Loader2, Check, Sparkles } from "lucide-react";
 import { salvarPersona } from "@/lib/admin/actions";
 import type { Persona } from "@/lib/admin/data";
+import { PERSONA_TEMPLATES } from "@/lib/admin/persona-templates";
 
 const inputCls =
   "w-full rounded-lg border border-borda bg-fundo px-4 py-2.5 text-sm text-texto outline-none focus:border-marca";
@@ -17,6 +18,22 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
   const [erro, setErro] = useState("");
 
   const set = (k: keyof Persona) => (v: string) => setP((s) => ({ ...s, [k]: v }));
+
+  function aplicarTemplate(id: string) {
+    const t = PERSONA_TEMPLATES.find((x) => x.id === id);
+    if (!t) return;
+    const temConteudo = [p.oferta, p.publico, p.tom, p.objecoes, p.faq, p.regras].some((v) => v.trim());
+    if (temConteudo && !confirm("Isto vai substituir os campos atuais pelo template. Continuar?")) return;
+    setP((s) => ({
+      ...s,
+      oferta: t.oferta,
+      publico: t.publico,
+      tom: t.tom,
+      objecoes: t.objecoes,
+      faq: t.faq,
+      regras: t.regras,
+    }));
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +86,29 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
             }`}
           />
         </button>
+      </div>
+
+      {/* Template por nicho (preenche os campos pra acelerar o onboarding) */}
+      <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-borda bg-fundo px-4 py-3">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-texto">
+          <Sparkles size={15} className="text-marca" /> Template por nicho
+        </span>
+        <select
+          defaultValue=""
+          onChange={(e) => {
+            if (e.target.value) aplicarTemplate(e.target.value);
+            e.target.value = "";
+          }}
+          className="rounded-md border border-borda bg-superficie px-3 py-1.5 text-sm text-texto outline-none focus:border-marca"
+        >
+          <option value="">Escolher e preencher…</option>
+          {PERSONA_TEMPLATES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nome}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-texto-suave">Preenche os campos abaixo; depois é só ajustar.</span>
       </div>
 
       <div className="mt-4 space-y-4">

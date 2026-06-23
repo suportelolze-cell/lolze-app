@@ -12,13 +12,16 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TracaoChart } from "@/components/dashboard/TracaoChart";
 import { PulsoFeed } from "@/components/dashboard/PulsoFeed";
 import { OrigemLeads } from "@/components/dashboard/OrigemLeads";
+import { ExportarBotao } from "@/components/dashboard/ExportarBotao";
 import {
   getDashboard,
   getPerfil,
   getTracao,
   getPulso,
+  getPlanoAtual,
 } from "@/lib/supabase/crm-data";
 import { getSessao } from "@/lib/supabase/tenant";
+import { planoTemFeature } from "@/lib/planos/features";
 
 export const dynamic = "force-dynamic";
 
@@ -30,13 +33,15 @@ export default async function PainelPage() {
   const sessao = await getSessao();
   if (sessao.papel === "superadmin" && !sessao.impersonating) redirect("/admin");
 
-  const [m, perfil, tracao, pulso] = await Promise.all([
+  const [m, perfil, tracao, pulso, plano] = await Promise.all([
     getDashboard(),
     getPerfil(),
     getTracao(),
     getPulso(),
+    getPlanoAtual(),
   ]);
   const cliente = perfil.nome || "bem-vindo";
+  const mostrarAnuncios = planoTemFeature(plano, "anuncios");
   return (
     <>
       {/* Cabeçalho */}
@@ -51,10 +56,13 @@ export default async function PainelPage() {
           </p>
         </div>
 
-        <button className="flex items-center gap-2 rounded-sm bg-marca px-5 py-2.5 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]">
-          <Plus size={18} />
-          Adicionar Lead Manualmente
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportarBotao />
+          <button className="flex items-center gap-2 rounded-sm bg-marca px-5 py-2.5 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02] no-print">
+            <Plus size={18} />
+            Adicionar Lead Manualmente
+          </button>
+        </div>
       </header>
 
       {/* Bloco 1: Métricas de Ouro */}
@@ -99,7 +107,9 @@ export default async function PainelPage() {
           <TracaoChart dados={tracao} />
         </div>
         <div className="flex flex-col gap-4 lg:col-span-1">
-          <OrigemLeads pagos={m.pagos} organicos={m.organicos} topAnuncios={m.topAnuncios} />
+          {mostrarAnuncios && (
+            <OrigemLeads pagos={m.pagos} organicos={m.organicos} topAnuncios={m.topAnuncios} />
+          )}
           <PulsoFeed eventos={pulso} />
         </div>
       </section>

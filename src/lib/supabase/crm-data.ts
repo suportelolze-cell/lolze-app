@@ -101,6 +101,15 @@ export async function getDashboard() {
   return { investimento, totalLeads, qualificados, agendamentos, cpa, pagos, organicos, topAnuncios };
 }
 
+/** Plano do tenant logado (start | growth | scale). "" se sem tenant. */
+export async function getPlanoAtual(): Promise<string> {
+  const tid = await getTenantId();
+  if (!tid) return "";
+  const sb = getCrmServer();
+  const { data } = await sb.from("app_tenants").select("plano").eq("id", tid).maybeSingle();
+  return data?.plano ?? "";
+}
+
 /** Série diária (30 dias) para o gráfico "Velocidade de Tração". */
 export type TracaoPonto = { dia: string; leads: number; agendamentos: number };
 

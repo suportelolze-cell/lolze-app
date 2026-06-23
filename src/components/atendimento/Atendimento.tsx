@@ -21,14 +21,42 @@ function agora() {
   });
 }
 
+/** Beep curto de notificação (Web Audio — sem arquivo). Reaproveita o contexto. */
+let _audioCtx: AudioContext | null = null;
+function tocarBeep() {
+  try {
+    const AC =
+      window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    if (!_audioCtx) _audioCtx = new AC();
+    const ctx = _audioCtx;
+    if (ctx.state === "suspended") void ctx.resume();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.type = "sine";
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+    o.start();
+    o.stop(ctx.currentTime + 0.3);
+  } catch {
+    /* navegador bloqueou áudio até a 1ª interação — badge/título continuam */
+  }
+}
+
 export function Atendimento({
   initialConversas,
   currentUserId,
   podeOverride = false,
+  respostasRapidas = [],
 }: {
   initialConversas: Conversa[];
   currentUserId: string;
   podeOverride?: boolean;
+  respostasRapidas?: string[];
 }) {
   const [conversas, setConversas] = useState<Conversa[]>(initialConversas);
   const [selecionadaId, setSelecionadaId] = useState<number | null>(
@@ -39,6 +67,26 @@ export function Atendimento({
   const [painelAberto, setPainelAberto] = useState(false); // Raio-X no mobile
   const [aviso, setAviso] = useState("");
   const enviando = useRef(false); // evita sobrescrever envio otimista em andamento
+  const snapshotRef = useRef<{ msgs: number; aguardando: number } | null>(null);
+
+  // Notificação: som quando chega mensagem nova de lead OU sobe "aguardando humano";
+  // contador no título da aba (badge mesmo com a aba em segundo plano).
+  useEffect(() => {
+    const totalLeadMsgs = conversas.reduce(
+      (s, c) => s + c.mensagens.filter((m) => m.autor === "lead").length,
+      0
+    );
+    const aguardandoHumano = conversas.filter((c) => c.precisaHumano).length;
+    const prev = snapshotRef.current;
+    if (prev && (totalLeadMsgs > prev.msgs || aguardandoHumano > prev.aguardando)) {
+      tocarBeep();
+    }
+    snapshotRef.current = { msgs: totalLeadMsgs, aguardando: aguardandoHumano };
+    document.title = aguardandoHumano > 0 ? `(${aguardandoHumano}) Central · Lolze` : "Central · Lolze";
+    return () => {
+      document.title = "Lolze";
+    };
+  }, [conversas]);
 
   // Atualiza a lista preservando seleção (chamado pelo realtime e pelo poll).
   const recarregar = useCallback(async () => {
@@ -209,6 +257,7 @@ export function Atendimento({
             onEnviar={onEnviar}
             onVoltar={() => setSelecionadaId(null)}
             onAbrirPainel={() => setPainelAberto(true)}
+            respostasRapidas={respostasRapidas}
           />
         </div>
 

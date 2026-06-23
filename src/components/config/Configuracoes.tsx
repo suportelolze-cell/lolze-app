@@ -13,7 +13,9 @@ import {
   Target,
   FileDown,
 } from "lucide-react";
-import { salvarConfig } from "@/lib/supabase/crm-actions";
+import { salvarConfig, salvarRespostasRapidas } from "@/lib/supabase/crm-actions";
+import { assinarPlano, gerenciarAssinatura } from "@/lib/billing/actions";
+import type { BillingInfo } from "@/lib/billing/data";
 import type { Config } from "@/lib/supabase/crm-data";
 import type { EquipeInfo } from "@/lib/team/data";
 import { EquipeManager } from "./EquipeManager";
@@ -31,9 +33,13 @@ const abas: { id: Aba; rotulo: string; icon: typeof Building2 }[] = [
 export function Configuracoes({
   config,
   equipeInfo,
+  respostasRapidas = "",
+  billing,
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
+  respostasRapidas?: string;
+  billing: BillingInfo;
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -91,10 +97,15 @@ export function Configuracoes({
 
         {/* Conteúdo */}
         <div className="min-w-0 flex-1">
-          {aba === "identidade" && <Identidade cfg={cfg} setCfg={setCfg} />}
+          {aba === "identidade" && (
+            <div className="flex flex-col gap-6">
+              <Identidade cfg={cfg} setCfg={setCfg} />
+              <RespostasRapidasPanel inicial={respostasRapidas} />
+            </div>
+          )}
           {aba === "integracoes" && <Integracoes />}
           {aba === "equipe" && <EquipeManager info={equipeInfo} />}
-          {aba === "faturamento" && <Faturamento />}
+          {aba === "faturamento" && <Faturamento billing={billing} />}
         </div>
       </div>
     </div>
@@ -251,44 +262,115 @@ function Integracoes() {
 }
 
 /* ---------- Aba 4: Faturamento ---------- */
-function Faturamento() {
+const brl = (cents: number) =>
+  (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+const STATUS_INFO: Record<string, { rotulo: string; classe: string }> = {
+  ativo: { rotulo: "Ativo", classe: "bg-marca text-bege-principal" },
+  inadimplente: { rotulo: "Pagamento pendente", classe: "bg-amber-500 text-white" },
+  cancelado: { rotulo: "Cancelado", classe: "bg-red-500 text-white" },
+};
+
+function Faturamento({ billing }: { billing: BillingInfo }) {
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+  const st = STATUS_INFO[billing.status] ?? { rotulo: billing.status || "—", classe: "bg-fundo text-texto-suave" };
+
+  async function ir(promessa: Promise<{ url?: string; erro?: string }>) {
+    setErro("");
+    setCarregando(true);
+    try {
+      const r = await promessa;
+      if (r.url) window.location.href = r.url;
+      else setErro(r.erro ?? "Não foi possível continuar.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
   return (
-    <Painel
-      titulo="Sua Assinatura"
-      micro="Transparência total sobre seu investimento no nosso ecossistema."
-    >
+    <Painel titulo="Sua Assinatura" micro="Seu plano e pagamento, com total transparência.">
       <div className="rounded-lg border border-marca/30 bg-marca-suave/40 p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <span className="font-corpo text-lg font-bold text-texto">
-            Plano Escala VIP
+            Plano {billing.planoNome || "—"}
           </span>
-          <span className="rounded-full bg-marca px-2.5 py-0.5 text-xs font-semibold text-bege-principal">
-            Ativo
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${st.classe}`}>
+            {st.rotulo}
           </span>
         </div>
-        <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs text-texto-suave">Próxima Cobrança</dt>
-            <dd className="text-sm font-semibold text-texto">
-              R$ 2.997 em 01/07/2026
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-texto-suave">Cartão Vinculado</dt>
-            <dd className="text-sm font-semibold text-texto">
-              Mastercard final **** 1234
-            </dd>
-          </div>
-        </dl>
+        {billing.mensalCents > 0 && (
+          <p className="mt-2 text-sm text-texto-suave">
+            <strong className="text-texto">{brl(billing.mensalCents)}</strong> / mês
+          </p>
+        )}
       </div>
+
+      {erro && <p className="mt-3 text-sm font-medium text-red-600">{erro}</p>}
+
       <div className="mt-4 flex flex-wrap gap-2">
-        <button className="rounded-md border border-borda px-4 py-2 text-sm font-semibold text-texto hover:bg-fundo">
-          Atualizar Método de Pagamento
-        </button>
-        <button className="flex items-center gap-2 rounded-md border border-borda px-4 py-2 text-sm font-semibold text-texto hover:bg-fundo">
-          <FileDown size={15} /> Baixar Notas Fiscais / Recibos
-        </button>
+        {billing.temAssinatura ? (
+          <button
+            onClick={() => ir(gerenciarAssinatura())}
+            disabled={carregando}
+            className="flex items-center gap-2 rounded-md border border-borda px-4 py-2 text-sm font-semibold text-texto hover:bg-fundo disabled:opacity-50"
+          >
+            <FileDown size={15} /> {carregando ? "Abrindo…" : "Gerenciar assinatura / notas"}
+          </button>
+        ) : billing.temCheckout ? (
+          <button
+            onClick={() => ir(assinarPlano())}
+            disabled={carregando}
+            className="rounded-sm bg-marca px-5 py-2.5 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.02] disabled:opacity-50"
+          >
+            {carregando ? "Redirecionando…" : "Assinar agora"}
+          </button>
+        ) : (
+          <p className="text-sm text-texto-suave">
+            Pagamento online ainda não habilitado nesta conta. Fale com o suporte.
+          </p>
+        )}
       </div>
+    </Painel>
+  );
+}
+
+/* ---------- Respostas rápidas (atalhos do atendimento) ---------- */
+function RespostasRapidasPanel({ inicial }: { inicial: string }) {
+  const [texto, setTexto] = useState(inicial);
+  const [salvo, setSalvo] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar() {
+    setSalvando(true);
+    const r = await salvarRespostasRapidas(texto).catch(() => ({ ok: false }));
+    setSalvando(false);
+    if (r.ok) {
+      setSalvo(true);
+      setTimeout(() => setSalvo(false), 2000);
+    }
+  }
+
+  return (
+    <Painel
+      titulo="Respostas Rápidas"
+      micro="Atalhos que a equipe insere no atendimento com 1 clique (botão ⚡). Uma por linha. Vazio = usa as padrão."
+    >
+      <textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        rows={6}
+        placeholder={"Olá! Tudo bem? Como posso te ajudar?\nConsigo te encaixar ainda esta semana. Prefere manhã ou tarde?"}
+        className="w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none focus:border-marca"
+      />
+      <button
+        onClick={salvar}
+        disabled={salvando}
+        className="mt-3 flex items-center gap-2 rounded-sm bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02] disabled:opacity-50"
+      >
+        {salvo ? <Check size={16} /> : <Save size={16} />}
+        {salvo ? "Salvo!" : salvando ? "Salvando..." : "Salvar respostas"}
+      </button>
     </Painel>
   );
 }

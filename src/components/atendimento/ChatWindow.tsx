@@ -14,6 +14,7 @@ export function ChatWindow({
   onEnviar,
   onVoltar,
   onAbrirPainel,
+  respostasRapidas = [],
 }: {
   conversa: Conversa | null;
   souAtendente?: boolean;
@@ -24,8 +25,10 @@ export function ChatWindow({
   onEnviar: (texto: string) => void;
   onVoltar?: () => void;
   onAbrirPainel?: () => void;
+  respostasRapidas?: string[];
 }) {
   const [texto, setTexto] = useState("");
+  const [mostrarRespostas, setMostrarRespostas] = useState(false);
   const listaRef = useRef<HTMLDivElement>(null);
 
   // Rola o container das mensagens até o fim quando troca de conversa ou
@@ -155,7 +158,39 @@ export function ChatWindow({
       </div>
 
       {/* Caixa de digitação */}
-      <div className="border-t border-borda bg-superficie px-4 py-3">
+      <div className="relative border-t border-borda bg-superficie px-4 py-3">
+        {/* Popover de respostas rápidas */}
+        {mostrarRespostas && souAtendente && !bloqueada && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setMostrarRespostas(false)} />
+            <div className="absolute bottom-full left-4 z-20 mb-2 w-[min(420px,calc(100%-2rem))] overflow-hidden rounded-lg border border-borda bg-superficie shadow-xl">
+              <p className="border-b border-borda px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-texto-suave">
+                Respostas rápidas
+              </p>
+              <ul className="max-h-64 overflow-y-auto py-1">
+                {respostasRapidas.length === 0 ? (
+                  <li className="px-3 py-2 text-xs italic text-texto-suave">
+                    Nenhuma resposta cadastrada. Configure em Configurações.
+                  </li>
+                ) : (
+                  respostasRapidas.map((r, i) => (
+                    <li key={i}>
+                      <button
+                        onClick={() => {
+                          setTexto((t) => (t ? t + " " + r : r));
+                          setMostrarRespostas(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm text-texto hover:bg-fundo"
+                      >
+                        {r}
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </>
+        )}
         {bloqueada ? (
           <div className="flex items-center justify-center gap-2 py-2 text-xs text-texto-suave">
             <Lock size={14} /> Conversa em atendimento por{" "}
@@ -164,7 +199,14 @@ export function ChatWindow({
           </div>
         ) : souAtendente ? (
           <div className="flex items-end gap-2">
-            <button className="rounded-md p-2 text-texto-suave hover:bg-fundo" title="Atalhos">
+            <button
+              onClick={() => setMostrarRespostas((v) => !v)}
+              className={`rounded-md p-2 transition-colors hover:bg-fundo ${
+                mostrarRespostas ? "text-marca" : "text-texto-suave"
+              }`}
+              title="Respostas rápidas"
+              type="button"
+            >
               <Zap size={18} />
             </button>
             <button className="rounded-md p-2 text-texto-suave hover:bg-fundo" title="Anexar">

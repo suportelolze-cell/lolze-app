@@ -36,10 +36,10 @@ export function AppShell({
         />
       )}
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 print-reset-pad">
         {/* Faixa de impersonation (superadmin vendo como cliente) */}
         {impersonating && (
-          <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 bg-marca px-4 py-2 text-sm text-bege-principal">
+          <div className="no-print sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 bg-marca px-4 py-2 text-sm text-bege-principal">
             <span className="flex items-center gap-2">
               <Eye size={16} /> Você está vendo como{" "}
               <strong>{clienteNome || "cliente"}</strong>.
@@ -56,7 +56,7 @@ export function AppShell({
         )}
 
         {/* Topbar mobile com hambúrguer */}
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-borda bg-superficie px-4 py-3 lg:hidden">
+        <div className="no-print sticky top-0 z-10 flex items-center gap-3 border-b border-borda bg-superficie px-4 py-3 lg:hidden">
           <button
             onClick={() => setAberto(true)}
             aria-label="Abrir menu"
@@ -72,7 +72,7 @@ export function AppShell({
 
       {/* Suporte flutuante */}
       <button
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-escuro-quente px-4 py-3 text-sm font-semibold text-bege-principal shadow-lg transition-transform hover:scale-105"
+        className="no-print fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-escuro-quente px-4 py-3 text-sm font-semibold text-bege-principal shadow-lg transition-transform hover:scale-105"
         type="button"
       >
         <MessageCircle size={18} />

@@ -12,6 +12,66 @@ export async function recarregarConversas(): Promise<Conversa[]> {
   return getConversas();
 }
 
+/** Gera um CSV (separador ";", amigável ao Excel BR) com os leads do tenant. */
+export async function exportarLeadsCsv(): Promise<string> {
+  const tid = await getTenantId();
+  if (!tid) return "";
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_leads")
+    .select("nome,telefone,email,canal,origem,aquisicao,anuncio,temperatura,coluna,valor,created_at")
+    .eq("tenant_id", tid)
+    .order("created_at", { ascending: false });
+
+  const cols = [
+    "nome",
+    "telefone",
+    "email",
+    "canal",
+    "origem",
+    "aquisicao",
+    "anuncio",
+    "temperatura",
+    "coluna",
+    "valor",
+    "created_at",
+  ] as const;
+  const titulos = [
+    "Nome",
+    "Telefone",
+    "E-mail",
+    "Canal",
+    "Origem",
+    "Aquisição",
+    "Anúncio",
+    "Temperatura",
+    "Etapa",
+    "Valor",
+    "Criado em",
+  ];
+  const esc = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const linhas = (data ?? []).map((r) =>
+    cols.map((c) => esc((r as Record<string, unknown>)[c])).join(";")
+  );
+  return [titulos.join(";"), ...linhas].join("\n");
+}
+
+/** Salva as respostas rápidas do tenant (uma por linha). */
+export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boolean; erro?: string }> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sem empresa ativa." };
+  const sb = getCrmServer();
+  const { error } = await sb
+    .from("app_config")
+    .update({ respostas_rapidas: texto, updated_at: new Date().toISOString() })
+    .eq("tenant_id", tid);
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
 const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
 
 /** Move um card de coluna (Pipeline). */

@@ -94,6 +94,20 @@
   overscroll-behavior: contain;
 }
 
+/* Impressão / Salvar como PDF: esconde menu, topbar e botões de ação */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-reset-pad {
+    padding-left: 0 !important;
+  }
+  body {
+    background: #fff !important;
+    overflow: visible !important;
+  }
+}
+
 /* Acessibilidade: respeita quem pede menos movimento */
 @media (prefers-reduced-motion: reduce) {
   *,
