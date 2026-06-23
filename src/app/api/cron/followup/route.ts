@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { enviarFollowup } from "@/lib/agent/followup";
+import { processarLembretes } from "@/lib/agent/lembretes";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -37,5 +38,14 @@ export async function GET(req: NextRequest) {
       // best-effort: um erro num lead não derruba o lote
     }
   }
-  return NextResponse.json({ ok: true, processados: leads.length, enviados });
+
+  // Lembretes de reunião (24h / 2h antes)
+  let lembretes = { enviados24h: 0, enviados2h: 0 };
+  try {
+    lembretes = await processarLembretes();
+  } catch {
+    // best-effort
+  }
+
+  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes });
 }

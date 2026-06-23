@@ -54,6 +54,7 @@ type LeadFu = {
   nome: string | null;
   canal: string | null;
   coluna: string | null;
+  temperatura: string | null;
   atendente_id: string | null;
   comando: string | null;
   followup_modo: string | null;
@@ -69,7 +70,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
 
   const { data } = await admin
     .from("app_leads")
-    .select("id,nome,canal,coluna,atendente_id,comando,followup_modo,followup_count")
+    .select("id,nome,canal,coluna,temperatura,atendente_id,comando,followup_modo,followup_count")
     .eq("tenant_id", tenantId)
     .eq("id", leadId)
     .maybeSingle();
@@ -115,17 +116,30 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
 
   const modo = lead.followup_modo ?? "cadencia";
   const reativacao = modo === "reativacao";
+  const count = lead.followup_count ?? 0;
+  const frio = (lead.temperatura ?? "frio") === "frio";
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
+
+  // Bifurcação (Caminho B): no último toque da cadência, se o lead é FRIO/apenas
+  // especulou, despede-se com elegância e PARA (não entra na reativação longa).
+  const ultimaCadencia = modo === "cadencia" && count >= CADENCIA_MIN.length - 1;
+  const despedidaFrio = ultimaCadencia && frio;
+
+  const instrucao = despedidaFrio
+    ? "[DESPEDIDA EDUCADA] Não houve retorno e o lead esfriou. Despeça-se com classe: diga que vai pausar os contatos pra não incomodar e deixe a porta aberta pra quando ele precisar. Sem cobrança, sem culpa."
+    : reativacao
+      ? "[REATIVAÇÃO] Faz um tempo que este lead não fala com a gente. Reabra com leveza, como quem retoma um papo: traga uma novidade/dica/valor do nicho dele. NÃO tente vender direto — o objetivo é reaquecer o relacionamento."
+      : frio
+        ? "[FOLLOW-UP] O lead sumiu. Dê um toque leve checando se ainda faz sentido continuar a conversa."
+        : "[FOLLOW-UP] O lead demonstrou interesse e sumiu. Retome lembrando do benefício que ele curtiu e convide a continuar, sem pressão.";
 
   const system =
     `Você é o SDR de ${str("nome_negocio") || "nossa empresa"}. ` +
     `Tom de voz: ${str("tom") || "humano, cordial e consultivo"}. ` +
     `Oferta: ${str("oferta") || "(não informada)"}. ` +
     `Regras: ${str("regras") || "—"}.\n\n` +
-    (reativacao
-      ? "[REATIVAÇÃO] Faz um tempo que este lead não fala com a gente. Reabra a conversa de forma calorosa e leve, como quem retoma um papo, trazendo um motivo/benefício novo. Sem cobrança."
-      : "[FOLLOW-UP] O lead parou de responder e ainda não recusou nem fechou. Dê um toque gentil para reengajar.") +
-    " Envie UMA mensagem curta (1–2 linhas), natural e humana, que agregue valor e faça uma pergunta simples pra ele voltar a responder. Não seja insistente, não repita o que já disse, não invente preço nem prometa resultado.";
+    instrucao +
+    " Envie UMA mensagem curta (1–2 linhas), natural e humana. Não seja insistente, não repita o que já disse, não invente preço nem prometa resultado.";
 
   const messages: Anthropic.MessageParam[] = [
     ...historico.map((t) => ({
@@ -161,8 +175,10 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
     await dispatchOutbound(tenantId, leadId, texto);
   }
 
-  // Avança a régua (ou encerra).
-  const prox = avancar(modo, lead.followup_count ?? 0);
+  // Avança a régua — ou para de vez se foi a despedida do lead frio.
+  const prox = despedidaFrio
+    ? { proximo: null as string | null, modo: null as string | null, count: count + 1 }
+    : avancar(modo, count);
   await admin
     .from("app_leads")
     .update({
