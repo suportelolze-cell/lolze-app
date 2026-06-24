@@ -8,6 +8,7 @@ import { montarSystemSDR } from "./prompt";
 import { SDR_TOOLS, aplicarToolSDR, type SdrPatch } from "./tools";
 import { buscarConhecimento } from "@/lib/kb/search";
 import { agendarReuniao } from "./agendar";
+import { consultarDisponibilidade } from "./disponibilidade";
 import { primeiroFollowup } from "../followup";
 import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
 
@@ -43,8 +44,18 @@ function dividirResposta(texto: string): string[] {
   return [...partes.slice(0, 4), partes.slice(4).join(" ")];
 }
 
-/** Avisa o contato do cliente (telefone do "Gerenciar") quando a IA escala. */
-async function notificarSuporte(admin: Admin, tenantId: string, leadNome: string, motivo?: string) {
+/**
+ * Avisa o contato da empresa (telefone do cadastro/"Gerenciar", ao lado do
+ * e-mail) quando a IA escala — com um resumo do que o cliente quer.
+ */
+async function notificarSuporte(
+  admin: Admin,
+  tenantId: string,
+  leadId: number,
+  leadNome: string,
+  motivo?: string,
+  diagnostico?: string
+) {
   const { data: t } = await admin
     .from("app_tenants")
     .select("contato_telefone")
@@ -58,11 +69,25 @@ async function notificarSuporte(admin: Admin, tenantId: string, leadNome: string
     .eq("tenant_id", tenantId)
     .maybeSingle();
   if (!temEvolutionConfig() || !sec?.evolution_instance) return;
-  const msg =
-    `🔔 A IA precisou de ajuda no atendimento de *${leadNome}*.` +
-    (motivo ? `\nMotivo: ${motivo}.` : "") +
-    `\nEntre na Central de Atendimento para assumir.`;
-  await enviarTexto(sec.evolution_instance, numero, msg).catch(() => null);
+
+  // Pega a última mensagem do cliente, para dar contexto no aviso.
+  const { data: msgs } = await admin
+    .from("app_mensagens")
+    .select("autor,texto")
+    .eq("tenant_id", tenantId)
+    .eq("lead_id", leadId)
+    .order("id", { ascending: false })
+    .limit(6);
+  const ultimaLead = ((msgs ?? []) as { autor: string; texto: string }[]).find((m) => m.autor === "lead")?.texto ?? "";
+
+  const linhas = [
+    `🔔 *A IA precisou de ajuda* — ${leadNome}`,
+    motivo ? `Motivo: ${motivo}` : "",
+    diagnostico ? `O que o cliente quer: ${diagnostico}` : "",
+    ultimaLead ? `Última mensagem do cliente: "${ultimaLead.slice(0, 220)}"` : "",
+    `👉 Assuma a conversa na Central de Atendimento do painel.`,
+  ].filter(Boolean);
+  await enviarTexto(sec.evolution_instance, numero, linhas.join("\n")).catch(() => null);
 }
 
 /** Quantos turnos do histórico enviar como contexto (limita custo). */
@@ -222,6 +247,16 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
             } catch (e) {
               confirm = "Base de conhecimento indisponível: " + (e as Error).message;
             }
+          } else if (block.name === "consultar_disponibilidade") {
+            try {
+              confirm = await consultarDisponibilidade(
+                tenantId,
+                String(args.data ?? ""),
+                Number(args.duracao_min) || undefined
+              );
+            } catch (e) {
+              confirm = "Não consegui ler a agenda agora: " + (e as Error).message;
+            }
           } else if (block.name === "agendar_reuniao") {
             try {
               confirm = await agendarReuniao(tenantId, leadId, args);
@@ -281,7 +316,8 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
   // contato do cliente (telefone do "Gerenciar") por WhatsApp.
   if (acc.patch.precisa_humano === true) {
     const escala = acc.acoes.find((a) => a.tipo === "escalar_humano") as { motivo?: string } | undefined;
-    await notificarSuporte(admin, tenantId, lead.nome ?? "um lead", escala?.motivo).catch(() => {});
+    const diag = (acc.patch.diagnostico as string | undefined) ?? lead.diagnostico ?? undefined;
+    await notificarSuporte(admin, tenantId, leadId, lead.nome ?? "um lead", escala?.motivo, diag).catch(() => {});
   }
 
   // Grava e entrega a resposta — em PARTES, com pausas, pra parecer humano.

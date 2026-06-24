@@ -74,6 +74,28 @@ export const SDR_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "consultar_disponibilidade",
+    description:
+      "Lê os horários LIVRES da agenda (Agenda do app + Google Calendar do cliente) para um dia. " +
+      "Você TEM acesso à agenda em tempo real por aqui — use SEMPRE que o lead perguntar horários " +
+      "disponíveis ou quiser marcar, e NUNCA diga que não tem acesso. Passe a 'duracao_min' do " +
+      "serviço (serviços longos ocupam mais tempo) para só receber janelas onde o serviço inteiro cabe.",
+    input_schema: {
+      type: "object",
+      properties: {
+        data: {
+          type: "string",
+          description: "Dia a consultar em AAAA-MM-DD (calcule a partir da 'Data e hora agora' do contexto).",
+        },
+        duracao_min: {
+          type: "number",
+          description: "Duração do serviço em minutos (padrão 60). Use a duração real do serviço escolhido.",
+        },
+      },
+      required: ["data"],
+    },
+  },
+  {
     name: "agendar_reuniao",
     description:
       "Cria o agendamento quando o lead CONFIRMAR um horário específico. Antes de chamar, " +
