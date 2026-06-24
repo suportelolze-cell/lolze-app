@@ -1,5 +1,4 @@
 import {
-  Plus,
   DollarSign,
   Users,
   Sparkles,
@@ -14,6 +13,7 @@ import { TracaoChart } from "@/components/dashboard/TracaoChart";
 import { PulsoFeed } from "@/components/dashboard/PulsoFeed";
 import { OrigemLeads } from "@/components/dashboard/OrigemLeads";
 import { ExportarBotao } from "@/components/dashboard/ExportarBotao";
+import { NovoLeadButton } from "@/components/dashboard/NovoLeadButton";
 import {
   getDashboard,
   getPerfil,
@@ -59,10 +59,7 @@ export default async function PainelPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <ExportarBotao />
-          <button className="flex items-center gap-2 rounded-sm bg-marca px-5 py-2.5 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02] no-print">
-            <Plus size={18} />
-            Adicionar Lead Manualmente
-          </button>
+          <NovoLeadButton />
         </div>
       </header>
 

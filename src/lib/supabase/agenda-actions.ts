@@ -130,6 +130,76 @@ export async function bloquearHorario(input: {
   return { ok: true };
 }
 
+/**
+ * Bloqueia um horário fixo em vários dias de uma vez (recorrente).
+ * Ex.: bloquear 12:00–13:00 toda Seg/Qua/Sex pelas próximas N semanas.
+ */
+export async function bloquearHorarioEmMassa(input: {
+  diasSemana: number[]; // 0=Seg ... 6=Dom
+  hora: string;
+  duracaoMin?: number;
+  motivo?: string;
+  semanas?: number;
+}): Promise<{ ok: boolean; erro?: string; criados?: number }> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sessão inválida." };
+  const dias = Array.from(new Set(input.diasSemana.filter((d) => d >= 0 && d <= 6)));
+  if (dias.length === 0) return { ok: false, erro: "Selecione ao menos um dia da semana." };
+  const semanas = Math.min(Math.max(Number(input.semanas) || 4, 1), 8);
+
+  // Base = hoje no fuso BR.
+  const hojeISO = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  const [y, m, d] = hojeISO.split("-").map(Number);
+  const hoje = new Date(Date.UTC(y, m - 1, d, 12));
+  const dowHoje = (hoje.getUTCDay() + 6) % 7; // 0=Seg
+  const motivo = input.motivo?.trim() || "";
+  const dur = Number(input.duracaoMin) > 0 ? Number(input.duracaoMin) : 60;
+
+  type Bloco = { inicioISO: string; fimISO: string };
+  const blocos: Bloco[] = [];
+  for (let w = 0; w < semanas; w++) {
+    for (const dd of dias) {
+      const offset = dd - dowHoje + w * 7;
+      if (offset < 0) continue; // não bloqueia dias passados
+      const dia = new Date(hoje);
+      dia.setUTCDate(hoje.getUTCDate() + offset);
+      const diaISO = dia.toISOString().slice(0, 10);
+      const inicio = new Date(`${diaISO}T${input.hora}:00-03:00`);
+      if (isNaN(inicio.getTime())) continue;
+      const fim = new Date(inicio.getTime() + dur * 60000);
+      blocos.push({ inicioISO: inicio.toISOString(), fimISO: fim.toISOString() });
+    }
+  }
+  if (blocos.length === 0) return { ok: false, erro: "Nenhuma data válida (verifique os dias)." };
+
+  const admin = getCrmAdmin();
+  const { error } = await admin.from("app_agendamentos").insert(
+    blocos.map((b) => ({
+      tenant_id: tid,
+      nome: motivo || "Bloqueado",
+      servico: "Bloqueio",
+      inicio: b.inicioISO,
+      fim: b.fimISO,
+      status: "confirmado",
+      por_ia: false,
+    }))
+  );
+  if (error) return { ok: false, erro: error.message };
+
+  // Espelha no Google (best-effort; pula se não conectado).
+  for (const b of blocos) {
+    await criarEventoGoogle(tid, {
+      summary: `🔒 Bloqueado${motivo ? ` — ${motivo}` : ""}`,
+      descricao: "Bloqueio recorrente (Lolze).",
+      inicioISO: b.inicioISO,
+      fimISO: b.fimISO,
+    }).catch(() => null);
+  }
+
+  revalidatePath("/agenda");
+  return { ok: true, criados: blocos.length };
+}
+
 /** Cancela um agendamento (some da agenda). */
 export async function cancelarAgendamento(id: number): Promise<Resultado> {
   const tid = await getTenantId();

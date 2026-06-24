@@ -3,12 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Loader2 } from "lucide-react";
-import { criarAgendamentoManual, bloquearHorario } from "@/lib/supabase/agenda-actions";
+import {
+  criarAgendamentoManual,
+  bloquearHorario,
+  bloquearHorarioEmMassa,
+} from "@/lib/supabase/agenda-actions";
 
 export type ModoModal = "agendar" | "bloquear" | null;
 
 const inputCls =
   "w-full rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto outline-none focus:border-marca";
+
+const DIAS_LABEL = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 function hoje() {
   return new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD (fuso local)
@@ -23,20 +29,29 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
   const [data, setData] = useState(hoje());
   const [hora, setHora] = useState("09:00");
   const [duracao, setDuracao] = useState(60);
+  const [dias, setDias] = useState<number[]>([]); // dias da semana p/ bloqueio em massa
+  const [semanas, setSemanas] = useState(4);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
   if (!modo) return null;
   const bloquear = modo === "bloquear";
+  const emMassa = bloquear && dias.length > 0;
+
+  function toggleDia(d: number) {
+    setDias((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
     setSalvando(true);
     try {
-      const r = bloquear
-        ? await bloquearHorario({ data, hora, duracaoMin: duracao, motivo })
-        : await criarAgendamentoManual({ nome, telefone, servico, data, hora, duracaoMin: duracao });
+      const r = emMassa
+        ? await bloquearHorarioEmMassa({ diasSemana: dias, hora, duracaoMin: duracao, motivo, semanas })
+        : bloquear
+          ? await bloquearHorario({ data, hora, duracaoMin: duracao, motivo })
+          : await criarAgendamentoManual({ nome, telefone, servico, data, hora, duracaoMin: duracao });
       if (r.ok) {
         router.refresh();
         onClose();
@@ -55,7 +70,7 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={salvar}
-        className="w-full max-w-md space-y-4 rounded-xl border border-borda bg-superficie p-6 shadow-xl"
+        className="w-full max-w-md space-y-4 rounded-xl border border-borda bg-superficie p-6"
       >
         <div className="flex items-center justify-between">
           <h2 className="font-corpo text-lg font-bold text-texto">
@@ -88,10 +103,43 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
           </Campo>
         )}
 
+        {/* Bloqueio em massa: dias da semana */}
+        {bloquear && (
+          <div>
+            <span className="mb-1 block text-xs font-semibold text-texto">
+              Repetir nos dias <span className="font-normal text-texto-suave">(deixe sem marcar p/ bloquear só a data)</span>
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {DIAS_LABEL.map((d, i) => {
+                const on = dias.includes(i);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => toggleDia(i)}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
+                      on ? "border-marca bg-marca text-bege-principal" : "border-borda text-texto-suave hover:border-marca"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-3">
-          <Campo label="Data">
-            <input type="date" value={data} onChange={(e) => setData(e.target.value)} required className={inputCls} />
-          </Campo>
+          {!emMassa && (
+            <Campo label="Data">
+              <input type="date" value={data} onChange={(e) => setData(e.target.value)} required={!emMassa} className={inputCls} />
+            </Campo>
+          )}
+          {emMassa && (
+            <Campo label="Por (semanas)">
+              <input type="number" min={1} max={8} value={semanas} onChange={(e) => setSemanas(Number(e.target.value))} className={inputCls} />
+            </Campo>
+          )}
           <Campo label="Hora">
             <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} required className={inputCls} />
           </Campo>
@@ -99,6 +147,13 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
             <input type="number" min={15} step={15} value={duracao} onChange={(e) => setDuracao(Number(e.target.value))} className={inputCls} />
           </Campo>
         </div>
+
+        {emMassa && (
+          <p className="text-xs text-texto-suave">
+            Vai bloquear <b>{hora}</b> ({duracao} min) em <b>{dias.length} dia(s)/semana</b> pelas próximas{" "}
+            <b>{semanas} semana(s)</b>.
+          </p>
+        )}
 
         {erro && <p className="text-sm font-medium text-red-600">{erro}</p>}
 
@@ -114,7 +169,7 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
             }`}
           >
             {salvando ? <Loader2 size={16} className="animate-spin" /> : null}
-            {bloquear ? "Bloquear" : "Agendar"}
+            {bloquear ? (emMassa ? "Bloquear em massa" : "Bloquear") : "Agendar"}
           </button>
         </div>
       </form>

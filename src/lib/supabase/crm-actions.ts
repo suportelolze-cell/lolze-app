@@ -1,6 +1,8 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getCrmServer } from "./server";
+import { getCrmAdmin } from "./admin";
 import { getSessao, getTenantId } from "./tenant";
 import { getConversas } from "./crm-data";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
@@ -73,6 +75,30 @@ export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boole
 }
 
 const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
+
+/** Cadastra um lead manualmente (botão "Adicionar Lead" do painel/pipeline). */
+export async function criarLeadManual(input: {
+  nome: string;
+  telefone?: string;
+}): Promise<{ ok: boolean; erro?: string }> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sem empresa ativa." };
+  const nome = input.nome.trim();
+  if (!nome) return { ok: false, erro: "Informe o nome do lead." };
+  const admin = getCrmAdmin();
+  const { error } = await admin.from("app_leads").insert({
+    tenant_id: tid,
+    nome,
+    telefone: input.telefone?.trim() || null,
+    temperatura: "morno",
+    coluna: "entrada",
+    canal: "manual",
+  });
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/pipeline");
+  revalidatePath("/painel");
+  return { ok: true };
+}
 
 /** Move um card de coluna (Pipeline). */
 export async function moverLead(id: number, coluna: ColunaId) {
