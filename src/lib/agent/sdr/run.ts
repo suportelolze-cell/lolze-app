@@ -56,13 +56,21 @@ async function notificarSuporte(
   motivo?: string,
   diagnostico?: string
 ) {
-  const { data: t } = await admin
-    .from("app_tenants")
-    .select("contato_telefone")
-    .eq("id", tenantId)
-    .maybeSingle();
-  const numero = (t?.contato_telefone as string | null) ?? "";
-  if (!numero) return;
+  const [{ data: t }, { data: cfg }] = await Promise.all([
+    admin.from("app_tenants").select("contato_telefone").eq("id", tenantId).maybeSingle(),
+    admin.from("app_config").select("especialista_numero").eq("tenant_id", tenantId).maybeSingle(),
+  ]);
+  const numeros = Array.from(
+    new Set(
+      [
+        (cfg?.especialista_numero as string | null) ?? "",
+        (t?.contato_telefone as string | null) ?? "",
+      ]
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
+  if (numeros.length === 0) return;
   const { data: sec } = await admin
     .from("app_tenant_secrets")
     .select("evolution_instance")
@@ -87,7 +95,9 @@ async function notificarSuporte(
     ultimaLead ? `Última mensagem do cliente: "${ultimaLead.slice(0, 220)}"` : "",
     `👉 Assuma a conversa na Central de Atendimento do painel.`,
   ].filter(Boolean);
-  await enviarTexto(sec.evolution_instance, numero, linhas.join("\n")).catch(() => null);
+  for (const n of numeros) {
+    await enviarTexto(sec.evolution_instance, n, linhas.join("\n")).catch(() => null);
+  }
 }
 
 /** Quantos turnos do histórico enviar como contexto (limita custo). */

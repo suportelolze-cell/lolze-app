@@ -19,6 +19,8 @@ import type { BillingInfo } from "@/lib/billing/data";
 import type { Config } from "@/lib/supabase/crm-data";
 import type { EquipeInfo } from "@/lib/team/data";
 import { EquipeManager } from "./EquipeManager";
+import { AtendimentoCard } from "./AtendimentoCard";
+import type { AtendimentoCfg } from "@/lib/supabase/crm-data";
 import { WhatsAppCard } from "./WhatsAppCard";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
@@ -38,12 +40,14 @@ export function Configuracoes({
   respostasRapidas = "",
   billing,
   google,
+  atendimento,
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
   respostasRapidas?: string;
   billing: BillingInfo;
   google?: GoogleStatus;
+  atendimento?: AtendimentoCfg;
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -108,7 +112,12 @@ export function Configuracoes({
             </div>
           )}
           {aba === "integracoes" && <Integracoes google={google} />}
-          {aba === "equipe" && <EquipeManager info={equipeInfo} />}
+          {aba === "equipe" && (
+            <div className="space-y-6">
+              <EquipeManager info={equipeInfo} />
+              <AtendimentoCard inicial={atendimento ?? { especialista: "", abre: 8, fecha: 18 }} />
+            </div>
+          )}
           {aba === "faturamento" && <Faturamento billing={billing} />}
         </div>
       </div>

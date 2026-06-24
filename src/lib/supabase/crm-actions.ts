@@ -74,6 +74,31 @@ export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boole
   return { ok: true };
 }
 
+/** Salva o número do especialista + horário de atendimento (abre/fecha) do tenant. */
+export async function salvarAtendimentoCfg(input: {
+  especialista: string;
+  abre: number;
+  fecha: number;
+}): Promise<{ ok: boolean; erro?: string }> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sem empresa ativa." };
+  const abre = Math.min(Math.max(Math.round(Number(input.abre) || 8), 0), 23);
+  const fecha = Math.min(Math.max(Math.round(Number(input.fecha) || 18), abre + 1), 24);
+  const sb = getCrmServer();
+  const { error } = await sb
+    .from("app_config")
+    .update({
+      especialista_numero: input.especialista.trim() || null,
+      agenda_abre: abre,
+      agenda_fecha: fecha,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("tenant_id", tid);
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/configuracoes");
+  return { ok: true };
+}
+
 const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
 
 /** Cadastra um lead manualmente (botão "Adicionar Lead" do painel/pipeline). */

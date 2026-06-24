@@ -5,6 +5,25 @@ import { ORIGEM_LABEL, type Lead, type ColunaId } from "@/lib/leads";
 import type { Conversa } from "@/lib/conversas";
 import type { DadosFunil, Periodo } from "@/lib/funil";
 
+export type AtendimentoCfg = { especialista: string; abre: number; fecha: number };
+
+/** Número do especialista + horário de atendimento do tenant ativo. */
+export async function getAtendimentoCfg(): Promise<AtendimentoCfg> {
+  const tid = await getTenantId();
+  if (!tid) return { especialista: "", abre: 8, fecha: 18 };
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_config")
+    .select("especialista_numero,agenda_abre,agenda_fecha")
+    .eq("tenant_id", tid)
+    .maybeSingle();
+  return {
+    especialista: (data?.especialista_numero as string | null) ?? "",
+    abre: Number(data?.agenda_abre ?? 8),
+    fecha: Number(data?.agenda_fecha ?? 18),
+  };
+}
+
 type LeadRow = {
   id: number;
   nome: string;
