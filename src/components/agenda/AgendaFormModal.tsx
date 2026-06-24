@@ -137,7 +137,7 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
           )}
           {emMassa && (
             <Campo label="Por (semanas)">
-              <input type="number" min={1} max={8} value={semanas} onChange={(e) => setSemanas(Number(e.target.value))} className={inputCls} />
+              <input type="number" min={1} max={52} value={semanas} onChange={(e) => setSemanas(Number(e.target.value))} className={inputCls} />
             </Campo>
           )}
           <Campo label="Hora">

@@ -145,7 +145,7 @@ export async function bloquearHorarioEmMassa(input: {
   if (!tid) return { ok: false, erro: "Sessão inválida." };
   const dias = Array.from(new Set(input.diasSemana.filter((d) => d >= 0 && d <= 6)));
   if (dias.length === 0) return { ok: false, erro: "Selecione ao menos um dia da semana." };
-  const semanas = Math.min(Math.max(Number(input.semanas) || 4, 1), 8);
+  const semanas = Math.min(Math.max(Number(input.semanas) || 4, 1), 52);
 
   // Base = hoje no fuso BR.
   const hojeISO = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
@@ -186,8 +186,10 @@ export async function bloquearHorarioEmMassa(input: {
   );
   if (error) return { ok: false, erro: error.message };
 
-  // Espelha no Google (best-effort; pula se não conectado).
-  for (const b of blocos) {
+  // Espelha no Google (best-effort; pula se não conectado). Limita a 40 eventos
+  // para não estourar o tempo em bloqueios muito longos — o bloqueio no app já
+  // impede a IA de marcar nesses horários de qualquer forma.
+  for (const b of blocos.slice(0, 40)) {
     await criarEventoGoogle(tid, {
       summary: `🔒 Bloqueado${motivo ? ` — ${motivo}` : ""}`,
       descricao: "Bloqueio recorrente (Lolze).",

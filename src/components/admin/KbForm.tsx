@@ -33,6 +33,7 @@ export function KbForm({
   const [nome, setNome] = useState("");
   const [texto, setTexto] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [enviandoNome, setEnviandoNome] = useState("");
   const [erro, setErro] = useState("");
   const [ok, setOk] = useState("");
 
@@ -48,6 +49,7 @@ export function KbForm({
         return;
       }
       fd.set("file", f);
+      setEnviandoNome(f.name);
     } else {
       if (!texto.trim()) {
         setErro("Cole o texto do documento.");
@@ -55,6 +57,7 @@ export function KbForm({
       }
       fd.set("texto", texto);
       fd.set("nome", nome || "Texto colado");
+      setEnviandoNome(nome || "Texto colado");
     }
     setCarregando(true);
     try {
@@ -69,6 +72,7 @@ export function KbForm({
       }
     } finally {
       setCarregando(false);
+      setEnviandoNome("");
     }
   }
 
@@ -164,12 +168,21 @@ export function KbForm({
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-texto-suave">
           Documentos indexados
         </p>
-        {docs.length === 0 ? (
+        {docs.length === 0 && !carregando ? (
           <p className="rounded-md border border-dashed border-borda px-4 py-6 text-center text-xs italic text-texto-suave">
             Nenhum documento ainda.
           </p>
         ) : (
           <div className="space-y-2">
+            {carregando && enviandoNome && (
+              <div className="flex items-center gap-3 rounded-md border border-marca/40 bg-marca-suave/30 px-4 py-3">
+                <Loader2 size={18} className="shrink-0 animate-spin text-marca" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-texto">{enviandoNome}</p>
+                  <p className="text-xs text-texto-suave">Indexando… pode levar alguns segundos.</p>
+                </div>
+              </div>
+            )}
             {docs.map((d) => (
               <div
                 key={d.fileNome}
