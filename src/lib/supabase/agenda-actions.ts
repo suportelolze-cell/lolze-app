@@ -129,3 +129,25 @@ export async function bloquearHorario(input: {
   revalidatePath("/agenda");
   return { ok: true };
 }
+
+/** Salva os toggles Anti-Faltas do tenant ativo. */
+export async function salvarAntiFaltas(p: {
+  c24: boolean;
+  l2: boolean;
+  resgate: boolean;
+}): Promise<Resultado> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sessão inválida." };
+  const admin = getCrmAdmin();
+  const { error } = await admin
+    .from("app_config")
+    .update({
+      antifaltas_24h: p.c24,
+      antifaltas_2h: p.l2,
+      antifaltas_resgate: p.resgate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("tenant_id", tid);
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}

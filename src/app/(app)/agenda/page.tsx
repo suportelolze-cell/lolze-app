@@ -1,5 +1,5 @@
 import { Agenda } from "@/components/agenda/Agenda";
-import { getAgendamentosApp, getOcupadosGoogle } from "@/lib/supabase/agenda-app";
+import { getAgendamentosApp, getOcupadosGoogle, getAntiFaltas } from "@/lib/supabase/agenda-app";
 import { getGoogleStatus } from "@/lib/google/oauth";
 import { getTenantId } from "@/lib/supabase/tenant";
 
@@ -22,16 +22,18 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ref
   max.setDate(max.getDate() + 7);
 
   const tid = await getTenantId();
-  const [agendamentos, google, status] = await Promise.all([
+  const [agendamentos, google, status, antifaltas] = await Promise.all([
     getAgendamentosApp(),
     getOcupadosGoogle(min.toISOString(), max.toISOString()),
     getGoogleStatus(tid),
+    getAntiFaltas(),
   ]);
   return (
     <Agenda
       agendamentos={[...agendamentos, ...google]}
       googleConectado={status.conectado}
       refISO={refISO}
+      antifaltas={antifaltas}
     />
   );
 }

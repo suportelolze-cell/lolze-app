@@ -128,3 +128,22 @@ export async function getOcupadosGoogle(timeMinISO?: string, timeMaxISO?: string
     };
   });
 }
+
+export type AntiFaltas = { c24: boolean; l2: boolean; resgate: boolean };
+
+/** Configuração de lembretes anti-faltas do tenant ativo. */
+export async function getAntiFaltas(): Promise<AntiFaltas> {
+  const tid = await getTenantId();
+  if (!tid) return { c24: true, l2: true, resgate: false };
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_config")
+    .select("antifaltas_24h,antifaltas_2h,antifaltas_resgate")
+    .eq("tenant_id", tid)
+    .maybeSingle();
+  return {
+    c24: data?.antifaltas_24h ?? true,
+    l2: data?.antifaltas_2h ?? true,
+    resgate: data?.antifaltas_resgate ?? false,
+  };
+}

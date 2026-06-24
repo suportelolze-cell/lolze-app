@@ -21,6 +21,23 @@ function quando(inicioISO: string) {
 
 type Ag = { id: number; tenant_id: string; lead_id: number | null; nome: string | null; servico: string | null; inicio: string };
 
+/** Flags anti-faltas por tenant (default: ligado). */
+async function flagsAntiFaltas(
+  admin: ReturnType<typeof getCrmAdmin>,
+  ids: string[]
+): Promise<Map<string, { c24: boolean; l2: boolean }>> {
+  const m = new Map<string, { c24: boolean; l2: boolean }>();
+  if (ids.length === 0) return m;
+  const { data } = await admin
+    .from("app_config")
+    .select("tenant_id,antifaltas_24h,antifaltas_2h")
+    .in("tenant_id", ids);
+  for (const r of (data ?? []) as { tenant_id: string; antifaltas_24h: boolean | null; antifaltas_2h: boolean | null }[]) {
+    m.set(r.tenant_id, { c24: r.antifaltas_24h ?? true, l2: r.antifaltas_2h ?? true });
+  }
+  return m;
+}
+
 export async function processarLembretes(): Promise<{ enviados24h: number; enviados2h: number }> {
   const admin = getCrmAdmin();
   const agora = new Date();
@@ -38,9 +55,12 @@ export async function processarLembretes(): Promise<{ enviados24h: number; envia
     .lte("inicio", em24h)
     .limit(50);
 
+  const flags24 = await flagsAntiFaltas(admin, Array.from(new Set(((lista24 ?? []) as Ag[]).map((a) => a.tenant_id))));
   let enviados24h = 0;
   for (const a of (lista24 ?? []) as Ag[]) {
     if (!a.lead_id) continue;
+    if (flags24.get(a.tenant_id)?.c24 === false) continue; // confirmação 24h desligada
+
     const nome = (a.nome || "").split(" ")[0] || "tudo bem";
     const msg = `Oi ${nome}, passando pra confirmar nosso ${a.servico || "compromisso"} em ${quando(a.inicio)}. Tá tudo certo pra você? Se precisar reagendar, é só me avisar por aqui! 😊`;
     await dispatchOutbound(a.tenant_id, a.lead_id, msg);
@@ -58,9 +78,12 @@ export async function processarLembretes(): Promise<{ enviados24h: number; envia
     .lte("inicio", em2h)
     .limit(50);
 
+  const flags2 = await flagsAntiFaltas(admin, Array.from(new Set(((lista2 ?? []) as Ag[]).map((a) => a.tenant_id))));
   let enviados2h = 0;
   for (const a of (lista2 ?? []) as Ag[]) {
     if (!a.lead_id) continue;
+    if (flags2.get(a.tenant_id)?.l2 === false) continue; // lembrete 2h desligado
+
     const nome = (a.nome || "").split(" ")[0] || "";
     const msg = `Olá ${nome}! Daqui a pouco temos nosso ${a.servico || "compromisso"} (${quando(a.inicio)}). Qualquer coisa, tô por aqui. Até já! 👋`;
     await dispatchOutbound(a.tenant_id, a.lead_id, msg);

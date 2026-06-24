@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw, Plus, Ban, ChevronLeft, ChevronRight } from "lucide-react";
 import { type Agendamento } from "@/lib/agenda";
+import type { AntiFaltas } from "@/lib/supabase/agenda-app";
 import { WeekGrid } from "./WeekGrid";
 import { MonthGrid } from "./MonthGrid";
 import { AntiFaltasPanel } from "./AntiFaltasPanel";
@@ -47,10 +48,12 @@ export function Agenda({
   agendamentos,
   googleConectado = false,
   refISO,
+  antifaltas,
 }: {
   agendamentos: Agendamento[];
   googleConectado?: boolean;
   refISO: string;
+  antifaltas: AntiFaltas;
 }) {
   const router = useRouter();
   useEffect(() => {
@@ -184,7 +187,7 @@ export function Agenda({
             <WeekGrid diasVisiveis={diasVisiveis} diasISO={diasISO} agendamentos={filtrados} onSelect={setSelecionado} />
           )}
         </div>
-        <AntiFaltasPanel preenchidosIA={preenchidosIA} agendamentosMes={agendamentosMes} />
+        <AntiFaltasPanel preenchidosIA={preenchidosIA} agendamentosMes={agendamentosMes} inicial={antifaltas} />
       </div>
 
       <CompromissoDetail agendamento={selecionado} onClose={() => setSelecionado(null)} />
