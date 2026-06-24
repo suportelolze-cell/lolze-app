@@ -11,7 +11,7 @@ async function calendarioDoTenant(tenantId: string): Promise<string> {
   return data?.google_calendar_id || "primary";
 }
 
-export type EventoGoogle = { summary: string; inicioISO: string; fimISO: string };
+export type EventoGoogle = { id: string; summary: string; inicioISO: string; fimISO: string };
 
 /**
  * Lista eventos do Google Calendar do cliente num intervalo. [] se não conectado.
@@ -40,6 +40,7 @@ export async function listarEventosGoogle(
     if (!r.ok) return [];
     const j = (await r.json()) as {
       items?: Array<{
+        id?: string;
         summary?: string;
         start?: { dateTime?: string; date?: string };
         end?: { dateTime?: string; date?: string };
@@ -47,6 +48,7 @@ export async function listarEventosGoogle(
     };
     return (j.items ?? [])
       .map((e) => ({
+        id: e.id ?? "",
         summary: e.summary || "Ocupado",
         inicioISO: e.start?.dateTime || (e.start?.date ? `${e.start.date}T00:00:00-03:00` : ""),
         fimISO: e.end?.dateTime || (e.end?.date ? `${e.end.date}T23:59:59-03:00` : ""),

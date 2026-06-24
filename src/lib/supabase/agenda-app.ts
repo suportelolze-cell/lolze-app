@@ -103,7 +103,26 @@ export async function getOcupadosGoogle(timeMinISO?: string, timeMaxISO?: string
     maxISO = fimSemana.toISOString();
   }
 
-  const eventos = await listarEventosGoogle(tid, minISO, maxISO);
+  // Dedup: não mostrar eventos do Google que são espelho dos nossos agendamentos
+  // (mesmo google_event_id OU mesmo horário de início) — evita card duplicado.
+  const sb = getCrmServer();
+  const { data: ags } = await sb
+    .from("app_agendamentos")
+    .select("inicio,google_event_id")
+    .eq("tenant_id", tid)
+    .neq("status", "cancelado");
+  const meusIds = new Set(
+    ((ags ?? []) as { google_event_id: string | null }[])
+      .map((a) => a.google_event_id)
+      .filter((x): x is string => Boolean(x))
+  );
+  const meusInicios = new Set(
+    ((ags ?? []) as { inicio: string }[]).map((a) => new Date(a.inicio).getTime())
+  );
+
+  const eventos = (await listarEventosGoogle(tid, minISO, maxISO)).filter(
+    (e) => !meusIds.has(e.id) && !meusInicios.has(new Date(e.inicioISO).getTime())
+  );
 
   return eventos.map((e, i): Agendamento => {
     const ini = new Date(e.inicioISO);

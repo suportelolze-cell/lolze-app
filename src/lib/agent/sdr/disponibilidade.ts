@@ -1,9 +1,9 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { listarEventosGoogle } from "@/lib/google/calendar";
 
-// Janela de atendimento padrão (BRT). Serviços longos (ex.: 4h) cabem até 17:00.
-const ABRE = 8;
-const FECHA = 21;
+// Janela de atendimento padrão (BRT) se o cliente não configurou.
+const ABRE_PADRAO = 8;
+const FECHA_PADRAO = 18;
 
 /**
  * Lê os horários LIVRES de um dia, cruzando a Agenda do app (app_agendamentos)
@@ -21,8 +21,18 @@ export async function consultarDisponibilidade(
   const dayStart = new Date(`${dataISO}T00:00:00-03:00`);
   const dayEnd = new Date(`${dataISO}T23:59:59-03:00`);
 
-  // Ocupados na Agenda do app (inclui bloqueios e agendamentos).
   const admin = getCrmAdmin();
+
+  // Horário de atendimento do cliente (fecha às X — não marca depois disso).
+  const { data: cfg } = await admin
+    .from("app_config")
+    .select("agenda_abre,agenda_fecha")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  const ABRE = Number((cfg as { agenda_abre?: number } | null)?.agenda_abre ?? ABRE_PADRAO);
+  const FECHA = Number((cfg as { agenda_fecha?: number } | null)?.agenda_fecha ?? FECHA_PADRAO);
+
+  // Ocupados na Agenda do app (inclui bloqueios e agendamentos).
   const { data: ags } = await admin
     .from("app_agendamentos")
     .select("inicio,fim")
