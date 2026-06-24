@@ -108,6 +108,22 @@ export async function getCliente(id: string): Promise<Cliente | null> {
   };
 }
 
+export type AcessoCliente = { userId: string | null; email: string | null };
+
+/** Conta de ACESSO (login) do dono do cliente — vem do Auth, espelhada em app_profiles. */
+export async function getAcessoCliente(tenantId: string): Promise<AcessoCliente> {
+  await exigirSuperadmin();
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_profiles")
+    .select("id,email")
+    .eq("tenant_id", tenantId)
+    .eq("papel", "owner")
+    .limit(1)
+    .maybeSingle();
+  return { userId: data?.id ?? null, email: data?.email ?? null };
+}
+
 export type InstagramCfg = { igAccountId: string; tokenSet: boolean };
 
 /** Conexão Instagram do cliente. Não devolve o token (só se está setado). */

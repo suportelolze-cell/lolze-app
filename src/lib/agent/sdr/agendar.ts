@@ -1,4 +1,5 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
+import { criarEventoGoogle, horarioOcupadoGoogle } from "@/lib/google/calendar";
 
 /**
  * Cria um agendamento no ecossistema (app_agendamentos) e move o lead para
@@ -25,18 +26,41 @@ export async function agendarReuniao(
     .eq("id", leadId)
     .maybeSingle();
 
-  const { error } = await admin.from("app_agendamentos").insert({
-    tenant_id: tenantId,
-    lead_id: leadId,
-    nome: (args.nome || lead?.nome || "Lead").trim(),
-    telefone: lead?.telefone ?? null,
-    servico: (args.servico || "Reunião").trim(),
-    inicio: inicio.toISOString(),
-    fim: fim.toISOString(),
-    status: "confirmado",
-    por_ia: true,
-    origem: lead?.canal ?? null,
-  });
+  const nome = (args.nome || lead?.nome || "Lead").trim();
+  const servico = (args.servico || "Reunião").trim();
+
+  // Não marca em cima de outro agendamento do app...
+  const { data: choque } = await admin
+    .from("app_agendamentos")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .neq("status", "cancelado")
+    .lt("inicio", fim.toISOString())
+    .gt("fim", inicio.toISOString())
+    .limit(1);
+  if (choque && choque.length > 0)
+    return "Esse horário já está ocupado na agenda. Ofereça outro horário ao lead e tente novamente.";
+
+  // ...nem em cima de um compromisso que já existe no Google Calendar do cliente.
+  if (await horarioOcupadoGoogle(tenantId, inicio.toISOString(), fim.toISOString()))
+    return "Esse horário está ocupado no Google Calendar do cliente. Ofereça outro horário ao lead.";
+
+  const { data: novo, error } = await admin
+    .from("app_agendamentos")
+    .insert({
+      tenant_id: tenantId,
+      lead_id: leadId,
+      nome,
+      telefone: lead?.telefone ?? null,
+      servico,
+      inicio: inicio.toISOString(),
+      fim: fim.toISOString(),
+      status: "confirmado",
+      por_ia: true,
+      origem: lead?.canal ?? null,
+    })
+    .select("id")
+    .single();
   if (error) return "Erro ao agendar: " + error.message;
 
   await admin
@@ -44,6 +68,17 @@ export async function agendarReuniao(
     .update({ coluna: "agendado", temperatura: "quente", updated_at: new Date().toISOString() })
     .eq("tenant_id", tenantId)
     .eq("id", leadId);
+
+  // 2ª camada: cria o evento no Google Calendar do cliente e guarda o id. Best-effort.
+  const eventId = await criarEventoGoogle(tenantId, {
+    summary: `${servico} — ${nome}`,
+    descricao: `Agendado pela IA (Lolze).${lead?.telefone ? ` Tel: ${lead.telefone}` : ""}`,
+    inicioISO: inicio.toISOString(),
+    fimISO: fim.toISOString(),
+  });
+  if (eventId && novo?.id) {
+    await admin.from("app_agendamentos").update({ google_event_id: eventId }).eq("id", novo.id);
+  }
 
   const fmt = inicio.toLocaleString("pt-BR", {
     timeZone: "America/Sao_Paulo",

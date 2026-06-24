@@ -33,7 +33,13 @@ function Chip({
   );
 }
 
-export function Agenda({ agendamentos }: { agendamentos: Agendamento[] }) {
+export function Agenda({
+  agendamentos,
+  googleConectado = false,
+}: {
+  agendamentos: Agendamento[];
+  googleConectado?: boolean;
+}) {
   const [view, setView] = useState<View>("semana");
   const [confirmados, setConfirmados] = useState(true);
   const [pendentes, setPendentes] = useState(true);
@@ -69,9 +75,18 @@ export function Agenda({ agendamentos }: { agendamentos: Agendamento[] }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex items-center gap-1.5 rounded-full bg-marca-suave px-3 py-1.5 text-xs font-semibold text-marca">
-            <RefreshCw size={13} /> Sincronizado com Google Calendar
-          </span>
+          {googleConectado ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-marca-suave px-3 py-1.5 text-xs font-semibold text-marca">
+              <RefreshCw size={13} /> Sincronizado com Google Calendar
+            </span>
+          ) : (
+            <a
+              href="/configuracoes"
+              className="flex items-center gap-1.5 rounded-full border border-borda px-3 py-1.5 text-xs font-semibold text-texto-suave hover:text-texto"
+            >
+              <RefreshCw size={13} /> Conectar Google Calendar
+            </a>
+          )}
           <button className="flex items-center gap-1.5 rounded-sm border border-borda px-3 py-2 text-sm font-semibold text-texto hover:bg-superficie">
             <Ban size={15} /> Bloquear Horário
           </button>

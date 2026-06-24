@@ -220,6 +220,94 @@ export async function atualizarCliente(
   revalidatePath(`/admin/clientes/${id}`);
 }
 
+/**
+ * Troca o e-mail de ACESSO (login) do dono do cliente. Atualiza o Auth
+ * (fonte de verdade) e espelha em app_profiles / app_config. Usado quando o
+ * cliente perdeu o e-mail antigo mas quer manter a mesma conta.
+ */
+export async function alterarEmailAcesso(
+  tenantId: string,
+  novoEmail: string
+): Promise<{ ok: boolean; erro?: string }> {
+  await exigirSuper();
+  const email = novoEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, erro: "E-mail inválido." };
+
+  const admin = getCrmAdmin();
+  const { data: dono } = await admin
+    .from("app_profiles")
+    .select("id,email")
+    .eq("tenant_id", tenantId)
+    .eq("papel", "owner")
+    .limit(1)
+    .maybeSingle();
+  if (!dono?.id) return { ok: false, erro: "Este cliente não tem um usuário dono cadastrado." };
+  if ((dono.email ?? "").toLowerCase() === email)
+    return { ok: false, erro: "Esse já é o e-mail de acesso atual." };
+
+  // 1. Auth = fonte de verdade do login. email_confirm: já válido sem precisar
+  //    confirmar no e-mail antigo (o cliente perdeu o acesso a ele).
+  const { error: errAuth } = await admin.auth.admin.updateUserById(dono.id, {
+    email,
+    email_confirm: true,
+  });
+  if (errAuth) {
+    const jaExiste = /already|registered|exist|duplicate/i.test(errAuth.message);
+    return { ok: false, erro: jaExiste ? "Já existe uma conta com esse e-mail." : errAuth.message };
+  }
+
+  // 2. Espelha nos perfis/config (best-effort).
+  await admin.from("app_profiles").update({ email }).eq("id", dono.id);
+  await admin.from("app_config").update({ email }).eq("tenant_id", tenantId);
+
+  revalidatePath(`/admin/clientes/${tenantId}`);
+  return { ok: true };
+}
+
+/**
+ * EXCLUI a conta do cliente por completo: usuários no Auth + perfis + tenant.
+ * Apagar app_tenants faz CASCADE em leads/mensagens/agendamentos/config/
+ * kb_documents/tenant_secrets/trafego. app_profiles é SET NULL na FK, então é
+ * removido manualmente ANTES (junto dos usuários do Auth). Irreversível.
+ * Exige digitar o nome do negócio como confirmação.
+ */
+export async function excluirCliente(
+  tenantId: string,
+  confirmacao: string
+): Promise<{ ok: boolean; erro?: string }> {
+  await exigirSuper();
+  const admin = getCrmAdmin();
+
+  const { data: tenant } = await admin
+    .from("app_tenants")
+    .select("nome")
+    .eq("id", tenantId)
+    .maybeSingle();
+  if (!tenant) return { ok: false, erro: "Cliente não encontrado." };
+  if (confirmacao.trim() !== tenant.nome)
+    return { ok: false, erro: "Confirmação incorreta: digite o nome do negócio exatamente." };
+
+  // 1. Usuários do Auth deste tenant (nunca um superadmin, por segurança).
+  const { data: perfis } = await admin
+    .from("app_profiles")
+    .select("id,papel")
+    .eq("tenant_id", tenantId);
+  for (const p of perfis ?? []) {
+    if (p.papel === "superadmin") continue;
+    await admin.auth.admin.deleteUser(p.id);
+  }
+
+  // 2. Perfis (FK tenant_id = SET NULL não remove sozinho; some o vínculo).
+  await admin.from("app_profiles").delete().eq("tenant_id", tenantId).neq("papel", "superadmin");
+
+  // 3. Tenant — CASCADE limpa o resto dos dados do cliente.
+  const { error } = await admin.from("app_tenants").delete().eq("id", tenantId);
+  if (error) return { ok: false, erro: error.message };
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
 /** Superadmin passa a "ver como" um cliente. */
 export async function entrarComo(tenantId: string) {
   await exigirSuper();

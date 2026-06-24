@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, KanbanSquare, Users } from "lucide-react";
-import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg } from "@/lib/admin/data";
+import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg, getAcessoCliente } from "@/lib/admin/data";
 import { entrarComo } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
+import { AlterarEmailAcesso } from "@/components/admin/AlterarEmailAcesso";
+import { ExcluirClienteCard } from "@/components/admin/ExcluirClienteCard";
 import { PersonaForm } from "@/components/admin/PersonaForm";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
 import { InstagramForm } from "@/components/admin/InstagramForm";
@@ -15,7 +17,7 @@ import { temOpenAIKey } from "@/lib/kb/embed";
 export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: { id: string } }) {
-  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg] = await Promise.all([
+  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, acesso] = await Promise.all([
     getCliente(params.id),
     getPlanos(),
     listarDocs(params.id),
@@ -23,6 +25,7 @@ export default async function ClientePage({ params }: { params: { id: string } }
     getEvolutionCfg(params.id),
     getMetaAdsCfg(params.id),
     getInstagramCfg(params.id),
+    getAcessoCliente(params.id),
   ]);
   if (!cliente) notFound();
   const semOpenAI = !temOpenAIKey();
@@ -72,6 +75,10 @@ export default async function ClientePage({ params }: { params: { id: string } }
       />
 
       <div className="mt-6">
+        <AlterarEmailAcesso tenantId={cliente.id} emailAtual={acesso.email} />
+      </div>
+
+      <div className="mt-6">
         <PersonaForm tenantId={cliente.id} persona={persona} />
       </div>
 
@@ -89,6 +96,10 @@ export default async function ClientePage({ params }: { params: { id: string } }
 
       <div className="mt-6">
         <KbForm tenantId={cliente.id} docs={docs} semKey={semOpenAI} />
+      </div>
+
+      <div className="mt-10">
+        <ExcluirClienteCard tenantId={cliente.id} nome={cliente.nome} />
       </div>
     </div>
   );

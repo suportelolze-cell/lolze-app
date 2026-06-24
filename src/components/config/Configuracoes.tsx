@@ -20,6 +20,8 @@ import type { Config } from "@/lib/supabase/crm-data";
 import type { EquipeInfo } from "@/lib/team/data";
 import { EquipeManager } from "./EquipeManager";
 import { WhatsAppCard } from "./WhatsAppCard";
+import { desconectarGoogle } from "@/lib/google/actions";
+import type { GoogleStatus } from "@/lib/google/oauth";
 
 type Aba = "identidade" | "integracoes" | "equipe" | "faturamento";
 
@@ -35,11 +37,13 @@ export function Configuracoes({
   equipeInfo,
   respostasRapidas = "",
   billing,
+  google,
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
   respostasRapidas?: string;
   billing: BillingInfo;
+  google?: GoogleStatus;
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -103,7 +107,7 @@ export function Configuracoes({
               <RespostasRapidasPanel inicial={respostasRapidas} />
             </div>
           )}
-          {aba === "integracoes" && <Integracoes />}
+          {aba === "integracoes" && <Integracoes google={google} />}
           {aba === "equipe" && <EquipeManager info={equipeInfo} />}
           {aba === "faturamento" && <Faturamento billing={billing} />}
         </div>
@@ -206,8 +210,9 @@ function CardIntegracao({
   );
 }
 
-function Integracoes() {
-  const [agendaOn, setAgendaOn] = useState(false);
+function Integracoes({ google }: { google?: GoogleStatus }) {
+  const googleConfigurado = google?.configurado ?? false;
+  const googleConectado = google?.conectado ?? false;
 
   return (
     <Painel
@@ -223,24 +228,44 @@ function Integracoes() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <StatusBadge
-                on={agendaOn}
-                texto={agendaOn ? "Conectado e Operante" : "Aguardando Conexão"}
+                on={googleConectado}
+                texto={
+                  googleConectado
+                    ? `Conectado${google?.email ? ` — ${google.email}` : ""}`
+                    : googleConfigurado
+                      ? "Aguardando Conexão"
+                      : "Não configurada"
+                }
               />
               <p className="mt-1.5 text-xs text-texto-suave">
-                Integre com o Google Calendar para a IA realizar e bloquear
-                agendamentos em tempo real.
+                {googleConfigurado
+                  ? "Conecte o Google Calendar: a IA importa os compromissos que já existem, não marca em horário ocupado e cria os agendamentos lá automaticamente."
+                  : "Integração indisponível: faltam as credenciais do Google (GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET) no servidor."}
               </p>
             </div>
-            <button
-              onClick={() => setAgendaOn((v) => !v)}
-              className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${
-                agendaOn
-                  ? "border border-borda text-texto hover:bg-superficie"
-                  : "bg-marca text-bege-principal"
-              }`}
-            >
-              {agendaOn ? "Desconectar" : "Sincronizar com Google Calendar"}
-            </button>
+
+            {googleConectado ? (
+              <form action={desconectarGoogle} className="shrink-0">
+                <button
+                  type="submit"
+                  className="rounded-md border border-borda px-3 py-2 text-xs font-semibold text-texto hover:bg-superficie"
+                >
+                  Desconectar
+                </button>
+              </form>
+            ) : (
+              <a
+                href={googleConfigurado ? "/api/google/start" : undefined}
+                aria-disabled={!googleConfigurado}
+                className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${
+                  googleConfigurado
+                    ? "bg-marca text-bege-principal"
+                    : "pointer-events-none cursor-not-allowed bg-superficie text-texto-suave"
+                }`}
+              >
+                Sincronizar com Google Calendar
+              </a>
+            )}
           </div>
         </CardIntegracao>
 

@@ -17,6 +17,7 @@ export type Agendamento = {
   telefone: string;
   dataLabel: string; // ex: "13/06"
   notas: string;
+  externo?: boolean; // true = bloco importado do Google Calendar (não editável)
 };
 
 export const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];

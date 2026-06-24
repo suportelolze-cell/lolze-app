@@ -74,19 +74,22 @@ export function WeekGrid({
                 const top = (a.inicio - HORAS[0]) * ROW;
                 const height = a.duracao * ROW - 4;
                 const confirmado = a.status === "confirmado";
+                const externo = a.externo;
                 return (
                   <button
                     key={a.id}
                     onClick={() => onSelect(a)}
                     style={{ top, height }}
                     className={`absolute inset-x-1 overflow-hidden rounded-md border-l-[3px] p-1.5 text-left transition-shadow hover:shadow-md ${
-                      confirmado
-                        ? "border-l-marca bg-marca-suave"
-                        : "border-l-amber-500 bg-amber-50"
+                      externo
+                        ? "border-l-texto-suave bg-borda/40"
+                        : confirmado
+                          ? "border-l-marca bg-marca-suave"
+                          : "border-l-amber-500 bg-amber-50"
                     }`}
                   >
                     <div className="flex items-center gap-1 text-[11px] font-bold text-texto">
-                      {a.porIA && <span>🤖</span>}
+                      {externo ? <span>📅</span> : a.porIA && <span>🤖</span>}
                       <span className="truncate">{a.nome}</span>
                     </div>
                     <div className="truncate text-[10px] text-texto-suave">
@@ -94,10 +97,10 @@ export function WeekGrid({
                     </div>
                     <div
                       className={`mt-0.5 truncate text-[10px] font-semibold ${
-                        confirmado ? "text-marca" : "text-amber-600"
+                        externo ? "text-texto-suave" : confirmado ? "text-marca" : "text-amber-600"
                       }`}
                     >
-                      {confirmado ? "🟢 Confirmado" : "🟡 Pendente"}
+                      {externo ? "📅 Google Calendar" : confirmado ? "🟢 Confirmado" : "🟡 Pendente"}
                     </div>
                   </button>
                 );

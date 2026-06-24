@@ -9,6 +9,25 @@ export function temGoogleConfig() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
+export type GoogleStatus = { configurado: boolean; conectado: boolean; email: string | null };
+
+/** Status da integração Google para um tenant: credenciais no servidor + conexão do cliente. */
+export async function getGoogleStatus(tenantId: string | null): Promise<GoogleStatus> {
+  const configurado = temGoogleConfig();
+  if (!tenantId) return { configurado, conectado: false, email: null };
+  const admin = getCrmAdmin();
+  const { data } = await admin
+    .from("app_tenant_secrets")
+    .select("google_refresh_token,google_calendar_id")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return {
+    configurado,
+    conectado: Boolean(data?.google_refresh_token),
+    email: data?.google_calendar_id ?? null,
+  };
+}
+
 /** URL de consentimento do Google (state = tenantId). */
 export function getAuthUrl(redirectUri: string, state: string): string {
   const p = new URLSearchParams({
