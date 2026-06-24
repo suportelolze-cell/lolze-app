@@ -104,9 +104,34 @@ export async function criarLeadManual(input: {
 export async function moverLead(id: number, coluna: ColunaId) {
   const tid = await getTenantId();
   const sb = getCrmServer();
-  const q = sb.from("app_leads").update({ coluna }).eq("id", id);
+
+  // Voltar para uma etapa da IA reativa o agente (tira do modo humano).
+  const reativaIA = coluna === "qualificacao" || coluna === "entrada";
+  const patch: Record<string, unknown> = { coluna };
+  if (reativaIA) {
+    patch.comando = "ia";
+    patch.precisa_humano = false;
+    patch.atendente_id = null;
+  }
+
+  const q = sb.from("app_leads").update(patch).eq("id", id);
   const { error } = await (tid ? q.eq("tenant_id", tid) : q);
   if (error) throw error;
+
+  // Se reativou a IA e há uma mensagem do lead sem resposta, faz a IA já responder.
+  if (reativaIA && tid) {
+    const { data: ult } = await sb
+      .from("app_mensagens")
+      .select("autor")
+      .eq("lead_id", id)
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (ult?.autor === "lead") {
+      const { executarSDR } = await import("@/lib/agent/sdr/run");
+      await executarSDR(tid, id).catch(() => {});
+    }
+  }
 }
 
 export type ResAssumir = { ok: boolean; erro?: string; atendenteId?: string };
