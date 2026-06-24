@@ -91,7 +91,10 @@ export function Agenda({
     [agendamentos, confirmados, pendentes, soIA]
   );
 
-  const preenchidosIA = agendamentos.filter((a) => a.porIA).length;
+  const prefMes = `${ano}-${String(mes + 1).padStart(2, "0")}-`;
+  const doMes = agendamentos.filter((a) => !a.externo && a.dataISO?.startsWith(prefMes));
+  const agendamentosMes = doMes.filter((a) => !a.bloqueio).length;
+  const preenchidosIA = doMes.filter((a) => a.porIA).length;
   const diasVisiveis = view === "dia" ? [dowRef] : [0, 1, 2, 3, 4, 5, 6];
   const label =
     view === "mes"
@@ -181,7 +184,7 @@ export function Agenda({
             <WeekGrid diasVisiveis={diasVisiveis} diasISO={diasISO} agendamentos={filtrados} onSelect={setSelecionado} />
           )}
         </div>
-        <AntiFaltasPanel preenchidosIA={preenchidosIA} />
+        <AntiFaltasPanel preenchidosIA={preenchidosIA} agendamentosMes={agendamentosMes} />
       </div>
 
       <CompromissoDetail agendamento={selecionado} onClose={() => setSelecionado(null)} />

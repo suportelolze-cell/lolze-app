@@ -44,7 +44,13 @@ const inicial = [
   },
 ];
 
-export function AntiFaltasPanel({ preenchidosIA }: { preenchidosIA: number }) {
+export function AntiFaltasPanel({
+  preenchidosIA,
+  agendamentosMes = 0,
+}: {
+  preenchidosIA: number;
+  agendamentosMes?: number;
+}) {
   const [toggles, setToggles] = useState(inicial);
 
   return (
@@ -85,17 +91,15 @@ export function AntiFaltasPanel({ preenchidosIA }: { preenchidosIA: number }) {
       <div className="space-y-3 border-t border-borda px-5 py-4">
         <div className="flex items-center justify-between rounded-md bg-marca-suave/50 px-3 py-2.5">
           <span className="flex items-center gap-1.5 text-xs font-medium text-texto">
-            <TrendingUp size={14} className="text-marca" /> Comparecimento (mês)
+            <TrendingUp size={14} className="text-marca" /> Agendamentos (mês)
           </span>
-          <span className="text-sm font-bold text-marca">85% 📈</span>
+          <span className="text-sm font-bold text-marca">{agendamentosMes}</span>
         </div>
         <div className="flex items-center justify-between rounded-md bg-fundo px-3 py-2.5">
           <span className="flex items-center gap-1.5 text-xs font-medium text-texto">
-            <Bot size={14} className="text-texto-suave" /> Preenchidos pela IA
+            <Bot size={14} className="text-texto-suave" /> Agendados pela IA
           </span>
-          <span className="text-sm font-bold text-texto">
-            {preenchidosIA} esta semana
-          </span>
+          <span className="text-sm font-bold text-texto">{preenchidosIA}</span>
         </div>
       </div>
     </div>
