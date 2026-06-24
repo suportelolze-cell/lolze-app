@@ -17,7 +17,31 @@ type Row = {
   notas: string | null;
 };
 
-/** Agendamentos do tenant ativo, mapeados para a grade da Agenda (Seg–Sáb). */
+const WD: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+
+/** Quebra uma data em partes no fuso de São Paulo (independe do fuso do servidor). */
+function partesBRT(d: Date): { dia: number; hora: number; dataISO: string; dataLabel: string } {
+  const f = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    weekday: "short",
+  });
+  const p: Record<string, string> = {};
+  for (const part of f.formatToParts(d)) p[part.type] = part.value;
+  return {
+    dia: WD[p.weekday] ?? 0, // 0 = Seg ... 6 = Dom
+    hora: parseInt(p.hour, 10) % 24,
+    dataISO: `${p.year}-${p.month}-${p.day}`,
+    dataLabel: `${p.day}/${p.month}`,
+  };
+}
+
+/** Agendamentos do tenant ativo, mapeados para a grade da Agenda (fuso BRT). */
 export async function getAgendamentosApp(): Promise<Agendamento[]> {
   const tid = await getTenantId();
   if (!tid) return [];
@@ -29,74 +53,78 @@ export async function getAgendamentosApp(): Promise<Agendamento[]> {
     .neq("status", "cancelado")
     .order("inicio");
 
-  return (data as Row[] | null ?? [])
-    .map((a): Agendamento | null => {
-      const ini = new Date(a.inicio);
-      const fim = a.fim ? new Date(a.fim) : new Date(ini.getTime() + 3_600_000);
-      const dia = (ini.getDay() + 6) % 7; // 0 = Seg ... 6 = Dom
-      if (dia > 5) return null; // a grade mostra Seg–Sáb
-      const inicio = ini.getHours();
-      const duracao = Math.max(1, Math.round((fim.getTime() - ini.getTime()) / 3_600_000));
-      const confirmado = a.status === "confirmado" || a.status === "concluido";
-      return {
-        id: String(a.id),
-        nome: a.nome || "Lead",
-        servico: a.servico || "Reunião",
-        origem: ORIGEM_LABEL[a.origem ?? ""] ?? "Site",
-        dia,
-        inicio,
-        duracao,
-        status: confirmado ? "confirmado" : "pendente",
-        porIA: a.por_ia,
-        telefone: a.telefone ?? "",
-        dataLabel: ini.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-        notas: a.notas ?? "",
-      };
-    })
-    .filter((x): x is Agendamento => x !== null);
+  return ((data as Row[] | null) ?? []).map((a): Agendamento => {
+    const ini = new Date(a.inicio);
+    const fim = a.fim ? new Date(a.fim) : new Date(ini.getTime() + 3_600_000);
+    const { dia, hora, dataISO, dataLabel } = partesBRT(ini);
+    const duracao = Math.max(1, Math.round((fim.getTime() - ini.getTime()) / 3_600_000));
+    const confirmado = a.status === "confirmado" || a.status === "concluido";
+    const bloqueio = (a.servico || "").toLowerCase() === "bloqueio";
+    return {
+      id: String(a.id),
+      nome: bloqueio ? "🔒 Bloqueado" : a.nome || "Lead",
+      servico: bloqueio ? "Indisponível" : a.servico || "Reunião",
+      origem: ORIGEM_LABEL[a.origem ?? ""] ?? "Site",
+      dia,
+      inicio: hora,
+      duracao,
+      status: confirmado ? "confirmado" : "pendente",
+      porIA: a.por_ia,
+      telefone: a.telefone ?? "",
+      dataLabel,
+      notas: a.notas ?? "",
+      bloqueio,
+      dataISO,
+    };
+  });
 }
 
 /**
- * Eventos já existentes no Google Calendar do cliente (semana atual, Seg–Sáb),
- * mapeados como blocos "ocupado" na grade. [] se o Google não estiver conectado.
+ * Eventos já existentes no Google Calendar do cliente, mapeados como blocos
+ * "ocupado". Por padrão pega o mês visível (timeMin/timeMax) ou a semana atual.
+ * [] se o Google não estiver conectado.
  */
-export async function getOcupadosGoogle(): Promise<Agendamento[]> {
+export async function getOcupadosGoogle(timeMinISO?: string, timeMaxISO?: string): Promise<Agendamento[]> {
   const tid = await getTenantId();
   if (!tid) return [];
 
-  const agora = new Date();
-  const diaSemana = (agora.getDay() + 6) % 7; // 0 = Seg
-  const seg = new Date(agora);
-  seg.setHours(0, 0, 0, 0);
-  seg.setDate(agora.getDate() - diaSemana);
-  const fimSemana = new Date(seg);
-  fimSemana.setDate(seg.getDate() + 7);
+  let minISO = timeMinISO;
+  let maxISO = timeMaxISO;
+  if (!minISO || !maxISO) {
+    // padrão: semana atual (Seg–Dom)
+    const agora = new Date();
+    const diaSemana = (agora.getDay() + 6) % 7;
+    const seg = new Date(agora);
+    seg.setHours(0, 0, 0, 0);
+    seg.setDate(agora.getDate() - diaSemana);
+    const fimSemana = new Date(seg);
+    fimSemana.setDate(seg.getDate() + 7);
+    minISO = seg.toISOString();
+    maxISO = fimSemana.toISOString();
+  }
 
-  const eventos = await listarEventosGoogle(tid, seg.toISOString(), fimSemana.toISOString());
+  const eventos = await listarEventosGoogle(tid, minISO, maxISO);
 
-  return eventos
-    .map((e, i): Agendamento | null => {
-      const ini = new Date(e.inicioISO);
-      const fim = new Date(e.fimISO);
-      const dia = (ini.getDay() + 6) % 7;
-      if (dia > 5) return null; // grade mostra Seg–Sáb
-      const inicio = ini.getHours();
-      const duracao = Math.max(1, Math.round((fim.getTime() - ini.getTime()) / 3_600_000));
-      return {
-        id: `g-${i}`,
-        nome: e.summary,
-        servico: "Google Calendar",
-        origem: "Site",
-        dia,
-        inicio,
-        duracao,
-        status: "confirmado",
-        porIA: false,
-        telefone: "",
-        dataLabel: ini.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-        notas: "Evento importado do Google Calendar.",
-        externo: true,
-      };
-    })
-    .filter((x): x is Agendamento => x !== null);
+  return eventos.map((e, i): Agendamento => {
+    const ini = new Date(e.inicioISO);
+    const fim = new Date(e.fimISO);
+    const { dia, hora, dataISO, dataLabel } = partesBRT(ini);
+    const duracao = Math.max(1, Math.round((fim.getTime() - ini.getTime()) / 3_600_000));
+    return {
+      id: `g-${i}`,
+      nome: e.summary,
+      servico: "Google Calendar",
+      origem: "Site",
+      dia,
+      inicio: hora,
+      duracao,
+      status: "confirmado",
+      porIA: false,
+      telefone: "",
+      dataLabel,
+      notas: "Evento importado do Google Calendar.",
+      externo: true,
+      dataISO,
+    };
+  });
 }

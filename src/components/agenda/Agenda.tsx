@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { RefreshCw, Plus, Ban } from "lucide-react";
 import { type Agendamento } from "@/lib/agenda";
 import { WeekGrid } from "./WeekGrid";
 import { MonthGrid } from "./MonthGrid";
 import { AntiFaltasPanel } from "./AntiFaltasPanel";
 import { CompromissoDetail } from "./CompromissoDetail";
+import { AgendaFormModal, type ModoModal } from "./AgendaFormModal";
 
 type View = "dia" | "semana" | "mes";
 
@@ -40,11 +42,19 @@ export function Agenda({
   agendamentos: Agendamento[];
   googleConectado?: boolean;
 }) {
+  const router = useRouter();
+  // Auto-refresh: rebusca os dados (inclui eventos do Google) a cada 60s.
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), 60_000);
+    return () => clearInterval(id);
+  }, [router]);
+
   const [view, setView] = useState<View>("semana");
   const [confirmados, setConfirmados] = useState(true);
   const [pendentes, setPendentes] = useState(true);
   const [soIA, setSoIA] = useState(false);
   const [selecionado, setSelecionado] = useState<Agendamento | null>(null);
+  const [modal, setModal] = useState<ModoModal>(null);
 
   const filtrados = useMemo(
     () =>
@@ -59,7 +69,7 @@ export function Agenda({
   );
 
   const preenchidosIA = agendamentos.filter((a) => a.porIA).length;
-  const diasVisiveis = view === "dia" ? [0] : [0, 1, 2, 3, 4, 5];
+  const diasVisiveis = view === "dia" ? [0] : [0, 1, 2, 3, 4, 5, 6];
 
   return (
     <div className="flex flex-col gap-5">
@@ -87,10 +97,16 @@ export function Agenda({
               <RefreshCw size={13} /> Conectar Google Calendar
             </a>
           )}
-          <button className="flex items-center gap-1.5 rounded-sm border border-borda px-3 py-2 text-sm font-semibold text-texto hover:bg-superficie">
+          <button
+            onClick={() => setModal("bloquear")}
+            className="flex items-center gap-1.5 rounded-sm border border-borda px-3 py-2 text-sm font-semibold text-texto hover:bg-superficie"
+          >
             <Ban size={15} /> Bloquear Horário
           </button>
-          <button className="flex items-center gap-1.5 rounded-sm bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]">
+          <button
+            onClick={() => setModal("agendar")}
+            className="flex items-center gap-1.5 rounded-sm bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
+          >
             <Plus size={16} /> Novo Agendamento
           </button>
         </div>
@@ -146,6 +162,8 @@ export function Agenda({
         agendamento={selecionado}
         onClose={() => setSelecionado(null)}
       />
+
+      <AgendaFormModal modo={modal} onClose={() => setModal(null)} />
     </div>
   );
 }

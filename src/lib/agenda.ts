@@ -18,9 +18,11 @@ export type Agendamento = {
   dataLabel: string; // ex: "13/06"
   notas: string;
   externo?: boolean; // true = bloco importado do Google Calendar (não editável)
+  bloqueio?: boolean; // true = horário bloqueado manualmente (indisponível)
+  dataISO?: string; // "YYYY-MM-DD" em BRT — usado para filtrar semana/mês reais
 };
 
-export const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+export const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 export const HORAS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
 export const AGENDAMENTOS: Agendamento[] = [
