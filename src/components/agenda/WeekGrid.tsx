@@ -6,10 +6,12 @@ const ROW = 60; // altura de 1 hora, em px
 
 export function WeekGrid({
   diasVisiveis,
+  diasISO,
   agendamentos,
   onSelect,
 }: {
   diasVisiveis: number[];
+  diasISO: string[];
   agendamentos: Agendamento[];
   onSelect: (a: Agendamento) => void;
 }) {
@@ -27,6 +29,9 @@ export function WeekGrid({
             className="border-r border-borda px-3 py-2 text-center"
           >
             <div className="text-sm font-bold text-texto">{DIAS[d]}</div>
+            {diasISO[d] && (
+              <div className="text-[11px] text-texto-suave">{diasISO[d].slice(8)}/{diasISO[d].slice(5, 7)}</div>
+            )}
           </div>
         ))}
       </div>
@@ -53,7 +58,10 @@ export function WeekGrid({
 
         {/* Colunas dos dias */}
         {diasVisiveis.map((d) => {
-          const doDia = agendamentos.filter((a) => a.dia === d);
+          const dataDia = diasISO[d];
+          const doDia = agendamentos.filter((a) =>
+            a.dataISO ? a.dataISO === dataDia : a.dia === d
+          );
           return (
             <div
               key={d}
