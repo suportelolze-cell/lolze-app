@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
 import type { PulsoEvento } from "@/lib/supabase/crm-data";
 
 type Tipo = "agendou" | "quente" | "quiz" | "ajuda";
@@ -84,9 +85,9 @@ export function PulsoFeed({ eventos }: { eventos: PulsoEvento[] }) {
                 <div className="min-w-0">
                   <p className="text-[13px] leading-snug text-texto">{texto}</p>
                   {tipo === "ajuda" && (
-                    <button className="text-xs font-semibold text-marca hover:underline">
+                    <Link href="/atendimento" className="text-xs font-semibold text-marca hover:underline">
                       Assumir chat →
-                    </button>
+                    </Link>
                   )}
                 </div>
               </li>
@@ -95,9 +96,12 @@ export function PulsoFeed({ eventos }: { eventos: PulsoEvento[] }) {
         )}
       </ul>
 
-      <button className="mt-4 w-full rounded-md border border-borda py-2.5 text-sm font-semibold text-texto transition-colors hover:bg-fundo">
+      <Link
+        href="/atendimento"
+        className="mt-4 block w-full rounded-md border border-borda py-2.5 text-center text-sm font-semibold text-texto transition-colors hover:bg-fundo"
+      >
         Ver Histórico Completo
-      </button>
+      </Link>
     </div>
   );
 }

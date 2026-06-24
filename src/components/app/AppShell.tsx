@@ -71,13 +71,13 @@ export function AppShell({
       </div>
 
       {/* Suporte flutuante */}
-      <button
+      <a
+        href="mailto:suporte.lolze@gmail.com?subject=Suporte%20Lolze"
         className="no-print fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-escuro-quente px-4 py-3 text-sm font-semibold text-bege-principal shadow-lg transition-transform hover:scale-105"
-        type="button"
       >
         <MessageCircle size={18} />
         <span className="hidden sm:inline">Dúvidas? Fale com nosso Suporte.</span>
-      </button>
+      </a>
     </div>
   );
 }

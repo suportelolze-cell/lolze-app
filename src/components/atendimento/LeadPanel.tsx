@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Phone, Sparkles, CalendarPlus, Trophy, Ban } from "lucide-react";
+import { moverLead } from "@/lib/supabase/crm-actions";
 import type { Conversa } from "@/lib/conversas";
 import type { Temperatura } from "@/lib/leads";
 
@@ -23,11 +25,17 @@ const termometro: Record<Temperatura, { rotulo: string; classe: string; micro: s
 };
 
 export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
+  const router = useRouter();
   if (!conversa) {
     return <div className="hidden h-full w-full border-l border-borda bg-superficie xl:block" />;
   }
 
   const t = termometro[conversa.temperatura];
+
+  async function marcar(coluna: "ganho" | "perdido") {
+    await moverLead(conversa!.id, coluna);
+    router.refresh();
+  }
 
   return (
     <div className="flex h-full w-full flex-col border-l border-borda bg-superficie">
@@ -90,14 +98,23 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
 
       {/* Ações rápidas */}
       <div className="space-y-2 border-t border-borda px-5 py-4">
-        <button className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-2.5 text-sm font-semibold text-bege-principal">
+        <button
+          onClick={() => router.push("/agenda")}
+          className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-2.5 text-sm font-semibold text-bege-principal"
+        >
           <CalendarPlus size={16} /> Agendar Reunião
         </button>
         <div className="flex gap-2">
-          <button className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-texto hover:bg-fundo">
+          <button
+            onClick={() => marcar("ganho")}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-texto hover:bg-fundo"
+          >
             <Trophy size={14} /> Marcar Ganho
           </button>
-          <button className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-texto-suave hover:bg-fundo">
+          <button
+            onClick={() => marcar("perdido")}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-texto-suave hover:bg-fundo"
+          >
             <Ban size={14} /> Descartar
           </button>
         </div>

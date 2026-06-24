@@ -130,6 +130,21 @@ export async function bloquearHorario(input: {
   return { ok: true };
 }
 
+/** Cancela um agendamento (some da agenda). */
+export async function cancelarAgendamento(id: number): Promise<Resultado> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sessão inválida." };
+  const admin = getCrmAdmin();
+  const { error } = await admin
+    .from("app_agendamentos")
+    .update({ status: "cancelado" })
+    .eq("id", id)
+    .eq("tenant_id", tid);
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
 /** Salva os toggles Anti-Faltas do tenant ativo. */
 export async function salvarAntiFaltas(p: {
   c24: boolean;

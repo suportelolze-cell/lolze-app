@@ -8,6 +8,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TracaoChart } from "@/components/dashboard/TracaoChart";
 import { PulsoFeed } from "@/components/dashboard/PulsoFeed";
@@ -124,9 +125,12 @@ export default async function PainelPage() {
             Quer extrair o máximo do seu Centro de Comando?
           </p>
         </div>
-        <button className="rounded-sm border border-marca px-4 py-2 text-sm font-semibold text-marca transition-colors hover:bg-marca-suave">
+        <Link
+          href="/universidade"
+          className="rounded-sm border border-marca px-4 py-2 text-sm font-semibold text-marca transition-colors hover:bg-marca-suave"
+        >
           Assista ao Treinamento Expresso de 3 Minutos
-        </button>
+        </Link>
       </section>
     </>
   );

@@ -147,9 +147,12 @@ export function Universidade() {
       )}
 
       {/* Botão de pânico flutuante (suporte) */}
-      <button className="fixed bottom-24 right-6 z-30 flex items-center gap-2 rounded-full bg-marca px-5 py-3 text-sm font-semibold text-bege-principal shadow-lg transition-transform hover:scale-105">
+      <a
+        href="mailto:suporte.lolze@gmail.com?subject=Ajuda%20-%20Universidade%20Lolze"
+        className="fixed bottom-24 right-6 z-30 flex items-center gap-2 rounded-full bg-marca px-5 py-3 text-sm font-semibold text-bege-principal shadow-lg transition-transform hover:scale-105"
+      >
         <MessageCircle size={18} /> Falar com Suporte
-      </button>
+      </a>
     </div>
   );
 }
