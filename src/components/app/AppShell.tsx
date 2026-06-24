@@ -70,13 +70,17 @@ export function AppShell({
         <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8 sm:py-8">{children}</div>
       </div>
 
-      {/* Suporte flutuante */}
+      {/* Suporte flutuante — bolinha (sem texto ocupando a tela) */}
       <a
         href="mailto:suporte.lolze@gmail.com?subject=Suporte%20Lolze"
-        className="no-print fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-escuro-quente px-4 py-3 text-sm font-semibold text-bege-principal shadow-lg transition-transform hover:scale-105"
+        title="Dúvidas? Fale com o suporte"
+        aria-label="Falar com o suporte"
+        className="no-print group fixed bottom-6 right-6 z-30 flex h-12 items-center gap-2 rounded-full bg-escuro-quente px-3.5 text-sm font-semibold text-bege-principal shadow-lg transition-all hover:scale-105"
       >
-        <MessageCircle size={18} />
-        <span className="hidden sm:inline">Dúvidas? Fale com nosso Suporte.</span>
+        <MessageCircle size={20} className="shrink-0" />
+        <span className="hidden max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all group-hover:max-w-[200px] group-hover:opacity-100 sm:inline">
+          Fale com o suporte
+        </span>
       </a>
     </div>
   );

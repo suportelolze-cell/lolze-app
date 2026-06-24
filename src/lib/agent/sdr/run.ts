@@ -9,8 +9,61 @@ import { SDR_TOOLS, aplicarToolSDR, type SdrPatch } from "./tools";
 import { buscarConhecimento } from "@/lib/kb/search";
 import { agendarReuniao } from "./agendar";
 import { primeiroFollowup } from "../followup";
+import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Quebra a resposta da IA em mensagens curtas (mais humano no WhatsApp):
+ * separa por parágrafos; parágrafos longos viram frases. Máx. 5 mensagens.
+ */
+function dividirResposta(texto: string): string[] {
+  const blocos = texto.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
+  const partes: string[] = [];
+  for (const b of blocos.length ? blocos : [texto.trim()]) {
+    if (b.length <= 320) {
+      partes.push(b);
+      continue;
+    }
+    const frases = b.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) ?? [b];
+    let buf = "";
+    for (const f of frases) {
+      if (buf && (buf + f).length > 320) {
+        partes.push(buf.trim());
+        buf = f;
+      } else {
+        buf += f;
+      }
+    }
+    if (buf.trim()) partes.push(buf.trim());
+  }
+  if (partes.length <= 5) return partes;
+  return [...partes.slice(0, 4), partes.slice(4).join(" ")];
+}
+
+/** Avisa o contato do cliente (telefone do "Gerenciar") quando a IA escala. */
+async function notificarSuporte(admin: Admin, tenantId: string, leadNome: string, motivo?: string) {
+  const { data: t } = await admin
+    .from("app_tenants")
+    .select("contato_telefone")
+    .eq("id", tenantId)
+    .maybeSingle();
+  const numero = (t?.contato_telefone as string | null) ?? "";
+  if (!numero) return;
+  const { data: sec } = await admin
+    .from("app_tenant_secrets")
+    .select("evolution_instance")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  if (!temEvolutionConfig() || !sec?.evolution_instance) return;
+  const msg =
+    `🔔 A IA precisou de ajuda no atendimento de *${leadNome}*.` +
+    (motivo ? `\nMotivo: ${motivo}.` : "") +
+    `\nEntre na Central de Atendimento para assumir.`;
+  await enviarTexto(sec.evolution_instance, numero, msg).catch(() => null);
+}
 
 /** Quantos turnos do histórico enviar como contexto (limita custo). */
 const MAX_TURNOS = 30;
@@ -224,12 +277,24 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     await admin.from("app_leads").update(acc.patch).eq("tenant_id", tenantId).eq("id", leadId);
   }
 
-  // Grava a resposta da IA e entrega ao canal (best-effort no envio).
+  // Se a IA escalou (não tinha a info / vai confirmar com a equipe), avisa o
+  // contato do cliente (telefone do "Gerenciar") por WhatsApp.
+  if (acc.patch.precisa_humano === true) {
+    const escala = acc.acoes.find((a) => a.tipo === "escalar_humano") as { motivo?: string } | undefined;
+    await notificarSuporte(admin, tenantId, lead.nome ?? "um lead", escala?.motivo).catch(() => {});
+  }
+
+  // Grava e entrega a resposta — em PARTES, com pausas, pra parecer humano.
   if (resposta) {
-    await admin
-      .from("app_mensagens")
-      .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto: resposta });
-    await dispatchOutbound(tenantId, leadId, resposta);
+    const partes = dividirResposta(resposta);
+    for (let i = 0; i < partes.length; i++) {
+      const parte = partes[i];
+      await admin
+        .from("app_mensagens")
+        .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto: parte });
+      await dispatchOutbound(tenantId, leadId, parte);
+      if (i < partes.length - 1) await sleep(Math.min(2600, 700 + parte.length * 18));
+    }
   }
 
   const latenciaMs = Date.now() - inicio;
