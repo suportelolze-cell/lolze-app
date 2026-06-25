@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, RefreshCw, QrCode } from "lucide-react";
+import { Loader2, RefreshCw, QrCode, DownloadCloud } from "lucide-react";
 import {
   acaoConectarWhatsapp,
   acaoStatusWhatsapp,
   acaoDesconectarWhatsapp,
+  acaoImportarHistorico,
 } from "@/lib/integracoes/whatsapp-actions";
 
 type Estado = "carregando" | "desconectado" | "qr" | "conectado" | "indisponivel";
@@ -29,7 +30,24 @@ export function WhatsAppCard() {
   const [numero, setNumero] = useState<string | null>(null);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  const [importando, setImportando] = useState(false);
+  const [resultImport, setResultImport] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function importarHistorico() {
+    setImportando(true);
+    setResultImport("");
+    try {
+      const r = await acaoImportarHistorico();
+      setResultImport(
+        r.ok
+          ? `✅ ${r.contatos} contato(s) novo(s) · ${r.mensagens} mensagens importadas. A IA já tem o contexto.`
+          : r.erro ?? "Não foi possível importar."
+      );
+    } finally {
+      setImportando(false);
+    }
+  }
 
   function pararPoll() {
     if (pollRef.current) {
@@ -139,18 +157,38 @@ export function WhatsAppCard() {
 
   if (estado === "conectado") {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Badge on texto="Conectado e Operante" />
-          {numero && <p className="mt-1.5 text-sm text-texto">+{numero}</p>}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Badge on texto="Conectado e Operante" />
+            {numero && <p className="mt-1.5 text-sm text-texto">+{numero}</p>}
+          </div>
+          <button
+            onClick={desconectar}
+            disabled={ocupado}
+            className="rounded-md border border-borda px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            {ocupado ? "…" : "Desconectar"}
+          </button>
         </div>
-        <button
-          onClick={desconectar}
-          disabled={ocupado}
-          className="rounded-md border border-borda px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
-        >
-          {ocupado ? "…" : "Desconectar"}
-        </button>
+
+        {/* Importar histórico de conversas que já existia neste WhatsApp */}
+        <div className="rounded-md border border-borda bg-fundo p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="max-w-xs text-xs text-texto-suave">
+              Puxe as conversas que este WhatsApp já tinha antes de conectar — viram contatos e a IA ganha contexto pra responder.
+            </p>
+            <button
+              onClick={importarHistorico}
+              disabled={importando}
+              className="flex shrink-0 items-center gap-1.5 rounded-md border border-marca px-3 py-1.5 text-xs font-semibold text-marca hover:bg-marca-suave/40 disabled:opacity-50"
+            >
+              {importando ? <Loader2 size={14} className="animate-spin" /> : <DownloadCloud size={14} />}
+              {importando ? "Importando…" : "Importar histórico"}
+            </button>
+          </div>
+          {resultImport && <p className="mt-2 text-xs font-medium text-texto">{resultImport}</p>}
+        </div>
       </div>
     );
   }

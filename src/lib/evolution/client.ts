@@ -338,6 +338,160 @@ export async function urlsAssinadasMidia(paths: string[]): Promise<Map<string, s
   return mapa;
 }
 
+/** Extrai o texto de uma mensagem crua da Evolution (vários formatos). */
+function extrairTextoMsg(m: any): string {
+  const msg = m?.message ?? m ?? {};
+  const t =
+    msg.conversation ??
+    msg.extendedTextMessage?.text ??
+    msg.imageMessage?.caption ??
+    msg.videoMessage?.caption ??
+    msg.documentMessage?.caption ??
+    (msg.audioMessage ? "[áudio]" : "");
+  return String(t || "").trim();
+}
+
+/** Lista os chats individuais da instância (tolerante a versão). */
+async function buscarChats(instancia: string): Promise<{ jid: string; nome: string }[]> {
+  const tentativas: (RequestInit | undefined)[] = [
+    { method: "POST", body: JSON.stringify({}) },
+    undefined, // GET
+  ];
+  for (const init of tentativas) {
+    const r = await evo(`/chat/findChats/${encodeURIComponent(instancia)}`, init);
+    const arr: any[] | null = Array.isArray(r.json)
+      ? r.json
+      : Array.isArray(r.json?.chats)
+        ? r.json.chats
+        : null;
+    if (r.ok && arr) {
+      return arr
+        .map((c: any) => ({
+          jid: c.remoteJid || c.id || c.jid || c.chatId || "",
+          nome: c.pushName || c.name || c.subject || c.contact?.pushName || "",
+        }))
+        .filter((c) => typeof c.jid === "string" && c.jid.endsWith("@s.whatsapp.net")); // só pessoas, não grupos
+    }
+  }
+  return [];
+}
+
+/** Busca as últimas mensagens de um chat (tolerante a versão). */
+async function buscarMensagens(
+  instancia: string,
+  jid: string,
+  limite: number
+): Promise<{ fromMe: boolean; texto: string; ts: number }[]> {
+  const bodies = [
+    { where: { key: { remoteJid: jid } } },
+    { where: { remoteJid: jid } },
+  ];
+  for (const body of bodies) {
+    const r = await evo(`/chat/findMessages/${encodeURIComponent(instancia)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    let arr: any[] | null = null;
+    if (r.ok) {
+      if (Array.isArray(r.json)) arr = r.json;
+      else if (Array.isArray(r.json?.messages?.records)) arr = r.json.messages.records;
+      else if (Array.isArray(r.json?.messages)) arr = r.json.messages;
+      else if (Array.isArray(r.json?.records)) arr = r.json.records;
+    }
+    if (arr) {
+      return arr
+        .map((m: any) => ({
+          fromMe: Boolean(m.key?.fromMe ?? m.fromMe),
+          texto: extrairTextoMsg(m),
+          ts: Number(m.messageTimestamp ?? m.timestamp ?? 0),
+        }))
+        .filter((m) => m.texto)
+        .sort((a, b) => a.ts - b.ts)
+        .slice(-limite);
+    }
+  }
+  return [];
+}
+
+export type ImportResultado = { ok: boolean; contatos: number; mensagens: number; erro?: string };
+
+/**
+ * Importa o histórico recente de conversas do WhatsApp conectado para o app:
+ * cada chat vira um lead (Caixa de Entrada) e as mensagens entram no histórico,
+ * para a IA já ter contexto. Best-effort, limitado para não estourar o tempo.
+ * NÃO dispara a IA — ela só responde quando o contato escrever de novo.
+ */
+export async function importarHistoricoWhatsapp(tenantId: string): Promise<ImportResultado> {
+  if (!temEvolutionConfig()) return { ok: false, contatos: 0, mensagens: 0, erro: "Evolution não configurada." };
+  const sec = await lerSecret(tenantId);
+  const instancia = sec.evolution_instance;
+  if (!instancia) return { ok: false, contatos: 0, mensagens: 0, erro: "WhatsApp não conectado." };
+
+  const admin = getCrmAdmin();
+  const chats = (await buscarChats(instancia)).slice(0, 40); // limita p/ não demorar demais
+  if (chats.length === 0)
+    return { ok: false, contatos: 0, mensagens: 0, erro: "Nenhuma conversa encontrada (o WhatsApp sincroniza só o histórico recente)." };
+
+  let contatos = 0;
+  let mensagens = 0;
+  for (const c of chats) {
+    const numero = c.jid.replace(/@.*/, "");
+    if (!numero) continue;
+
+    // Lead por (tenant, canal, canal_user_id): pega o existente ou cria.
+    let leadId: number | null = null;
+    const { data: ex } = await admin
+      .from("app_leads")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("canal", "whatsapp")
+      .eq("canal_user_id", numero)
+      .maybeSingle();
+    if (ex?.id) {
+      leadId = ex.id as number;
+    } else {
+      const { data: novo } = await admin
+        .from("app_leads")
+        .insert({
+          tenant_id: tenantId,
+          canal: "whatsapp",
+          canal_user_id: numero,
+          telefone: numero,
+          nome: c.nome || numero,
+          coluna: "entrada",
+          temperatura: "morno",
+        })
+        .select("id")
+        .single();
+      leadId = (novo?.id as number) ?? null;
+      if (leadId) contatos++;
+    }
+    if (!leadId) continue;
+
+    // Não reimporta por cima de quem já tem histórico/conversa viva.
+    const { count } = await admin
+      .from("app_mensagens")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("lead_id", leadId);
+    if ((count ?? 0) > 0) continue;
+
+    const msgs = await buscarMensagens(instancia, c.jid, 15);
+    const rows = msgs.map((m) => ({
+      tenant_id: tenantId,
+      lead_id: leadId,
+      autor: m.fromMe ? "atendente" : "lead",
+      texto: m.texto,
+    }));
+    if (rows.length > 0) {
+      const { error } = await admin.from("app_mensagens").insert(rows);
+      if (!error) mensagens += rows.length;
+    }
+  }
+
+  return { ok: true, contatos, mensagens };
+}
+
 /** Desconecta (logout) a instância do WhatsApp do tenant. */
 export async function desconectarWhatsapp(tenantId: string): Promise<{ ok: boolean; erro?: string }> {
   if (!temEvolutionConfig()) return { ok: false, erro: "Evolution não configurada." };
