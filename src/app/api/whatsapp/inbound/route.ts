@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
-import { baixarMidiaBase64, uploadMidia } from "@/lib/evolution/client";
+import { baixarMidiaBase64, uploadMidia, puxarHistoricoContato } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 
 export const dynamic = "force-dynamic";
@@ -128,6 +128,7 @@ export async function POST(req: NextRequest) {
   // Localiza/cria o lead (tenant, whatsapp, canal_user_id).
   type LeadRow = { id: number; atendente_id: string | null };
   let lead: LeadRow | null = null;
+  let leadNovo = false;
   {
     const { data } = await admin
       .from("app_leads")
@@ -165,6 +166,17 @@ export async function POST(req: NextRequest) {
       .single();
     if (error) return NextResponse.json({ erro: error.message }, { status: 500 });
     lead = data as LeadRow;
+    leadNovo = true;
+  }
+
+  // Contato NOVO: puxa o histórico anterior dele do WhatsApp ANTES de gravar a
+  // mensagem atual (ordem cronológica), para a IA já responder com contexto.
+  if (leadNovo && instancia) {
+    try {
+      await puxarHistoricoContato(tenantId, lead!.id, canalUserId, instancia, texto);
+    } catch {
+      // best-effort: sem histórico, a IA só começa do zero
+    }
   }
 
   const { error: errM } = await admin.from("app_mensagens").insert({

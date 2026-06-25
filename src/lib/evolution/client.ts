@@ -492,6 +492,49 @@ export async function importarHistoricoWhatsapp(tenantId: string): Promise<Impor
   return { ok: true, contatos, mensagens };
 }
 
+/**
+ * Puxa o histórico ANTERIOR de UM contato (chamado no 1º inbound de um lead
+ * novo) e insere no app, para a IA já responder com contexto. Idempotente:
+ * só roda se o lead ainda não tem mensagens. `excluirTexto` evita duplicar a
+ * mensagem que acabou de chegar (ela é inserida pelo webhook em seguida).
+ */
+export async function puxarHistoricoContato(
+  tenantId: string,
+  leadId: number,
+  numero: string,
+  instancia: string,
+  excluirTexto?: string
+): Promise<number> {
+  const admin = getCrmAdmin();
+  const { count } = await admin
+    .from("app_mensagens")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("lead_id", leadId);
+  if ((count ?? 0) > 0) return 0; // já tem histórico — não mexe
+
+  const msgs = await buscarMensagens(instancia, `${numero}@s.whatsapp.net`, 20);
+  const rows = msgs.map((m) => ({
+    tenant_id: tenantId,
+    lead_id: leadId,
+    autor: m.fromMe ? "atendente" : "lead",
+    texto: m.texto,
+  }));
+  // remove a última mensagem do lead igual à que acabou de chegar (anti-duplicata)
+  if (excluirTexto) {
+    const alvo = excluirTexto.trim();
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (rows[i].autor === "lead" && rows[i].texto === alvo) {
+        rows.splice(i, 1);
+        break;
+      }
+    }
+  }
+  if (rows.length === 0) return 0;
+  const { error } = await admin.from("app_mensagens").insert(rows);
+  return error ? 0 : rows.length;
+}
+
 /** Desconecta (logout) a instância do WhatsApp do tenant. */
 export async function desconectarWhatsapp(tenantId: string): Promise<{ ok: boolean; erro?: string }> {
   if (!temEvolutionConfig()) return { ok: false, erro: "Evolution não configurada." };
