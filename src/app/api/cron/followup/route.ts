@@ -12,8 +12,10 @@ export const maxDuration = 60;
  * (a Vercel manda Authorization: Bearer <CRON_SECRET> automaticamente).
  */
 export async function GET(req: NextRequest) {
+  // Fail-closed: sem CRON_SECRET configurado, o endpoint NÃO roda (evita que
+  // qualquer um dispare follow-ups em massa). A Vercel manda o header sozinha.
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
 
