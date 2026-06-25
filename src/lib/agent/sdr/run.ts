@@ -210,7 +210,16 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     diagnostico: lead.diagnostico ?? "",
   };
 
-  const system = montarSystemSDR(cfg, ctx);
+  // "Catraca": cliente da base = já tem ao menos 1 agendamento confirmado/concluído.
+  const { count: nServicos } = await admin
+    .from("app_agendamentos")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("lead_id", leadId)
+    .in("status", ["confirmado", "concluido"]);
+  const ehBase = (nServicos ?? 0) > 0;
+
+  const system = montarSystemSDR(cfg, ctx, ehBase);
   const messages = montarMensagens(await carregarHistorico(admin, tenantId, leadId));
 
   const client = getAnthropic();

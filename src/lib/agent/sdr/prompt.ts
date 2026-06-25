@@ -11,7 +11,8 @@ import type { LeadContexto, PersonaConfig } from "../types";
  */
 export function montarSystemSDR(
   cfg: PersonaConfig,
-  lead: LeadContexto
+  lead: LeadContexto,
+  ehBase = false
 ): Anthropic.TextBlockParam[] {
   const negocio = cfg.nomeNegocio || "o negócio";
 
@@ -70,6 +71,13 @@ ${cfg.regras ? `# Regras adicionais do cliente\n${cfg.regras}\n` : ""}
 Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
 
   const agora = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const tipoCliente = ehBase
+    ? "JÁ É CLIENTE DA BASE (não é a primeira vez — já fez serviço antes)"
+    : "LEAD NOVO (primeiro contato, sem histórico de serviço)";
+  const regraTom = ehBase
+    ? 'Cliente da base: tom mais íntimo e direto, SEM reapresentar a empresa. Acolha com algo como "que bom te ver de novo!" e já ofereça retomar/repetir o serviço de sempre. Reaproveite o que você já sabe dele (não refaça todo o cadastro) — confirme só o que pode ter mudado (ex.: "é o mesmo endereço?").'
+    : "Lead novo: foque em entender a necessidade, qualificar e fechar o PRIMEIRO serviço. Faça o cadastro completo (dados + endereço).";
+
   const contexto = `# Lead atual
 - Data e hora agora (America/Sao_Paulo): ${agora}
 - Nome: ${lead.nome || "(desconhecido)"}
@@ -77,7 +85,11 @@ Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
 - Origem: ${lead.origem}
 - Etapa no funil: ${lead.coluna}
 - Temperatura atual: ${lead.temperatura}
+- Tipo de cliente: ${tipoCliente}
 - Diagnóstico até agora: ${lead.diagnostico || "(nenhum ainda)"}
+
+# Como tratar este contato
+${regraTom}
 
 A seguir vem o histórico real da conversa. Continue de onde parou.`;
 
