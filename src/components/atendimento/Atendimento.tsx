@@ -13,6 +13,7 @@ import { crmBrowser } from "@/lib/supabase/browser";
 import { ConversaList, type Filtro } from "./ConversaList";
 import { ChatWindow } from "./ChatWindow";
 import { LeadPanel } from "./LeadPanel";
+import { IaSwitchPill } from "@/components/config/IaSwitchCard";
 
 function agora() {
   return new Date().toLocaleTimeString("pt-BR", {
@@ -53,12 +54,14 @@ export function Atendimento({
   podeOverride = false,
   respostasRapidas = [],
   conversaInicial = null,
+  iaAtiva = true,
 }: {
   initialConversas: Conversa[];
   currentUserId: string;
   podeOverride?: boolean;
   respostasRapidas?: string[];
   conversaInicial?: number | null;
+  iaAtiva?: boolean;
 }) {
   const [conversas, setConversas] = useState<Conversa[]>(initialConversas);
   const [selecionadaId, setSelecionadaId] = useState<number | null>(
@@ -212,7 +215,8 @@ export function Atendimento({
             cliente pagante.
           </p>
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          {podeOverride && <IaSwitchPill inicial={iaAtiva} />}
           <span className="flex items-center gap-1.5 text-texto-suave">
             <span className="h-2 w-2 rounded-full bg-marca" /> {ativas} ativas
           </span>

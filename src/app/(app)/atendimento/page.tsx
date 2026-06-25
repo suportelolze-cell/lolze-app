@@ -1,5 +1,5 @@
 import { Atendimento } from "@/components/atendimento/Atendimento";
-import { getConversas } from "@/lib/supabase/crm-data";
+import { getConversas, getIaAtiva } from "@/lib/supabase/crm-data";
 import { getRespostasRapidas } from "@/lib/atendimento/respostas";
 import { getSessao } from "@/lib/supabase/tenant";
 
@@ -10,10 +10,11 @@ export default async function AtendimentoPage({
 }: {
   searchParams: { conversa?: string };
 }) {
-  const [conversas, sessao, respostas] = await Promise.all([
+  const [conversas, sessao, respostas, iaAtiva] = await Promise.all([
     getConversas(),
     getSessao(),
     getRespostasRapidas(),
+    getIaAtiva(),
   ]);
   const conversaInicial = Number(searchParams?.conversa) || null;
   return (
@@ -23,6 +24,7 @@ export default async function AtendimentoPage({
       podeOverride={sessao.papel === "owner" || sessao.papel === "superadmin"}
       respostasRapidas={respostas}
       conversaInicial={conversaInicial}
+      iaAtiva={iaAtiva}
     />
   );
 }

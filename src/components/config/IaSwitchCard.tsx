@@ -78,3 +78,44 @@ export function IaSwitchCard({ inicial }: { inicial: boolean }) {
     </div>
   );
 }
+
+/**
+ * Versão compacta (pílula) do master switch — para o cabeçalho do Atendimento.
+ * Mesma ação do card; mostra o estado e alterna num clique.
+ */
+export function IaSwitchPill({ inicial }: { inicial: boolean }) {
+  const [ativa, setAtiva] = useState(inicial);
+  const [salvando, setSalvando] = useState(false);
+
+  async function alternar() {
+    const novo = !ativa;
+    setSalvando(true);
+    setAtiva(novo); // otimista
+    const r = await setIaAtiva(novo).catch(() => ({ ok: false }));
+    setSalvando(false);
+    if (!r.ok) setAtiva(!novo); // desfaz
+  }
+
+  return (
+    <button
+      onClick={alternar}
+      disabled={salvando}
+      title={ativa ? "IA ligada — clique para desligar" : "IA desligada — clique para ligar"}
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-60 ${
+        ativa
+          ? "border-marca/40 bg-marca-suave text-marca hover:bg-marca-suave/70"
+          : "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+      }`}
+    >
+      {salvando ? <Loader2 size={13} className="animate-spin" /> : <Bot size={13} />}
+      IA {ativa ? "Ligada" : "Desligada"}
+      <span
+        className={`ml-0.5 inline-flex h-3.5 w-6 items-center rounded-full px-0.5 transition-colors ${
+          ativa ? "justify-end bg-marca" : "justify-start bg-red-300"
+        }`}
+      >
+        <span className="h-2.5 w-2.5 rounded-full bg-white" />
+      </span>
+    </button>
+  );
+}
