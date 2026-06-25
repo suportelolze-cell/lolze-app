@@ -5,6 +5,101 @@ import { ORIGEM_LABEL, type Lead, type ColunaId } from "@/lib/leads";
 import type { Conversa } from "@/lib/conversas";
 import type { DadosFunil, Periodo } from "@/lib/funil";
 
+export type ClienteRecorrente = {
+  leadId: number;
+  nome: string;
+  telefone: string;
+  totalServicos: number;
+  servicos30d: number;
+  ultimoServicoISO: string | null;
+  diasDesdeUltimo: number | null;
+  cadenciaDias: number | null;
+  churn: boolean;
+};
+
+export type RecorrenciaDados = {
+  clientes: ClienteRecorrente[];
+  totalBase: number;
+  emChurn: number;
+  servicosMes: number;
+};
+
+/**
+ * Carteira de clientes recorrentes (Lista 2): só quem já fez ≥1 serviço.
+ * Agrega os agendamentos confirmados/concluídos por cliente para o Dashboard
+ * de Recorrência (frequência, churn, curva ABC).
+ */
+export async function getRecorrencia(): Promise<RecorrenciaDados> {
+  const tid = await getTenantId();
+  if (!tid) return { clientes: [], totalBase: 0, emChurn: 0, servicosMes: 0 };
+  const sb = getCrmServer();
+
+  const { data: ags } = await sb
+    .from("app_agendamentos")
+    .select("lead_id,inicio")
+    .eq("tenant_id", tid)
+    .in("status", ["confirmado", "concluido"])
+    .order("inicio");
+
+  const porLead = new Map<number, number[]>();
+  for (const a of (ags ?? []) as { lead_id: number | null; inicio: string }[]) {
+    if (a.lead_id == null) continue;
+    const arr = porLead.get(a.lead_id) ?? [];
+    arr.push(new Date(a.inicio).getTime());
+    porLead.set(a.lead_id, arr);
+  }
+  const leadIds = Array.from(porLead.keys());
+  if (leadIds.length === 0) return { clientes: [], totalBase: 0, emChurn: 0, servicosMes: 0 };
+
+  const { data: leads } = await sb
+    .from("app_leads")
+    .select("id,nome,telefone")
+    .eq("tenant_id", tid)
+    .in("id", leadIds);
+  const info = new Map(
+    ((leads ?? []) as { id: number; nome: string | null; telefone: string | null }[]).map((l) => [l.id, l])
+  );
+
+  const agora = Date.now();
+  const D = 86_400_000;
+  let servicosMes = 0;
+  const clientes: ClienteRecorrente[] = [];
+  for (const [leadId, ms] of Array.from(porLead.entries())) {
+    const t = ms.sort((a, b) => a - b);
+    const ultimo = t[t.length - 1];
+    const s30 = t.filter((x) => agora - x <= 30 * D).length;
+    servicosMes += s30;
+    const diasDesde = Math.floor((agora - ultimo) / D);
+    let cadencia: number | null = null;
+    if (t.length >= 2) {
+      let soma = 0;
+      for (let i = 1; i < t.length; i++) soma += (t[i] - t[i - 1]) / D;
+      cadencia = Math.round(soma / (t.length - 1));
+    }
+    const limite = cadencia ? Math.max(cadencia * 1.3, cadencia + 7) : 30;
+    const churn = diasDesde >= 7 && diasDesde > limite;
+    const li = info.get(leadId);
+    clientes.push({
+      leadId,
+      nome: li?.nome ?? "Cliente",
+      telefone: li?.telefone ?? "",
+      totalServicos: t.length,
+      servicos30d: s30,
+      ultimoServicoISO: new Date(ultimo).toISOString(),
+      diasDesdeUltimo: diasDesde,
+      cadenciaDias: cadencia,
+      churn,
+    });
+  }
+  clientes.sort((a, b) => b.totalServicos - a.totalServicos || (b.servicos30d - a.servicos30d));
+  return {
+    clientes,
+    totalBase: clientes.length,
+    emChurn: clientes.filter((c) => c.churn).length,
+    servicosMes,
+  };
+}
+
 export type AtendimentoCfg = { especialista: string; abre: number; fecha: number };
 
 /** Número do especialista + horário de atendimento do tenant ativo. */

@@ -8,6 +8,7 @@ import {
   MessagesSquare,
   CalendarDays,
   Workflow,
+  Repeat,
   GraduationCap,
   Settings,
   LogOut,
@@ -25,6 +26,7 @@ const itens: Item[] = [
   { href: "/atendimento", label: "Central de Atendimento", icon: MessagesSquare },
   { href: "/agenda", label: "Agenda Mágica", icon: CalendarDays },
   { href: "/funil", label: "Raio-X do Funil", icon: Workflow },
+  { href: "/recorrencia", label: "Recorrência", icon: Repeat },
   { href: "/universidade", label: "Universidade", icon: GraduationCap },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];

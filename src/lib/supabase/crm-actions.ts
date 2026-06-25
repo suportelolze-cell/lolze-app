@@ -74,6 +74,20 @@ export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boole
   return { ok: true };
 }
 
+/** Reativa um cliente da base com a IA (manda um toque de reativação na hora). */
+export async function reativarClienteIA(leadId: number): Promise<{ ok: boolean; erro?: string }> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sem empresa ativa." };
+  try {
+    const { enviarFollowup } = await import("@/lib/agent/followup");
+    await enviarFollowup(tid, leadId);
+  } catch (e) {
+    return { ok: false, erro: (e as Error).message };
+  }
+  revalidatePath("/recorrencia");
+  return { ok: true };
+}
+
 /** Salva o número do especialista + horário de atendimento (abre/fecha) do tenant. */
 export async function salvarAtendimentoCfg(input: {
   especialista: string;
