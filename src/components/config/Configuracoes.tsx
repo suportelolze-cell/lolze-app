@@ -22,6 +22,7 @@ import { EquipeManager } from "./EquipeManager";
 import { AtendimentoCard } from "./AtendimentoCard";
 import type { AtendimentoCfg } from "@/lib/supabase/crm-data";
 import { WhatsAppCard } from "./WhatsAppCard";
+import { IaSwitchCard } from "./IaSwitchCard";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
 
@@ -41,6 +42,7 @@ export function Configuracoes({
   billing,
   google,
   atendimento,
+  iaAtiva = true,
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
@@ -48,6 +50,7 @@ export function Configuracoes({
   billing: BillingInfo;
   google?: GoogleStatus;
   atendimento?: AtendimentoCfg;
+  iaAtiva?: boolean;
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -111,7 +114,7 @@ export function Configuracoes({
               <RespostasRapidasPanel inicial={respostasRapidas} />
             </div>
           )}
-          {aba === "integracoes" && <Integracoes google={google} />}
+          {aba === "integracoes" && <Integracoes google={google} iaAtiva={iaAtiva} />}
           {aba === "equipe" && (
             <div className="space-y-6">
               <EquipeManager info={equipeInfo} />
@@ -219,7 +222,7 @@ function CardIntegracao({
   );
 }
 
-function Integracoes({ google }: { google?: GoogleStatus }) {
+function Integracoes({ google, iaAtiva = true }: { google?: GoogleStatus; iaAtiva?: boolean }) {
   const googleConfigurado = google?.configurado ?? false;
   const googleConectado = google?.conectado ?? false;
 
@@ -229,6 +232,8 @@ function Integracoes({ google }: { google?: GoogleStatus }) {
       micro="Conecte suas ferramentas e deixe o sistema orquestrar o fluxo de dados por você. Sem códigos complexos."
     >
       <div className="space-y-4">
+        <IaSwitchCard inicial={iaAtiva} />
+
         <CardIntegracao icon={MessageSquare} titulo="WhatsApp Oficial">
           <WhatsAppCard />
         </CardIntegracao>

@@ -119,6 +119,19 @@ export async function getAtendimentoCfg(): Promise<AtendimentoCfg> {
   };
 }
 
+/** Estado do master switch da IA (true = respondendo; false = desligada). */
+export async function getIaAtiva(): Promise<boolean> {
+  const tid = await getTenantId();
+  if (!tid) return true;
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_config")
+    .select("agente_ativo")
+    .eq("tenant_id", tid)
+    .maybeSingle();
+  return (data?.agente_ativo as boolean | null) ?? true;
+}
+
 type LeadRow = {
   id: number;
   nome: string;

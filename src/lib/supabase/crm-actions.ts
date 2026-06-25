@@ -74,6 +74,20 @@ export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boole
   return { ok: true };
 }
 
+/** Liga/desliga a IA por completo (master switch — não responde ninguém quando off). */
+export async function setIaAtiva(ativo: boolean): Promise<{ ok: boolean; erro?: string }> {
+  const s = await getSessao();
+  if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, erro: "Sem permissão." };
+  const sb = getCrmServer();
+  const { error } = await sb
+    .from("app_config")
+    .update({ agente_ativo: ativo, updated_at: new Date().toISOString() })
+    .eq("tenant_id", s.tenantId);
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/configuracoes");
+  return { ok: true };
+}
+
 /** Reativa um cliente da base com a IA (manda um toque de reativação na hora). */
 export async function reativarClienteIA(leadId: number): Promise<{ ok: boolean; erro?: string }> {
   const tid = await getTenantId();
