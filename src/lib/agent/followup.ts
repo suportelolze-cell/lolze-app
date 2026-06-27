@@ -2,6 +2,8 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { getAnthropic, temChaveIA, SDR_MODEL } from "./anthropic";
+import { registrarUsoIA } from "./uso";
+import { registrarErro } from "@/lib/observability/erros";
 
 /**
  * Sistema de follow-up automático (cadência + reativação).
@@ -163,8 +165,15 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
       .map((b) => (b.type === "text" ? b.text : ""))
       .join(" ")
       .trim();
-  } catch {
+    await registrarUsoIA(tenantId, {
+      inputTokens: res.usage.input_tokens ?? 0,
+      outputTokens: res.usage.output_tokens ?? 0,
+      cacheCreation: res.usage.cache_creation_input_tokens ?? 0,
+      cacheRead: res.usage.cache_read_input_tokens ?? 0,
+    });
+  } catch (e) {
     // falha de IA: reprograma pra tentar no próximo ciclo (não consome o toque)
+    await registrarErro({ tenantId, leadId, contexto: "followup", erro: e });
     return;
   }
 

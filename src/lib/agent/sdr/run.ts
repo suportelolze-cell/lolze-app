@@ -11,6 +11,8 @@ import { agendarReuniao } from "./agendar";
 import { consultarDisponibilidade } from "./disponibilidade";
 import { primeiroFollowup } from "../followup";
 import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
+import { registrarUsoIA } from "../uso";
+import { registrarErro } from "@/lib/observability/erros";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
 
@@ -304,6 +306,9 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
       uso,
       latenciaMs: Date.now() - inicio,
     });
+    // A IA falhou ao responder um cliente: loga + avisa a operação (não silencia).
+    await registrarErro({ tenantId, leadId, contexto: "sdr.run", erro: e, severidade: "alta" });
+    await registrarUsoIA(tenantId, uso);
     return { ok: false, resposta: "", acoes: acc.acoes, erro };
   }
 
@@ -363,6 +368,7 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     uso,
     latenciaMs,
   });
+  await registrarUsoIA(tenantId, uso);
 
   return { ok: true, resposta, acoes: acc.acoes, uso, latenciaMs };
 }

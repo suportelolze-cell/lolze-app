@@ -3,6 +3,7 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
 import { baixarMidiaBase64, uploadMidia, puxarHistoricoContato } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
+import { registrarErro } from "@/lib/observability/erros";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // baixar mídia + transcrever + rodar o SDR
@@ -174,8 +175,9 @@ export async function POST(req: NextRequest) {
   if (leadNovo && instancia) {
     try {
       await puxarHistoricoContato(tenantId, lead!.id, canalUserId, instancia, texto);
-    } catch {
+    } catch (e) {
       // best-effort: sem histórico, a IA só começa do zero
+      await registrarErro({ tenantId, leadId: lead!.id, contexto: "whatsapp.historico", erro: e });
     }
   }
 
@@ -195,8 +197,8 @@ export async function POST(req: NextRequest) {
     try {
       const r = await executarSDR(tenantId, lead!.id);
       resposta = r.resposta;
-    } catch {
-      // best-effort
+    } catch (e) {
+      await registrarErro({ tenantId, leadId: lead!.id, contexto: "whatsapp.inbound", erro: e, severidade: "alta" });
     }
   }
 
