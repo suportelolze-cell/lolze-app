@@ -680,12 +680,12 @@ function DashboardMock() {
           </div>
 
           {/* Abas */}
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex gap-1 rounded-lg bg-superficie p-1">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 gap-1 overflow-x-auto rounded-lg bg-superficie p-1">
               {["Visão Geral", "Pipeline", "Agenda", "Funil"].map((t, i) => (
                 <span
                   key={t}
-                  className={`rounded-md px-3 py-1 text-[10px] font-semibold ${
+                  className={`shrink-0 rounded-md px-3 py-1 text-[10px] font-semibold ${
                     i === 0 ? "bg-marca text-bege-principal" : "text-texto-suave"
                   }`}
                 >
@@ -693,13 +693,13 @@ function DashboardMock() {
                 </span>
               ))}
             </div>
-            <span className="flex items-center gap-1 rounded-lg bg-marca px-3 py-1.5 text-[10px] font-semibold text-bege-principal">
+            <span className="hidden shrink-0 items-center gap-1 rounded-lg bg-marca px-3 py-1.5 text-[10px] font-semibold text-bege-principal sm:flex">
               Exportar <ArrowRight size={10} />
             </span>
           </div>
 
-          {/* 3 cards */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* 3 cards (empilham no celular, lado a lado no PC) */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* Card 1: meta + barras */}
             <div className="rounded-xl border border-borda bg-superficie p-3">
               <div className="text-[10px] font-bold text-texto">Meta de Conversão</div>
@@ -740,7 +740,7 @@ function DashboardMock() {
                 <span className="rounded-full bg-white/60 px-1.5 py-px text-[8px] font-semibold text-marca">87%</span>
               </div>
               <div className="mt-1 text-[9px] text-texto-suave">Cliente: Dr. Ricardo</div>
-              <div className="mt-7 text-xl font-bold text-texto">
+              <div className="mt-4 text-xl font-bold text-texto sm:mt-7">
                 R$ 24.120
                 <span className="text-[10px] font-medium text-texto-suave"> /R$ 32.200</span>
               </div>
