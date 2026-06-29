@@ -26,6 +26,8 @@ import { Logo } from "@/components/Logo";
 import { FAQ } from "./FAQ";
 import { AplicarButton } from "./AplicarButton";
 import { Aplicacao } from "./Aplicacao";
+import { Diagnostico } from "./Diagnostico";
+import { ProvaReal } from "./ProvaReal";
 
 // CTA principal → WhatsApp (troque pelo número real da operação)
 const WHATSAPP =
@@ -194,6 +196,9 @@ export function Landing() {
         </div>
       </section>
 
+      {/* ===================== DIAGNÓSTICO RÁPIDO (calculadora) ===================== */}
+      <Diagnostico />
+
       {/* ===================== O QUE A LOLZE FAZ ===================== */}
       <section className="px-6 py-10">
         <div className="mx-auto max-w-5xl rounded-3xl border border-borda bg-superficie p-8 sm:p-12">
@@ -263,6 +268,9 @@ export function Landing() {
           </p>
         </div>
       </section>
+
+      {/* ===================== PROVA REAL (chat ao vivo) ===================== */}
+      <ProvaReal />
 
       {/* ===================== MONTADA PRA VOCÊ ===================== */}
       <section id="funciona" className="bg-superficie px-6 py-20">
