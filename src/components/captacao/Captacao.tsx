@@ -38,7 +38,7 @@ export function Captacao({
 
   async function salvar() {
     setSalvando(true);
-    const r = await setCaptacaoCfg(cfg);
+    const r = await setCaptacaoCfg({ instancia: cfg.instancia, porDia: cfg.porDia, ativo: cfg.ativo });
     setSalvando(false);
     if (r.ok) {
       setSalvo(true);
@@ -124,17 +124,28 @@ export function Captacao({
           <h2 className="font-corpo text-lg font-bold text-texto">Configuração do disparo</h2>
           <div className="mt-4 space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-texto">
-                Instância do número dedicado (Evolution)
-              </label>
-              <input
-                value={cfg.instancia}
-                onChange={(e) => setCfg({ ...cfg, instancia: e.target.value })}
-                placeholder="ex.: lolze-prospeccao"
-                className="w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none focus:border-marca"
-              />
+              <label className="mb-1 block text-sm font-semibold text-texto">Número de disparo</label>
+              {cfg.instancias.length === 0 ? (
+                <p className="rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto-suave">
+                  Nenhum número liberado ainda. Fale com a Lolze para liberar um número de disparo no
+                  seu plano.
+                </p>
+              ) : (
+                <select
+                  value={cfg.instancia}
+                  onChange={(e) => setCfg({ ...cfg, instancia: e.target.value })}
+                  className="w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none focus:border-marca"
+                >
+                  <option value="">Selecione um número…</option>
+                  {cfg.instancias.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              )}
               <p className="mt-1 text-xs text-texto-suave">
-                O nome da instância do chip só de prospecção, conectada na Evolution.
+                Escolha o número dedicado que a Lolze liberou para você.
               </p>
             </div>
             <div className="flex items-end gap-4">

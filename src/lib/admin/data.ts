@@ -8,6 +8,7 @@ export type Plano = {
   setupCents: number;
   mensalCents: number;
   canaisMax: number;
+  maxDisparo: number;
   carenciaDias: number;
   recursos: string[];
 };
@@ -46,9 +47,23 @@ export async function getPlanos(): Promise<Plano[]> {
     setupCents: p.setup_cents,
     mensalCents: p.mensal_cents,
     canaisMax: p.canais_max,
+    maxDisparo: Number(p.max_disparo ?? 1),
     carenciaDias: p.carencia_dias,
     recursos: (p.recursos as string[]) ?? [],
   }));
+}
+
+/** Instâncias de disparo (prospecção) liberadas para o cliente. Só superadmin. */
+export async function getDisparoInstancias(tenantId: string): Promise<string[]> {
+  await exigirSuperadmin();
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_config")
+    .select("prospect_instancias")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  const arr = data?.prospect_instancias;
+  return Array.isArray(arr) ? (arr as string[]).map(String) : [];
 }
 
 export async function listarClientes(): Promise<Cliente[]> {

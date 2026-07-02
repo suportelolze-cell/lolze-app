@@ -14,7 +14,13 @@ export type ProspectRow = {
   created_at: string;
 };
 
-export type CaptacaoCfg = { instancia: string; porDia: number; ativo: boolean };
+export type CaptacaoCfg = {
+  instancia: string;
+  porDia: number;
+  ativo: boolean;
+  /** Pool de números liberados pelo admin (o cliente escolhe um). */
+  instancias: string[];
+};
 export type CaptacaoResumo = {
   total: number;
   novo: number;
@@ -26,17 +32,21 @@ export type CaptacaoResumo = {
 
 export async function getCaptacaoCfg(): Promise<CaptacaoCfg> {
   const tid = await getTenantId();
-  if (!tid) return { instancia: "", porDia: 10, ativo: false };
+  if (!tid) return { instancia: "", porDia: 10, ativo: false, instancias: [] };
   const sb = getCrmAdmin();
   const { data } = await sb
     .from("app_config")
-    .select("prospect_instancia,prospect_dia,prospect_ativo")
+    .select("prospect_instancia,prospect_dia,prospect_ativo,prospect_instancias")
     .eq("tenant_id", tid)
     .maybeSingle();
+  const pool = Array.isArray(data?.prospect_instancias)
+    ? (data!.prospect_instancias as string[]).map(String)
+    : [];
   return {
     instancia: (data?.prospect_instancia as string | null) ?? "",
     porDia: Number(data?.prospect_dia ?? 10),
     ativo: Boolean(data?.prospect_ativo ?? false),
+    instancias: pool,
   };
 }
 

@@ -68,6 +68,40 @@ export async function salvarEvolutionCfg(tenantId: string, cfg: { instance: stri
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+/**
+ * Salva o pool de números de disparo (prospecção) do cliente. Somente
+ * superadmin. Respeita o limite do plano (app_plans.max_disparo).
+ */
+export async function salvarDisparoInstancias(
+  tenantId: string,
+  instancias: string[]
+): Promise<{ ok: boolean; erro?: string }> {
+  await exigirSuper();
+  const sb = getCrmServer();
+
+  // Limite do plano do cliente.
+  const { data: t } = await sb.from("app_tenants").select("plano").eq("id", tenantId).maybeSingle();
+  const { data: plano } = await sb
+    .from("app_plans")
+    .select("max_disparo")
+    .eq("id", (t?.plano as string) ?? "")
+    .maybeSingle();
+  const max = Number(plano?.max_disparo ?? 1);
+
+  // Normaliza: trim, remove vazios/duplicados, corta no limite do plano.
+  const limpo = Array.from(
+    new Set(instancias.map((s) => String(s).trim()).filter(Boolean))
+  ).slice(0, max);
+
+  const { error } = await sb
+    .from("app_config")
+    .update({ prospect_instancias: limpo, updated_at: new Date().toISOString() })
+    .eq("tenant_id", tenantId);
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath(`/admin/clientes/${tenantId}`);
+  return { ok: true };
+}
+
 /** Salva a persona/cérebro do SDR de um cliente. Somente superadmin. */
 export async function salvarPersona(
   tenantId: string,

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, KanbanSquare, Users } from "lucide-react";
-import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg, getAcessoCliente } from "@/lib/admin/data";
+import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg, getAcessoCliente, getDisparoInstancias } from "@/lib/admin/data";
 import { entrarComo } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
 import { AlterarEmailAcesso } from "@/components/admin/AlterarEmailAcesso";
 import { ExcluirClienteCard } from "@/components/admin/ExcluirClienteCard";
 import { PersonaForm } from "@/components/admin/PersonaForm";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
+import { DisparoForm } from "@/components/admin/DisparoForm";
 import { InstagramForm } from "@/components/admin/InstagramForm";
 import { MetaAdsForm } from "@/components/admin/MetaAdsForm";
 import { KbForm } from "@/components/admin/KbForm";
@@ -17,7 +18,7 @@ import { temOpenAIKey } from "@/lib/kb/embed";
 export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: { id: string } }) {
-  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, acesso] = await Promise.all([
+  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, acesso, disparoInstancias] = await Promise.all([
     getCliente(params.id),
     getPlanos(),
     listarDocs(params.id),
@@ -26,9 +27,12 @@ export default async function ClientePage({ params }: { params: { id: string } }
     getMetaAdsCfg(params.id),
     getInstagramCfg(params.id),
     getAcessoCliente(params.id),
+    getDisparoInstancias(params.id),
   ]);
   if (!cliente) notFound();
   const semOpenAI = !temOpenAIKey();
+  const planoAtual = planos.find((p) => p.id === cliente.plano);
+  const maxDisparo = planoAtual?.maxDisparo ?? 1;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -84,6 +88,15 @@ export default async function ClientePage({ params }: { params: { id: string } }
 
       <div className="mt-6">
         <EvolutionForm tenantId={cliente.id} cfg={evolutionCfg} />
+      </div>
+
+      <div className="mt-6">
+        <DisparoForm
+          tenantId={cliente.id}
+          instancias={disparoInstancias}
+          max={maxDisparo}
+          plano={planoAtual?.nome ?? cliente.plano}
+        />
       </div>
 
       <div className="mt-6">
