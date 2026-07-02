@@ -32,7 +32,7 @@ export default async function ClientePage({ params }: { params: { id: string } }
   if (!cliente) notFound();
   const semOpenAI = !temOpenAIKey();
   const planoAtual = planos.find((p) => p.id === cliente.plano);
-  const maxDisparo = planoAtual?.maxDisparo ?? 1;
+  const maxDisparo = planoAtual?.sdrMax ?? 0;
 
   return (
     <div className="mx-auto max-w-3xl">

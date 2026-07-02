@@ -8,7 +8,7 @@ export type Plano = {
   setupCents: number;
   mensalCents: number;
   canaisMax: number;
-  maxDisparo: number;
+  sdrMax: number;
   carenciaDias: number;
   recursos: string[];
 };
@@ -47,7 +47,7 @@ export async function getPlanos(): Promise<Plano[]> {
     setupCents: p.setup_cents,
     mensalCents: p.mensal_cents,
     canaisMax: p.canais_max,
-    maxDisparo: Number(p.max_disparo ?? 1),
+    sdrMax: Number(p.sdr_max ?? 0),
     carenciaDias: p.carencia_dias,
     recursos: (p.recursos as string[]) ?? [],
   }));

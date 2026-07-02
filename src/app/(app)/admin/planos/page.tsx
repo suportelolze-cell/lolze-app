@@ -37,8 +37,8 @@ export default async function PlanosPage() {
           <div key={p.id} className="flex flex-col rounded-xl border border-borda bg-superficie p-6">
             <h2 className="font-corpo text-lg font-bold text-texto">{p.nome}</h2>
             <p className="mt-1 text-xs uppercase tracking-wide text-texto-suave">
-              {p.canaisMax} {p.canaisMax > 1 ? "canais" : "canal"} · {p.maxDisparo}{" "}
-              {p.maxDisparo > 1 ? "números de disparo" : "número de disparo"}
+              {p.canaisMax} {p.canaisMax > 1 ? "canais" : "canal"} · {p.sdrMax} SDR
+              {p.sdrMax > 1 ? "s" : ""} / números de captação
             </p>
 
             <div className="mt-4 border-y border-borda py-4">

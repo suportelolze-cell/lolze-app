@@ -64,6 +64,26 @@ export async function getProspectsResumo(): Promise<CaptacaoResumo> {
   return r;
 }
 
+/** Pool de números de captação do tenant + limite do plano (= sdr_max). */
+export async function getNumerosCaptacaoInfo(): Promise<{ instancias: string[]; max: number }> {
+  const tid = await getTenantId();
+  if (!tid) return { instancias: [], max: 0 };
+  const sb = getCrmAdmin();
+  const { data: cfg } = await sb
+    .from("app_config")
+    .select("prospect_instancias")
+    .eq("tenant_id", tid)
+    .maybeSingle();
+  const pool = Array.isArray(cfg?.prospect_instancias) ? (cfg!.prospect_instancias as string[]).map(String) : [];
+  const { data: t } = await sb.from("app_tenants").select("plano").eq("id", tid).maybeSingle();
+  const { data: p } = await sb
+    .from("app_plans")
+    .select("sdr_max")
+    .eq("id", (t?.plano as string) ?? "")
+    .maybeSingle();
+  return { instancias: pool, max: Number(p?.sdr_max ?? 0) };
+}
+
 export async function listarProspects(limit = 200): Promise<ProspectRow[]> {
   const tid = await getTenantId();
   if (!tid) return [];

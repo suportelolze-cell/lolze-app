@@ -12,6 +12,7 @@ import {
   CalendarSync,
   Target,
   FileDown,
+  Radar,
 } from "lucide-react";
 import { salvarConfig, salvarRespostasRapidas } from "@/lib/supabase/crm-actions";
 import { assinarPlano, gerenciarAssinatura } from "@/lib/billing/actions";
@@ -23,6 +24,7 @@ import { AtendimentoCard } from "./AtendimentoCard";
 import type { AtendimentoCfg } from "@/lib/supabase/crm-data";
 import { WhatsAppCard } from "./WhatsAppCard";
 import { IaSwitchCard } from "./IaSwitchCard";
+import { CaptacaoNumerosCard } from "./CaptacaoNumerosCard";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
 
@@ -43,6 +45,7 @@ export function Configuracoes({
   google,
   atendimento,
   iaAtiva = true,
+  numerosCaptacao,
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
@@ -51,6 +54,7 @@ export function Configuracoes({
   google?: GoogleStatus;
   atendimento?: AtendimentoCfg;
   iaAtiva?: boolean;
+  numerosCaptacao?: { instancias: string[]; max: number };
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -114,7 +118,14 @@ export function Configuracoes({
               <RespostasRapidasPanel inicial={respostasRapidas} />
             </div>
           )}
-          {aba === "integracoes" && <Integracoes google={google} iaAtiva={iaAtiva} />}
+          {aba === "integracoes" && (
+            <Integracoes
+              google={google}
+              iaAtiva={iaAtiva}
+              numerosCaptacao={numerosCaptacao}
+              podeGerenciar={equipeInfo.podeGerenciar}
+            />
+          )}
           {aba === "equipe" && (
             <div className="space-y-6">
               <EquipeManager info={equipeInfo} />
@@ -222,7 +233,17 @@ function CardIntegracao({
   );
 }
 
-function Integracoes({ google, iaAtiva = true }: { google?: GoogleStatus; iaAtiva?: boolean }) {
+function Integracoes({
+  google,
+  iaAtiva = true,
+  numerosCaptacao,
+  podeGerenciar = false,
+}: {
+  google?: GoogleStatus;
+  iaAtiva?: boolean;
+  numerosCaptacao?: { instancias: string[]; max: number };
+  podeGerenciar?: boolean;
+}) {
   const googleConfigurado = google?.configurado ?? false;
   const googleConectado = google?.conectado ?? false;
 
@@ -233,6 +254,12 @@ function Integracoes({ google, iaAtiva = true }: { google?: GoogleStatus; iaAtiv
     >
       <div className="space-y-4">
         <IaSwitchCard inicial={iaAtiva} />
+
+        {podeGerenciar && numerosCaptacao && numerosCaptacao.max > 0 && (
+          <CardIntegracao icon={Radar} titulo="Números de Captação (prospecção)">
+            <CaptacaoNumerosCard instancias={numerosCaptacao.instancias} max={numerosCaptacao.max} />
+          </CardIntegracao>
+        )}
 
         <CardIntegracao icon={MessageSquare} titulo="WhatsApp Oficial">
           <WhatsAppCard />

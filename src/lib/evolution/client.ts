@@ -232,6 +232,78 @@ export async function conectarWhatsapp(tenantId: string): Promise<ConexaoResulta
   return { ok: false, conectado: false, erro: "Não foi possível gerar o QR. Tente de novo." };
 }
 
+/** Nome da i-ésima instância de DISPARO (prospecção) do tenant. */
+export function nomeDisparo(tenantId: string, i: number) {
+  return nomePadrao(tenantId) + "_disp" + i;
+}
+
+/**
+ * Conecta (QR) uma instância de DISPARO nomeada, dedicada à prospecção.
+ * NÃO mexe na instância principal do tenant. O webhook aponta pro mesmo inbound
+ * (autenticado pelo ingest_token), então respostas viram lead normalmente.
+ */
+export async function conectarDisparo(tenantId: string, instancia: string): Promise<ConexaoResultado> {
+  if (!temEvolutionConfig()) return { ok: false, conectado: false, erro: "Evolution não configurada." };
+  const sec = await lerSecret(tenantId);
+  const inbound = sec.ingest_token ? appInboundUrl(sec.ingest_token) : "";
+  if (inbound) await garantirWebhook(instancia, inbound);
+
+  const est = await evo(`/instance/connectionState/${encodeURIComponent(instancia)}`);
+  if (est.ok && extrairEstado(est.json) === "open") {
+    return { ok: true, conectado: true, numero: extrairNumero(est.json) };
+  }
+
+  if (est.status === 404 || !est.ok) {
+    const body: Record<string, unknown> = {
+      instanceName: instancia,
+      qrcode: true,
+      integration: "WHATSAPP-BAILEYS",
+    };
+    if (inbound) {
+      body.webhook = { url: inbound, enabled: true, webhookByEvents: false, events: ["MESSAGES_UPSERT"] };
+    }
+    const criar = await evo(`/instance/create`, { method: "POST", body: JSON.stringify(body) });
+    if (!criar.ok && criar.status !== 403 && criar.status !== 409) {
+      return {
+        ok: false,
+        conectado: false,
+        erro: criar.json?.message || `Falha ao criar instância (HTTP ${criar.status}).`,
+      };
+    }
+    const qr = extrairQr(criar.json);
+    if (qr) return { ok: true, conectado: false, qr };
+  }
+
+  if (inbound) await garantirWebhook(instancia, inbound);
+  const conn = await evo(`/instance/connect/${encodeURIComponent(instancia)}`);
+  const qr = extrairQr(conn.json);
+  if (qr) return { ok: true, conectado: false, qr };
+  if (extrairEstado(conn.json) === "open") {
+    return { ok: true, conectado: true, numero: extrairNumero(conn.json) };
+  }
+  return { ok: false, conectado: false, erro: "Não foi possível gerar o QR. Tente de novo." };
+}
+
+/** Estado de uma instância de disparo (polling do front). */
+export async function statusDisparo(
+  instancia: string
+): Promise<{ ok: boolean; conectado: boolean; numero?: string | null }> {
+  if (!temEvolutionConfig()) return { ok: false, conectado: false };
+  const est = await evo(`/instance/connectionState/${encodeURIComponent(instancia)}`);
+  if (est.ok && extrairEstado(est.json) === "open") {
+    return { ok: true, conectado: true, numero: extrairNumero(est.json) };
+  }
+  return { ok: true, conectado: false };
+}
+
+/** Desconecta e remove uma instância de disparo. */
+export async function desconectarDisparo(instancia: string): Promise<{ ok: boolean }> {
+  if (!temEvolutionConfig()) return { ok: false };
+  await evo(`/instance/logout/${encodeURIComponent(instancia)}`, { method: "DELETE" }).catch(() => null);
+  await evo(`/instance/delete/${encodeURIComponent(instancia)}`, { method: "DELETE" }).catch(() => null);
+  return { ok: true };
+}
+
 /** Consulta o estado atual da conexão (usado no polling do front). */
 export async function statusWhatsapp(tenantId: string): Promise<ConexaoResultado> {
   if (!temEvolutionConfig()) return { ok: false, conectado: false, erro: "Evolution não configurada." };

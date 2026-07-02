@@ -127,8 +127,8 @@ export function Captacao({
               <label className="mb-1 block text-sm font-semibold text-texto">Número de disparo</label>
               {cfg.instancias.length === 0 ? (
                 <p className="rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto-suave">
-                  Nenhum número liberado ainda. Fale com a Lolze para liberar um número de disparo no
-                  seu plano.
+                  Nenhum número conectado. Vá em <b>Configurações → Integrações → Números de
+                  Captação</b> e conecte um chip dedicado por QR.
                 </p>
               ) : (
                 <select
