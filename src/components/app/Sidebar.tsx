@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Workflow,
   Repeat,
+  Radar,
   GraduationCap,
   Settings,
   LogOut,
@@ -18,7 +19,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { crmBrowser } from "@/lib/supabase/browser";
 
-type Item = { href: string; label: string; icon: LucideIcon };
+type Item = { href: string; label: string; icon: LucideIcon; gestorOnly?: boolean };
 
 const itens: Item[] = [
   { href: "/painel", label: "Visão Geral", icon: LayoutDashboard },
@@ -27,6 +28,7 @@ const itens: Item[] = [
   { href: "/agenda", label: "Agenda Mágica", icon: CalendarDays },
   { href: "/funil", label: "Raio-X do Funil", icon: Workflow },
   { href: "/recorrencia", label: "Recorrência", icon: Repeat },
+  { href: "/captacao", label: "Captação", icon: Radar, gestorOnly: true },
   { href: "/universidade", label: "Universidade", icon: GraduationCap },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
@@ -79,7 +81,9 @@ export function Sidebar({
             <span>Painel do Admin</span>
           </Link>
         )}
-        {itens.map(({ href, label, icon: Icon }) => {
+        {itens
+          .filter((it) => !it.gestorOnly || ehSuper || papel === "owner")
+          .map(({ href, label, icon: Icon }) => {
           const ativo = pathname === href;
           return (
             <Link

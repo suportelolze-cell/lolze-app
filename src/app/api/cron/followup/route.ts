@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { enviarFollowup } from "@/lib/agent/followup";
 import { processarLembretes } from "@/lib/agent/lembretes";
+import { processarCaptacao } from "@/lib/captacao/enviar";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -49,5 +50,13 @@ export async function GET(req: NextRequest) {
     // best-effort
   }
 
-  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes });
+  // Prospecção assistida (envio automático em baixo volume)
+  let captacao = { enviados: 0 };
+  try {
+    captacao = await processarCaptacao();
+  } catch {
+    // best-effort
+  }
+
+  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes, captacao });
 }

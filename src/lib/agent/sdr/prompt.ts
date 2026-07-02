@@ -78,6 +78,11 @@ Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
     ? 'Cliente da base: tom mais íntimo e direto, SEM reapresentar a empresa. Acolha com algo como "que bom te ver de novo!" e já ofereça retomar/repetir o serviço de sempre. Reaproveite o que você já sabe dele (não refaça todo o cadastro) — confirme só o que pode ter mudado (ex.: "é o mesmo endereço?").'
     : "Lead novo: foque em entender a necessidade, qualificar e fechar o PRIMEIRO serviço. Faça o cadastro completo (dados + endereço).";
 
+  const veioDeAnuncio = /trafego|pago|an[úu]ncio|meta|facebook|instagram|\bads?\b/i.test(lead.origem || "");
+  const regraOrigem = veioDeAnuncio
+    ? '\n\nEste lead veio de um ANÚNCIO (tráfego pago): ele clicou no anúncio e chamou AGORA, então já tem interesse no tema. NÃO abra com um genérico "como posso te ajudar?": puxe pelo que o anúncio provavelmente prometia, confirme rapidinho o que ele procura e conduza direto pra qualificação/agendamento, sem enrolar (ele está quente).'
+    : "";
+
   const contexto = `# Lead atual
 - Data e hora agora (America/Sao_Paulo): ${agora}
 - Nome: ${lead.nome || "(desconhecido)"}
@@ -89,7 +94,7 @@ Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
 - Diagnóstico até agora: ${lead.diagnostico || "(nenhum ainda)"}
 
 # Como tratar este contato
-${regraTom}
+${regraTom}${regraOrigem}
 
 A seguir vem o histórico real da conversa. Continue de onde parou.`;
 
