@@ -53,19 +53,6 @@ export async function getPlanos(): Promise<Plano[]> {
   }));
 }
 
-/** Instâncias de disparo (prospecção) liberadas para o cliente. Só superadmin. */
-export async function getDisparoInstancias(tenantId: string): Promise<string[]> {
-  await exigirSuperadmin();
-  const sb = getCrmServer();
-  const { data } = await sb
-    .from("app_config")
-    .select("prospect_instancias")
-    .eq("tenant_id", tenantId)
-    .maybeSingle();
-  const arr = data?.prospect_instancias;
-  return Array.isArray(arr) ? (arr as string[]).map(String) : [];
-}
-
 export async function listarClientes(): Promise<Cliente[]> {
   const sb = getCrmServer();
   const [{ data: tenants }, { data: leads }, { data: profs }] = await Promise.all([
