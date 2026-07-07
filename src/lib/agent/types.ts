@@ -45,7 +45,7 @@ export type ResultadoAgente = {
   ok: boolean;
   resposta: string;
   acoes: AcaoSDR[];
-  skipped?: "humano" | "agente_inativo" | "sem_chave";
+  skipped?: "humano" | "agente_inativo" | "sem_chave" | "limite_ia";
   erro?: string;
   uso?: {
     inputTokens: number;

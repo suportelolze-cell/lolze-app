@@ -12,6 +12,7 @@ import { consultarDisponibilidade } from "./disponibilidade";
 import { primeiroFollowup } from "../followup";
 import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
 import { registrarUsoIA } from "../uso";
+import { dentroDoLimiteIA } from "../limite";
 import { registrarErro } from "@/lib/observability/erros";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
@@ -200,6 +201,10 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
   }
   if (!cfg.agenteAtivo) {
     return { ok: true, resposta: "", acoes: [], skipped: "agente_inativo" };
+  }
+  // Trava de custo por plano: se estourou o teto de IA do mês, a IA para.
+  if (!(await dentroDoLimiteIA(tenantId))) {
+    return { ok: true, resposta: "", acoes: [], skipped: "limite_ia" };
   }
 
   const ctx: LeadContexto = {

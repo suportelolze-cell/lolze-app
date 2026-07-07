@@ -3,6 +3,7 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { getAnthropic, temChaveIA, SDR_MODEL } from "./anthropic";
 import { registrarUsoIA } from "./uso";
+import { dentroDoLimiteIA } from "./limite";
 import { registrarErro } from "@/lib/observability/erros";
 
 /**
@@ -105,6 +106,9 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   const c = (cfg ?? {}) as Record<string, unknown>;
   const ativo = c.agente_ativo === undefined ? true : Boolean(c.agente_ativo);
   if (!ativo || !temChaveIA()) return parar();
+  // Trava de custo por plano: estourou o teto de IA do mês → pula o toque agora
+  // (não encerra a régua; retoma quando o mês virar ou o teto aumentar).
+  if (!(await dentroDoLimiteIA(tenantId))) return;
 
   // Histórico recente para dar contexto ao toque.
   const { data: msgs } = await admin
