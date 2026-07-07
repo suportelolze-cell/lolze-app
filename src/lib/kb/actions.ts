@@ -5,6 +5,8 @@ import { getSessao } from "@/lib/supabase/tenant";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { ingerir } from "./ingest";
 
+const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
+
 async function exigirSuper() {
   const s = await getSessao();
   if (s.papel !== "superadmin") throw new Error("Acesso restrito.");
@@ -23,39 +25,51 @@ async function extrairTexto(file: File): Promise<string> {
   return buf.toString("utf8");
 }
 
-export type ResDoc = { ok: boolean; erro?: string; trechos?: number; nome?: string };
-
-/** Sobe um documento (arquivo ou texto colado) para a base do cliente. */
-export async function subirDocumento(tenantId: string, fd: FormData): Promise<ResDoc> {
-  await exigirSuper();
-
+/** Extrai nome + texto de um upload (arquivo ou texto colado). Compartilhado. */
+async function lerUpload(fd: FormData): Promise<{ nome: string; texto: string } | { erro: string }> {
   const file = fd.get("file") as File | null;
   const textoColado = ((fd.get("texto") as string | null) ?? "").trim();
   const nomeColado = ((fd.get("nome") as string | null) ?? "").trim();
 
-  let nome = "";
-  let texto = "";
-
   if (file && file.size > 0) {
-    nome = file.name;
     try {
-      texto = await extrairTexto(file);
+      return { nome: file.name, texto: await extrairTexto(file) };
     } catch (e) {
-      return { ok: false, erro: "Não consegui ler o arquivo: " + (e as Error).message };
+      return { erro: "Não consegui ler o arquivo: " + (e as Error).message };
     }
-  } else if (textoColado) {
-    nome = nomeColado || "Texto colado";
-    texto = textoColado;
-  } else {
-    return { ok: false, erro: "Envie um arquivo ou cole o texto." };
   }
+  if (textoColado) return { nome: nomeColado || "Texto colado", texto: textoColado };
+  return { erro: "Envie um arquivo ou cole o texto." };
+}
 
-  if (!texto.trim()) return { ok: false, erro: "Documento sem texto legível." };
+export type ResDoc = { ok: boolean; erro?: string; trechos?: number; nome?: string };
 
+/** Sobe um documento (arquivo ou texto colado) para a base do cliente. (ADMIN) */
+export async function subirDocumento(tenantId: string, fd: FormData): Promise<ResDoc> {
+  await exigirSuper();
+  const lido = await lerUpload(fd);
+  if ("erro" in lido) return { ok: false, erro: lido.erro };
+  if (!lido.texto.trim()) return { ok: false, erro: "Documento sem texto legível." };
   try {
-    const trechos = await ingerir(tenantId, nome, texto);
+    const trechos = await ingerir(tenantId, lido.nome, lido.texto);
     revalidatePath(`/admin/clientes/${tenantId}`);
-    return { ok: true, trechos, nome };
+    return { ok: true, trechos, nome: lido.nome };
+  } catch (e) {
+    return { ok: false, erro: (e as Error).message };
+  }
+}
+
+/** Sobe um documento para a base da PRÓPRIA empresa (cliente/onboarding). */
+export async function subirDocumentoCliente(fd: FormData): Promise<ResDoc> {
+  const s = await getSessao();
+  if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, erro: "Sem permissão." };
+  const lido = await lerUpload(fd);
+  if ("erro" in lido) return { ok: false, erro: lido.erro };
+  if (!lido.texto.trim()) return { ok: false, erro: "Documento sem texto legível." };
+  try {
+    const trechos = await ingerir(s.tenantId, lido.nome, lido.texto);
+    revalidatePath("/onboarding");
+    return { ok: true, trechos, nome: lido.nome };
   } catch (e) {
     return { ok: false, erro: (e as Error).message };
   }

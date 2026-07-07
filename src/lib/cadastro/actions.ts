@@ -59,8 +59,8 @@ export async function cadastroPublico(form: {
     tenantId: prov.tenantId,
     priceId: plano.stripe_price_id,
     email,
-    successPath: "/painel?bemvindo=1",
-    cancelPath: "/painel?assinatura=cancel",
+    successPath: "/onboarding",
+    cancelPath: "/onboarding?assinatura=cancel",
   });
   return { ok: true, checkoutUrl: url ?? undefined };
 }

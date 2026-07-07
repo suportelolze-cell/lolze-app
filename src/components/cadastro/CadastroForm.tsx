@@ -47,7 +47,7 @@ export function CadastroForm({
       if (r.checkoutUrl) {
         window.location.href = r.checkoutUrl; // vai pro pagamento
       } else {
-        router.push("/painel");
+        router.push("/onboarding");
         router.refresh();
       }
     } catch {
