@@ -1,11 +1,30 @@
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { getSessao } from "@/lib/supabase/tenant";
 import { getCrmServer } from "@/lib/supabase/server";
+import { getCrmAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
+// Status que bloqueiam o uso do app até regularizar o pagamento.
+const BLOQUEADOS = ["pendente", "inadimplente", "cancelado"];
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSessao();
+
+  // Gate de pagamento: o superadmin NUNCA é bloqueado (nem impersonando um
+  // cliente não-pago). Falha aberta se não der pra checar (não tranca ninguém).
+  if (s.papel !== "superadmin" && s.tenantId) {
+    let status = "";
+    try {
+      const admin = getCrmAdmin();
+      const { data } = await admin.from("app_tenants").select("status").eq("id", s.tenantId).maybeSingle();
+      status = ((data?.status as string | null) ?? "").toLowerCase();
+    } catch {
+      status = ""; // fail-open
+    }
+    if (BLOQUEADOS.includes(status)) redirect("/assinatura");
+  }
 
   let clienteNome = "";
   if (s.impersonating && s.tenantId) {
