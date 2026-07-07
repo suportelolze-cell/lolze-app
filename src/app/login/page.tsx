@@ -85,7 +85,14 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-5 text-center text-[11px] leading-relaxed text-texto-suave">
+          <p className="mt-5 text-center text-sm text-texto-suave">
+            Não tem conta?{" "}
+            <a href="/cadastro" className="font-semibold text-marca underline">
+              Criar conta
+            </a>
+          </p>
+
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-texto-suave">
             Ao entrar, você concorda com os{" "}
             <a href="/termos" className="text-marca underline">Termos de Uso</a> e a{" "}
             <a href="/privacidade" className="text-marca underline">

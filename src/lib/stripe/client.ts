@@ -34,13 +34,15 @@ export async function criarCheckout(opts: {
   priceId: string;
   email?: string;
   customerId?: string | null;
+  successPath?: string;
+  cancelPath?: string;
 }): Promise<string | null> {
   const params: Record<string, string> = {
     mode: "subscription",
     "line_items[0][price]": opts.priceId,
     "line_items[0][quantity]": "1",
-    success_url: `${appUrl()}/configuracoes?assinatura=ok`,
-    cancel_url: `${appUrl()}/configuracoes?assinatura=cancel`,
+    success_url: `${appUrl()}${opts.successPath ?? "/configuracoes?assinatura=ok"}`,
+    cancel_url: `${appUrl()}${opts.cancelPath ?? "/configuracoes?assinatura=cancel"}`,
     "metadata[tenant_id]": opts.tenantId,
     "subscription_data[metadata][tenant_id]": opts.tenantId,
     allow_promotion_codes: "true",

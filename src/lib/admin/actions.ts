@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getCrmServer } from "@/lib/supabase/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { getSessao, IMPERSONATE_COOKIE } from "@/lib/supabase/tenant";
+import { provisionarTenant } from "@/lib/cadastro/provisionar";
 
 async function exigirSuper() {
   const s = await getSessao();
@@ -122,69 +123,17 @@ export async function criarCliente(form: {
   if (!form.senha || form.senha.length < 6)
     return { ok: false, erro: "A senha precisa ter ao menos 6 caracteres." };
 
-  let admin;
-  try {
-    admin = getCrmAdmin();
-  } catch (e) {
-    return { ok: false, erro: (e as Error).message };
-  }
-
-  const slug =
-    nomeNegocio
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
-      .slice(0, 40) +
-    "-" +
-    Math.random().toString(36).slice(2, 6);
-
-  // 1. Tenant
-  const { data: tenant, error: errT } = await admin
-    .from("app_tenants")
-    .insert({
-      nome: nomeNegocio,
-      slug,
-      plano: form.plano,
-      status: "ativo",
-      canais: form.canais ?? [],
-      contato_email: emailDono,
-      contato_telefone: form.telefone ?? null,
-    })
-    .select("id")
-    .single();
-  if (errT || !tenant) return { ok: false, erro: errT?.message ?? "Falha ao criar tenant." };
-
-  // 2. Usuário de auth (owner)
-  const { data: u, error: errU } = await admin.auth.admin.createUser({
-    email: emailDono,
-    password: form.senha,
-    email_confirm: true,
+  const prov = await provisionarTenant({
+    nomeNegocio,
+    plano: form.plano,
+    emailDono,
+    nomeDono: form.nomeDono,
+    senha: form.senha,
+    telefone: form.telefone,
+    canais: form.canais ?? [],
+    status: "ativo",
   });
-  if (errU || !u?.user) {
-    // limpa o tenant órfão
-    await admin.from("app_tenants").delete().eq("id", tenant.id);
-    return { ok: false, erro: errU?.message ?? "Falha ao criar usuário." };
-  }
-
-  // 3. Perfil + 4. Config
-  await admin.from("app_profiles").insert({
-    id: u.user.id,
-    nome: form.nomeDono.trim() || nomeNegocio,
-    email: emailDono,
-    papel: "owner",
-    tenant_id: tenant.id,
-  });
-  await admin.from("app_config").insert({
-    id: tenant.id,
-    tenant_id: tenant.id,
-    nome_negocio: nomeNegocio,
-    email: emailDono,
-  });
-
-  // 5. Token de integração (usado internamente pelo webhook do app) — default da tabela
-  await admin.from("app_tenant_secrets").insert({ tenant_id: tenant.id });
+  if (!prov.ok) return { ok: false, erro: prov.erro };
 
   revalidatePath("/admin");
   return { ok: true, email: emailDono, senha: form.senha };

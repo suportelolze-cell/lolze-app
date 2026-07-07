@@ -78,7 +78,13 @@ export function Landing() {
             >
               Entrar
             </Link>
-            <AplicarButton className="rounded-full border border-borda bg-superficie px-4 py-2 text-sm font-semibold text-texto transition-colors hover:border-marca hover:text-marca">
+            <Link
+              href="/cadastro"
+              className="hidden rounded-full border border-borda bg-superficie px-4 py-2 text-sm font-semibold text-texto transition-colors hover:border-marca hover:text-marca sm:block"
+            >
+              Criar conta
+            </Link>
+            <AplicarButton className="rounded-full bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]">
               Aplicar Agora
             </AplicarButton>
           </div>

@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Rotas acessíveis sem login (landing pública + login + páginas legais)
-const PUBLICAS = ["/", "/login", "/privacidade", "/termos", "/cookies"];
+// Rotas acessíveis sem login (landing pública + login/cadastro + páginas legais)
+const PUBLICAS = ["/", "/login", "/cadastro", "/privacidade", "/termos", "/cookies"];
 
 export async function middleware(req: NextRequest) {
   let res = NextResponse.next({ request: req });
