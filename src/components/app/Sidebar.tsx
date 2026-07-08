@@ -10,6 +10,7 @@ import {
   Workflow,
   Repeat,
   Radar,
+  Users,
   GraduationCap,
   Settings,
   LogOut,
@@ -20,17 +21,33 @@ import { Logo } from "@/components/Logo";
 import { crmBrowser } from "@/lib/supabase/browser";
 
 type Item = { href: string; label: string; icon: LucideIcon; gestorOnly?: boolean };
+type Grupo = { titulo?: string; itens: Item[] };
 
-const itens: Item[] = [
-  { href: "/painel", label: "Visão Geral", icon: LayoutDashboard },
-  { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
-  { href: "/atendimento", label: "Central de Atendimento", icon: MessagesSquare },
-  { href: "/agenda", label: "Agenda Mágica", icon: CalendarDays },
-  { href: "/funil", label: "Raio-X do Funil", icon: Workflow },
-  { href: "/recorrencia", label: "Recorrência", icon: Repeat },
-  { href: "/captacao", label: "Captação", icon: Radar, gestorOnly: true },
-  { href: "/universidade", label: "Universidade", icon: GraduationCap },
-  { href: "/configuracoes", label: "Configurações", icon: Settings },
+const grupos: Grupo[] = [
+  { itens: [{ href: "/painel", label: "Visão Geral", icon: LayoutDashboard }] },
+  {
+    titulo: "CRM",
+    itens: [
+      { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
+      { href: "/atendimento", label: "Central de Atendimento", icon: MessagesSquare },
+      { href: "/agenda", label: "Agenda Mágica", icon: CalendarDays },
+      { href: "/contatos", label: "Contatos", icon: Users },
+    ],
+  },
+  {
+    titulo: "Crescimento",
+    itens: [
+      { href: "/funil", label: "Raio-X do Funil", icon: Workflow },
+      { href: "/recorrencia", label: "Recorrência", icon: Repeat },
+      { href: "/captacao", label: "Captação", icon: Radar, gestorOnly: true },
+    ],
+  },
+  {
+    itens: [
+      { href: "/universidade", label: "Universidade", icon: GraduationCap },
+      { href: "/configuracoes", label: "Configurações", icon: Settings },
+    ],
+  },
 ];
 
 export function Sidebar({
@@ -81,24 +98,37 @@ export function Sidebar({
             <span>Painel do Admin</span>
           </Link>
         )}
-        {itens
-          .filter((it) => !it.gestorOnly || ehSuper || papel === "owner")
-          .map(({ href, label, icon: Icon }) => {
-          const ativo = pathname === href;
+        {grupos.map((grupo, gi) => {
+          const visiveis = grupo.itens.filter((it) => !it.gestorOnly || ehSuper || papel === "owner");
+          if (visiveis.length === 0) return null;
           return (
-            <Link
-              key={href}
-              href={href}
-              onClick={onClose}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                ativo
-                  ? "bg-marca text-bege-principal"
-                  : "text-bege-principal/55 hover:bg-white/5 hover:text-bege-principal"
-              }`}
-            >
-              <Icon size={18} strokeWidth={2} />
-              <span>{label}</span>
-            </Link>
+            <div key={gi}>
+              {grupo.titulo && (
+                <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-bege-principal/30">
+                  {grupo.titulo}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {visiveis.map(({ href, label, icon: Icon }) => {
+                  const ativo = pathname === href;
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={onClose}
+                      className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                        ativo
+                          ? "bg-marca text-bege-principal"
+                          : "text-bege-principal/55 hover:bg-white/5 hover:text-bege-principal"
+                      }`}
+                    >
+                      <Icon size={18} strokeWidth={2} />
+                      <span>{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>

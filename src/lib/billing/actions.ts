@@ -1,10 +1,41 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getCrmServer } from "@/lib/supabase/server";
+import { getCrmAdmin } from "@/lib/supabase/admin";
 import { getSessao } from "@/lib/supabase/tenant";
-import { criarCheckout, criarPortal } from "@/lib/stripe/client";
+import { criarCheckout, criarPortal, criarProdutoEPreco, temStripe } from "@/lib/stripe/client";
 
 const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
+
+/**
+ * (Superadmin) Cria no Stripe o Produto + Preço mensal de cada plano pagável
+ * que ainda não tem `stripe_price_id`, usando a STRIPE_SECRET_KEY do servidor.
+ * Assim o admin ativa a cobrança com um clique, sem expor a chave.
+ */
+export async function criarPrecosStripe(): Promise<{ ok: boolean; criados: number; erro?: string }> {
+  const s = await getSessao();
+  if (s.papel !== "superadmin") return { ok: false, criados: 0, erro: "Acesso restrito ao administrador." };
+  if (!temStripe()) return { ok: false, criados: 0, erro: "STRIPE_SECRET_KEY não está configurada na Vercel." };
+
+  const admin = getCrmAdmin();
+  const { data: planos } = await admin
+    .from("app_plans")
+    .select("id,nome,mensal_cents,stripe_price_id")
+    .gt("mensal_cents", 0);
+
+  let criados = 0;
+  for (const p of (planos ?? []) as Array<{ id: string; nome: string; mensal_cents: number; stripe_price_id: string | null }>) {
+    if (p.stripe_price_id) continue; // já tem preço
+    const priceId = await criarProdutoEPreco({ nome: `Lolze ${p.nome}`, mensalCents: p.mensal_cents });
+    if (priceId) {
+      await admin.from("app_plans").update({ stripe_price_id: priceId }).eq("id", p.id);
+      criados++;
+    }
+  }
+  revalidatePath("/admin/planos");
+  return { ok: true, criados };
+}
 
 /** Inicia o checkout de assinatura do plano do tenant. Devolve a URL do Stripe. */
 export async function assinarPlano(): Promise<{ url?: string; erro?: string }> {

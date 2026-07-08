@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
 import { getPlanos } from "@/lib/admin/data";
+import { CriarPrecosButton } from "@/components/admin/CriarPrecosButton";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ const brl = (cents: number) =>
 
 export default async function PlanosPage() {
   const planos = await getPlanos();
+  const faltandoPreco = planos.filter((p) => p.mensalCents > 0 && !p.temPreco).length;
 
   return (
     <>
@@ -31,6 +33,10 @@ export default async function PlanosPage() {
           Tabela oficial de precificação aplicada aos clientes.
         </p>
       </header>
+
+      <div className="mb-6">
+        <CriarPrecosButton faltando={faltandoPreco} />
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {planos.map((p) => (

@@ -53,6 +53,22 @@ export async function criarCheckout(opts: {
   return r.ok ? (r.json?.url ?? null) : null;
 }
 
+/** Cria um Produto + Preço recorrente mensal (BRL) no Stripe. Devolve o price id. */
+export async function criarProdutoEPreco(opts: {
+  nome: string;
+  mensalCents: number;
+}): Promise<string | null> {
+  const prod = await stripePost("/products", { name: opts.nome });
+  if (!prod.ok || !prod.json?.id) return null;
+  const price = await stripePost("/prices", {
+    product: String(prod.json.id),
+    unit_amount: String(opts.mensalCents),
+    currency: "brl",
+    "recurring[interval]": "month",
+  });
+  return price.ok ? (price.json?.id ?? null) : null;
+}
+
 /** Cria uma sessão do Portal do Cliente (gerenciar/cancelar assinatura). */
 export async function criarPortal(customerId: string): Promise<string | null> {
   const r = await stripePost("/billing_portal/sessions", {

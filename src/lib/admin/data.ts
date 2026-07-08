@@ -11,6 +11,7 @@ export type Plano = {
   sdrMax: number;
   carenciaDias: number;
   recursos: string[];
+  temPreco: boolean; // já tem stripe_price_id
 };
 
 export type Cliente = {
@@ -50,6 +51,7 @@ export async function getPlanos(): Promise<Plano[]> {
     sdrMax: Number(p.sdr_max ?? 0),
     carenciaDias: p.carencia_dias,
     recursos: (p.recursos as string[]) ?? [],
+    temPreco: Boolean(p.stripe_price_id),
   }));
 }
 

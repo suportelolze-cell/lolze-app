@@ -15,15 +15,16 @@ export async function recarregarConversas(): Promise<Conversa[]> {
 }
 
 /** Gera um CSV (separador ";", amigável ao Excel BR) com os leads do tenant. */
-export async function exportarLeadsCsv(): Promise<string> {
+export async function exportarLeadsCsv(canal?: string): Promise<string> {
   const tid = await getTenantId();
   if (!tid) return "";
   const sb = getCrmServer();
-  const { data } = await sb
+  let q = sb
     .from("app_leads")
     .select("nome,telefone,email,canal,origem,aquisicao,anuncio,temperatura,coluna,valor,created_at")
-    .eq("tenant_id", tid)
-    .order("created_at", { ascending: false });
+    .eq("tenant_id", tid);
+  if (canal && canal !== "todos") q = q.eq("canal", canal);
+  const { data } = await q.order("created_at", { ascending: false });
 
   const cols = [
     "nome",
