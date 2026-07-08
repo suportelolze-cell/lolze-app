@@ -31,6 +31,13 @@ export function CadastroForm({
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
 
+  // Planos com preço são selecionáveis; sem preço (Enterprise) vira "Entrar em contato".
+  const pagaveis = planos.filter((p) => p.mensalCents > 0);
+  const enterprise = planos.find((p) => p.mensalCents === 0);
+  const contatoWhats =
+    "https://wa.me/5519992657109?text=" +
+    encodeURIComponent("Olá! Tenho interesse em um plano acima (Enterprise) da Lolze.");
+
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
@@ -71,11 +78,11 @@ export function CadastroForm({
 
           <form onSubmit={enviar} className="mt-6 space-y-5">
             {/* Planos */}
-            {planos.length > 0 && (
+            {pagaveis.length > 0 && (
               <div>
                 <label className="mb-2 block text-sm font-semibold text-texto">Escolha o plano</label>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {planos.map((p) => {
+                  {pagaveis.map((p) => {
                     const sel = plano === p.id;
                     return (
                       <button
@@ -90,16 +97,29 @@ export function CadastroForm({
                           <span className="font-corpo text-sm font-bold text-texto">{p.nome}</span>
                           {sel && <Check size={16} className="text-marca" />}
                         </div>
-                        {p.mensalCents > 0 && (
-                          <div className="mt-1 text-lg font-bold text-texto">
-                            {brl(p.mensalCents)}
-                            <span className="text-xs font-medium text-texto-suave">/mês</span>
-                          </div>
-                        )}
+                        <div className="mt-1 text-lg font-bold text-texto">
+                          {brl(p.mensalCents)}
+                          <span className="text-xs font-medium text-texto-suave">/mês</span>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Enterprise / Planos acima → Entrar em contato */}
+                {enterprise && (
+                  <a
+                    href={contatoWhats}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-borda bg-fundo px-4 py-3 text-sm hover:border-marca"
+                  >
+                    <span className="text-texto-suave">
+                      Precisa de mais? <b className="text-texto">{enterprise.nome}</b> — planos acima, sob medida.
+                    </span>
+                    <span className="shrink-0 font-semibold text-marca">Entrar em contato →</span>
+                  </a>
+                )}
               </div>
             )}
 

@@ -32,7 +32,7 @@ export default async function PlanosPage() {
         </p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {planos.map((p) => (
           <div key={p.id} className="flex flex-col rounded-xl border border-borda bg-superficie p-6">
             <h2 className="font-corpo text-lg font-bold text-texto">{p.nome}</h2>
@@ -42,10 +42,14 @@ export default async function PlanosPage() {
             </p>
 
             <div className="mt-4 border-y border-borda py-4">
-              <p className="text-3xl font-semibold text-texto">
-                {brl(p.mensalCents)}
-                <span className="text-sm font-normal text-texto-suave">/mês</span>
-              </p>
+              {p.mensalCents > 0 ? (
+                <p className="text-3xl font-semibold text-texto">
+                  {brl(p.mensalCents)}
+                  <span className="text-sm font-normal text-texto-suave">/mês</span>
+                </p>
+              ) : (
+                <p className="text-2xl font-semibold text-texto">Sob consulta</p>
+              )}
               <p className="mt-1 text-sm text-texto-suave">
                 Implementação: <strong className="text-texto">{brl(p.setupCents)}</strong>
               </p>
