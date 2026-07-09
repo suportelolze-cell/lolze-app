@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ArrowRight, Check } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { registrarAplicacao } from "@/lib/landing/aplicacao";
 
 // Troque pelo número real da operação (formato 55 + DDD + número)
 const WHATSAPP_NUM = "5519992657109";
 
 type Resp = {
   nome: string;
+  telefone: string;
   negocio: string;
   faturamento: string;
   trafego: string;
   dificuldade: string;
 };
-const VAZIO: Resp = { nome: "", negocio: "", faturamento: "", trafego: "", dificuldade: "" };
+const VAZIO: Resp = { nome: "", telefone: "", negocio: "", faturamento: "", trafego: "", dificuldade: "" };
 
 const PERGUNTAS = [
   {
@@ -53,6 +55,7 @@ export function Aplicacao() {
   const [r, setR] = useState<Resp>(VAZIO);
   const [outroAberto, setOutroAberto] = useState(false); // campo "Outro serviço"
   const [outroTxt, setOutroTxt] = useState("");
+  const capturadoRef = useRef(false);
 
   useEffect(() => {
     function abrir() {
@@ -60,11 +63,28 @@ export function Aplicacao() {
       setPasso(0);
       setOutroAberto(false);
       setOutroTxt("");
+      capturadoRef.current = false;
       setAberto(true);
     }
     window.addEventListener("abrir-aplicacao", abrir);
     return () => window.removeEventListener("abrir-aplicacao", abrir);
   }, []);
+
+  // Captura a aplicação como lead no CRM ao chegar no passo final (mesmo que a
+  // pessoa NÃO abra o WhatsApp). Roda uma vez por aplicação.
+  useEffect(() => {
+    if (passo === TOTAL && !capturadoRef.current) {
+      capturadoRef.current = true;
+      registrarAplicacao({
+        nome: r.nome,
+        telefone: r.telefone,
+        negocio: r.negocio,
+        faturamento: r.faturamento,
+        trafego: r.trafego,
+        dificuldade: r.dificuldade,
+      }).catch(() => {});
+    }
+  }, [passo, r]);
 
   function responder(chave: keyof Resp, valor: string) {
     setR((p) => ({ ...p, [chave]: valor }));
@@ -95,6 +115,7 @@ export function Aplicacao() {
 
   const ehFinal = passo === TOTAL;
   const progresso = Math.round((Math.min(passo, TOTAL) / TOTAL) * 100);
+  const podeIniciar = r.nome.trim().length > 1 && r.telefone.replace(/\D/g, "").length >= 10;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-escuro-quente/60 p-0 sm:items-center sm:p-4">
@@ -140,13 +161,20 @@ export function Aplicacao() {
                 autoFocus
                 value={r.nome}
                 onChange={(e) => setR((p) => ({ ...p, nome: e.target.value }))}
-                onKeyDown={(e) => e.key === "Enter" && r.nome.trim() && setPasso(1)}
                 placeholder="Seu nome"
                 className="mt-5 w-full rounded-lg border border-borda bg-fundo px-4 py-3 text-sm text-texto outline-none focus:border-marca"
               />
+              <input
+                type="tel"
+                value={r.telefone}
+                onChange={(e) => setR((p) => ({ ...p, telefone: e.target.value }))}
+                onKeyDown={(e) => e.key === "Enter" && podeIniciar && setPasso(1)}
+                placeholder="Seu WhatsApp (com DDD)"
+                className="mt-3 w-full rounded-lg border border-borda bg-fundo px-4 py-3 text-sm text-texto outline-none focus:border-marca"
+              />
               <button
-                onClick={() => r.nome.trim() && setPasso(1)}
-                disabled={!r.nome.trim()}
+                onClick={() => podeIniciar && setPasso(1)}
+                disabled={!podeIniciar}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-marca py-3 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.01] disabled:opacity-50"
               >
                 Começar <ArrowRight size={16} />
