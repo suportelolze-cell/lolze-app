@@ -21,6 +21,7 @@ import {
   MessageCircle,
   Mail,
   Send,
+  Check,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { FAQ } from "./FAQ";
@@ -28,6 +29,7 @@ import { AplicarButton } from "./AplicarButton";
 import { Aplicacao } from "./Aplicacao";
 import { Diagnostico } from "./Diagnostico";
 import { ProvaReal } from "./ProvaReal";
+import type { PlanoPublico } from "@/lib/cadastro/data";
 
 // CTA principal → WhatsApp (troque pelo número real da operação)
 const WHATSAPP =
@@ -44,7 +46,7 @@ const NICHOS = [
   "Pet Shops",
 ];
 
-export function Landing() {
+export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
   return (
     <div className="bg-bege-principal">
       {/* ===================== NAVBAR ===================== */}
@@ -55,6 +57,7 @@ export function Landing() {
             {[
               ["Início", "#topo"],
               ["Solução", "#solucao"],
+              ["Planos", "#planos"],
               ["Resultados", "#resultados"],
               ["Dúvidas", "#faq"],
             ].map(([t, h], i) => (
@@ -303,6 +306,9 @@ export function Landing() {
         </div>
       </section>
 
+      {/* ===================== PLANOS ===================== */}
+      <Planos planos={planos} />
+
       {/* ===================== FAQ ===================== */}
       <FAQ />
 
@@ -506,6 +512,95 @@ function FooterCol({ titulo, links }: { titulo: string; links: string[][] }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/* ----- Planos ----- */
+function moeda(cents: number) {
+  return "R$ " + Math.round(cents / 100).toLocaleString("pt-BR");
+}
+
+function Planos({ planos }: { planos: PlanoPublico[] }) {
+  if (!planos.length) return null;
+  return (
+    <section id="planos" className="px-6 py-20">
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-2xl text-center">
+          <Selo center>Planos</Selo>
+          <h2 className="font-display text-3xl font-medium italic text-texto sm:text-4xl">
+            Escolha o tamanho da sua máquina.
+          </h2>
+          <p className="mt-4 text-texto-suave">
+            Sem fidelidade no piloto · 1º mês de carência · cancele quando quiser.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {planos.map((p) => (
+            <PlanoCard key={p.id} p={p} destaque={p.id === "growth"} />
+          ))}
+        </div>
+
+        <p className="mt-6 text-center text-xs text-texto-suave">
+          Valores mensais. A implementação é cobrada uma única vez. Precisa de mais volume?
+          Fale com a gente no plano Enterprise.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function PlanoCard({ p, destaque }: { p: PlanoPublico; destaque?: boolean }) {
+  const enterprise = p.mensalCents <= 0;
+  return (
+    <div
+      className={`relative flex flex-col rounded-2xl bg-superficie p-6 ${
+        destaque ? "border-2 border-marca" : "border border-borda"
+      }`}
+    >
+      {destaque && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-marca px-3 py-1 text-[11px] font-bold text-bege-principal">
+          Mais popular
+        </span>
+      )}
+      <h3 className="font-corpo text-lg font-bold text-texto">{p.nome}</h3>
+
+      {enterprise ? (
+        <div className="mt-2 font-display text-2xl font-medium italic text-texto">Sob consulta</div>
+      ) : (
+        <div className="mt-2 flex items-baseline gap-1">
+          <span className="text-3xl font-semibold text-texto">{moeda(p.mensalCents)}</span>
+          <span className="text-sm text-texto-suave">/mês</span>
+        </div>
+      )}
+      {!enterprise && p.setupCents > 0 && (
+        <p className="mt-1 text-xs text-texto-suave">Implementação: {moeda(p.setupCents)} (única)</p>
+      )}
+
+      <ul className="mt-5 flex-1 space-y-2.5 text-sm">
+        {p.recursos.map((r, i) => (
+          <li key={i} className="flex gap-2 text-texto">
+            <Check size={16} className="mt-0.5 shrink-0 text-marca" />
+            <span>{r}</span>
+          </li>
+        ))}
+      </ul>
+
+      {enterprise ? (
+        <AplicarButton className="mt-6 flex items-center justify-center gap-2 rounded-full border border-borda bg-fundo px-5 py-3 text-sm font-bold text-texto transition-colors hover:border-marca hover:text-marca">
+          Falar com a gente
+        </AplicarButton>
+      ) : (
+        <Link
+          href={`/cadastro?plano=${p.id}`}
+          className={`mt-6 flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-transform hover:scale-[1.02] ${
+            destaque ? "bg-marca text-bege-principal" : "bg-escuro-quente text-bege-principal"
+          }`}
+        >
+          Começar agora <ArrowRight size={16} />
+        </Link>
+      )}
     </div>
   );
 }
