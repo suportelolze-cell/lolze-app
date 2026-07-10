@@ -79,6 +79,7 @@ export async function comentarIdeia(
     user_id: s.userId,
     autor_nome: nome,
     texto: txt.slice(0, 1000),
+    autor_admin: s.papel === "superadmin",
   });
   if (error) return { ok: false, erro: "Não consegui comentar agora." };
   revalidatePath("/ideias");
@@ -108,6 +109,7 @@ export type Comentario = {
   texto: string;
   createdAt: string;
   minha: boolean;
+  admin: boolean;
 };
 
 /** Lista os comentários de uma ideia (carregado sob demanda ao expandir). */
@@ -116,7 +118,7 @@ export async function listarComentarios(ideiaId: string): Promise<Comentario[]> 
   const admin = getCrmAdmin();
   const { data } = await admin
     .from("app_ideia_comentarios")
-    .select("id,autor_nome,texto,created_at,user_id")
+    .select("id,autor_nome,texto,created_at,user_id,autor_admin")
     .eq("ideia_id", ideiaId)
     .order("created_at", { ascending: true });
   return (
@@ -126,6 +128,7 @@ export async function listarComentarios(ideiaId: string): Promise<Comentario[]> 
       texto: string;
       created_at: string;
       user_id: string | null;
+      autor_admin: boolean | null;
     }>
   ).map((r) => ({
     id: r.id,
@@ -133,5 +136,6 @@ export async function listarComentarios(ideiaId: string): Promise<Comentario[]> 
     texto: r.texto,
     createdAt: r.created_at,
     minha: !!s.userId && r.user_id === s.userId,
+    admin: r.autor_admin === true,
   }));
 }

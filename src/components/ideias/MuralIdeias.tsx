@@ -11,6 +11,7 @@ import {
   X,
   Loader2,
   ChevronRight,
+  BadgeCheck,
 } from "lucide-react";
 import type { Ideia, StatusIdeia } from "@/lib/ideias/data";
 import {
@@ -355,7 +356,12 @@ function PainelComentarios({ ideiaId }: { ideiaId: string }) {
         <ul className="space-y-2.5">
           {coms.map((c) => (
             <li key={c.id} className="text-sm leading-relaxed">
-              <span className="font-semibold text-texto">{c.autorNome}</span>{" "}
+              <span className="font-semibold text-texto">{c.autorNome}</span>
+              {c.admin && (
+                <span className="mx-1.5 inline-flex items-center gap-1 rounded-full bg-marca px-1.5 py-0.5 align-middle text-[10px] font-bold text-bege-principal">
+                  <BadgeCheck size={11} /> Equipe Lolze
+                </span>
+              )}{" "}
               <span className="text-texto-suave">{c.texto}</span>
             </li>
           ))}
