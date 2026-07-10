@@ -77,19 +77,16 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           <div className="flex items-center gap-4">
             <Link
               href="/login"
-              className="hidden text-sm font-semibold text-texto transition-colors hover:text-marca sm:block"
+              className="text-sm font-semibold text-texto transition-colors hover:text-marca"
             >
               Entrar
             </Link>
             <Link
               href="/cadastro"
-              className="hidden rounded-full border border-borda bg-superficie px-4 py-2 text-sm font-semibold text-texto transition-colors hover:border-marca hover:text-marca sm:block"
+              className="rounded-full bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
             >
               Criar conta
             </Link>
-            <AplicarButton className="rounded-full bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]">
-              Aplicar Agora
-            </AplicarButton>
           </div>
         </div>
       </nav>

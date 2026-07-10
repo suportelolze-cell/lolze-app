@@ -26,10 +26,13 @@ export function ProvaReal() {
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [encerrado, setEncerrado] = useState(false);
-  const fimRef = useRef<HTMLDivElement>(null);
+  const listaRef = useRef<HTMLDivElement>(null);
 
+  // Mantém o chat "colado" na última mensagem — rolando SÓ o container interno,
+  // nunca a janela (senão a página inteira pulava pra cá ao carregar).
   useEffect(() => {
-    fimRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const el = listaRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [msgs, enviando]);
 
   async function enviar() {
@@ -112,7 +115,7 @@ export function ProvaReal() {
             </div>
 
             {/* Mensagens */}
-            <div className="flex-1 space-y-3 overflow-y-auto bg-fundo px-4 py-4">
+            <div ref={listaRef} className="flex-1 space-y-3 overflow-y-auto bg-fundo px-4 py-4">
               {msgs.map((m, i) => (
                 <div
                   key={i}
@@ -135,7 +138,6 @@ export function ProvaReal() {
                   <Loader2 size={13} className="animate-spin" /> digitando…
                 </div>
               )}
-              <div ref={fimRef} />
             </div>
 
             {/* Entrada */}
