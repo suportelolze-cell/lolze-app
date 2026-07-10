@@ -24,8 +24,12 @@ export function CookieBanner() {
       );
     } catch {}
     setVisivel(false);
-    // Aqui é o ponto de ativar/desativar scripts de analytics/marketing
-    // conforme o consentimento (ex.: Meta Pixel, Google Analytics).
+    // Ativa os scripts de marketing (Meta Pixel) SÓ com o aceite (LGPD).
+    if (valor === "aceito") {
+      try {
+        window.dispatchEvent(new Event("cookies-aceito"));
+      } catch {}
+    }
   }
 
   if (!visivel) return null;
