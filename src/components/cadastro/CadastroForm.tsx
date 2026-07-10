@@ -28,6 +28,7 @@ export function CadastroForm({
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [plano, setPlano] = useState(planoInicial);
+  const [website, setWebsite] = useState(""); // honeypot (isca p/ bot)
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
 
@@ -43,7 +44,7 @@ export function CadastroForm({
     setErro("");
     setCarregando(true);
     try {
-      const r = await cadastroPublico({ nomeNegocio, nomeDono, email, senha, telefone, plano });
+      const r = await cadastroPublico({ nomeNegocio, nomeDono, email, senha, telefone, plano, hp: website });
       if (!r.ok) {
         setErro(r.erro ?? "Não foi possível criar a conta.");
         setCarregando(false);
@@ -77,6 +78,20 @@ export function CadastroForm({
           </p>
 
           <form onSubmit={enviar} className="mt-6 space-y-5">
+            {/* Honeypot: invisível ao usuário, isca para bots. Não remover. */}
+            <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", top: 0, height: 0, width: 0, overflow: "hidden" }}>
+              <label>
+                Site
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </label>
+            </div>
             {/* Planos */}
             {pagaveis.length > 0 && (
               <div>

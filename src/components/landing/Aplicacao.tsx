@@ -55,6 +55,7 @@ export function Aplicacao() {
   const [r, setR] = useState<Resp>(VAZIO);
   const [outroAberto, setOutroAberto] = useState(false); // campo "Outro serviço"
   const [outroTxt, setOutroTxt] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot (isca p/ bot)
   const capturadoRef = useRef(false);
 
   useEffect(() => {
@@ -82,12 +83,13 @@ export function Aplicacao() {
         faturamento: r.faturamento,
         trafego: r.trafego,
         dificuldade: r.dificuldade,
+        hp: website,
       }).catch(() => {});
       // Conversão no Pixel da Meta (otimiza anúncio para "quem aplica").
       const w = window as unknown as { fbq?: (...a: unknown[]) => void };
       w.fbq?.("track", "Lead");
     }
-  }, [passo, r]);
+  }, [passo, r, website]);
 
   function responder(chave: keyof Resp, valor: string) {
     setR((p) => ({ ...p, [chave]: valor }));
@@ -152,6 +154,20 @@ export function Aplicacao() {
         </div>
 
         <div className="p-6">
+          {/* Honeypot: invisível ao usuário, isca para bots. Não remover. */}
+          <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", top: 0, height: 0, width: 0, overflow: "hidden" }}>
+            <label>
+              Site
+              <input
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+            </label>
+          </div>
           {/* Passo 0: nome */}
           {passo === 0 && (
             <div>

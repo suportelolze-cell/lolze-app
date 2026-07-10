@@ -3,6 +3,7 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { provisionarTenant } from "./provisionar";
 import { criarCheckout } from "@/lib/stripe/client";
+import { ipDoCliente, dentroDoLimite, honeypot } from "@/lib/seguranca/antiabuso";
 
 /**
  * Cadastro PÚBLICO (self-service): cria a conta na hora (status "pendente") e
@@ -17,7 +18,13 @@ export async function cadastroPublico(form: {
   senha: string;
   telefone?: string;
   plano: string;
+  hp?: string;
 }): Promise<{ ok: boolean; checkoutUrl?: string; erro?: string }> {
+  // Anti-abuso: isca (bot) + limite por IP (self-service público).
+  if (honeypot(form.hp)) return { ok: false, erro: "Não foi possível concluir o cadastro." };
+  if (!(await dentroDoLimite("cadastro", ipDoCliente(), 5, 3600)))
+    return { ok: false, erro: "Muitas tentativas deste dispositivo. Aguarde alguns minutos." };
+
   const nomeNegocio = (form.nomeNegocio || "").trim();
   const email = (form.email || "").trim().toLowerCase();
   if (!nomeNegocio) return { ok: false, erro: "Informe o nome do negócio." };

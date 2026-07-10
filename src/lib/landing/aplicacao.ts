@@ -2,6 +2,7 @@
 
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
+import { ipDoCliente, dentroDoLimite, honeypot } from "@/lib/seguranca/antiabuso";
 
 // Tenant da própria Lolze (onde caem os leads da landing). Override por env.
 const LOLZE_TENANT = process.env.LOLZE_TENANT_ID || "6196a5bb-40ea-4166-ac8e-76855c51696e";
@@ -18,7 +19,12 @@ export async function registrarAplicacao(input: {
   faturamento: string;
   trafego: string;
   dificuldade: string;
+  hp?: string;
 }): Promise<{ ok: boolean }> {
+  // Anti-abuso: bot (isca) ou excesso → sai quieto (best-effort, não cria lixo).
+  if (honeypot(input.hp)) return { ok: true };
+  if (!(await dentroDoLimite("aplicacao", ipDoCliente(), 4, 900))) return { ok: true };
+
   let admin;
   try {
     admin = getCrmAdmin();
