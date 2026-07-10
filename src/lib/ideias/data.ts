@@ -32,7 +32,7 @@ export async function listarIdeias(): Promise<MuralDados> {
 
   const { data: rows } = await admin
     .from("app_ideias")
-    .select("id,titulo,descricao,status,autor_id,autor_nome,created_at")
+    .select("id,titulo,descricao,status,autor_id,autor_nome,created_at,curtidas_base")
     .order("created_at", { ascending: false });
 
   const base = (rows ?? []) as Array<{
@@ -43,6 +43,7 @@ export async function listarIdeias(): Promise<MuralDados> {
     autor_id: string | null;
     autor_nome: string | null;
     created_at: string;
+    curtidas_base: number | null;
   }>;
 
   const ids = base.map((r) => r.id);
@@ -71,7 +72,7 @@ export async function listarIdeias(): Promise<MuralDados> {
     status: (r.status ?? "analise") as StatusIdeia,
     autorNome: (r.autor_nome ?? "").trim() || "Cliente Lolze",
     minha: !!s.userId && r.autor_id === s.userId,
-    curtidas: curtidas.get(r.id) ?? 0,
+    curtidas: (curtidas.get(r.id) ?? 0) + (r.curtidas_base ?? 0),
     euCurti: euCurti.has(r.id),
     comentarios: comentarios.get(r.id) ?? 0,
     createdAt: r.created_at,
