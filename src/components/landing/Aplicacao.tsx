@@ -83,6 +83,9 @@ export function Aplicacao() {
         trafego: r.trafego,
         dificuldade: r.dificuldade,
       }).catch(() => {});
+      // Conversão no Pixel da Meta (otimiza anúncio para "quem aplica").
+      const w = window as unknown as { fbq?: (...a: unknown[]) => void };
+      w.fbq?.("track", "Lead");
     }
   }, [passo, r]);
 
