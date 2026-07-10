@@ -11,6 +11,7 @@ import {
   Repeat,
   Radar,
   Users,
+  Lightbulb,
   GraduationCap,
   Settings,
   LogOut,
@@ -44,6 +45,7 @@ const grupos: Grupo[] = [
   },
   {
     itens: [
+      { href: "/ideias", label: "Ideias & Novidades", icon: Lightbulb },
       { href: "/universidade", label: "Universidade", icon: GraduationCap },
       { href: "/configuracoes", label: "Configurações", icon: Settings },
     ],
