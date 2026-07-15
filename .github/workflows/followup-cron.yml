@@ -1,0 +1,18 @@
+name: Follow-up e Lembretes (cron)
+
+# Chama o endpoint do robô a cada 15 min (Vercel Hobby só permite cron diário,
+# então usamos o GitHub Actions, que é grátis para repositório público).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
+
+jobs:
+  disparar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar follow-up + lembretes
+        run: |
+          curl -s -m 60 -o /dev/null -w "status:%{http_code}\n" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://www.app.lolze.com.br/api/cron/followup"
