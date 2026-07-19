@@ -33,11 +33,8 @@ const DEFS: { chave: Chave; titulo: string; micro: string }[] = [
     titulo: "Ativar Lembrete 2h Antes",
     micro: "A IA enviará um lembrete final para garantir o comparecimento.",
   },
-  {
-    chave: "resgate",
-    titulo: "Resgate Automático de Desmarcação",
-    micro: "Se o cliente desmarcar, a IA tentará reagendar (em breve).",
-  },
+  // "Resgate Automático de Desmarcação" sai da tela até o fluxo existir ponta a
+  // ponta (dossiê, seção 9: nada de recurso anunciado sem funcionar).
 ];
 
 export function AntiFaltasPanel({

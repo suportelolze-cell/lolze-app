@@ -11,8 +11,6 @@ import {
   Repeat,
   Radar,
   Users,
-  Lightbulb,
-  GraduationCap,
   Settings,
   LogOut,
   Shield,
@@ -44,11 +42,9 @@ const grupos: Grupo[] = [
     ],
   },
   {
-    itens: [
-      { href: "/ideias", label: "Ideias & Novidades", icon: Lightbulb },
-      { href: "/universidade", label: "Universidade", icon: GraduationCap },
-      { href: "/configuracoes", label: "Configurações", icon: Settings },
-    ],
+    // Universidade (conteúdo demonstrativo) e Ideias saíram do menu principal
+    // até estarem prontos ponta a ponta (dossiê, seção 9).
+    itens: [{ href: "/configuracoes", label: "Configurações", icon: Settings }],
   },
 ];
 

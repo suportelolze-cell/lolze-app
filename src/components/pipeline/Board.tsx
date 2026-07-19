@@ -10,7 +10,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { Search, Plus } from "lucide-react";
+import { Search } from "lucide-react";
 import { COLUNAS, type ColunaId, type Lead } from "@/lib/leads";
 import { moverLead } from "@/lib/supabase/crm-actions";
 import { Column } from "./Column";
@@ -88,10 +88,6 @@ export function Board({ initialLeads }: { initialLeads: Lead[] }) {
               className="w-72 rounded-md border border-borda bg-superficie py-2.5 pl-9 pr-3 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca"
             />
           </div>
-          <button className="flex items-center gap-2 rounded-sm bg-marca px-4 py-2.5 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]">
-            <Plus size={18} />
-            Novo Negócio
-          </button>
         </div>
       </header>
 
