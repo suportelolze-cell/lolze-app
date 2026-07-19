@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, Send, Paperclip, Zap, Bot, ChevronLeft, PanelRight, Lock, AlertTriangle } from "lucide-react";
+import { Pause, Play, Send, Zap, Bot, ChevronLeft, PanelRight, Lock, AlertTriangle } from "lucide-react";
 import type { Conversa } from "@/lib/conversas";
 
 export function ChatWindow({
@@ -209,9 +209,6 @@ export function ChatWindow({
               type="button"
             >
               <Zap size={18} />
-            </button>
-            <button className="rounded-md p-2 text-texto-suave hover:bg-fundo" title="Anexar">
-              <Paperclip size={18} />
             </button>
             <textarea
               rows={1}

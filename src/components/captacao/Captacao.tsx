@@ -188,7 +188,7 @@ export function Captacao({
           <h2 className="font-corpo text-lg font-bold text-texto">Importar lista (planilha)</h2>
           <p className="mt-1 text-xs text-texto-suave">
             Envie um CSV com colunas: <b>nome/empresa</b>, <b>telefone</b>, e opcionalmente site,
-            nicho e cidade. (O importador da Apify entra aqui em breve.)
+            nicho e cidade.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onArquivo} className="hidden" />
