@@ -13,6 +13,12 @@ jobs:
     steps:
       - name: Disparar follow-up + lembretes
         run: |
-          curl -s -m 60 -o /dev/null -w "status:%{http_code}\n" \
+          status=$(curl -s -m 60 -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://www.app.lolze.com.br/api/cron/followup"
+            "https://www.app.lolze.com.br/api/cron/followup")
+          echo "status:$status"
+          # Fora de 2xx (401, 5xx, 000...) o job FALHA — sem sucesso silencioso.
+          case "$status" in
+            2*) ;;
+            *) echo "::error::Cron de follow-up respondeu HTTP $status"; exit 1 ;;
+          esac
