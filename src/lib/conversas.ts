@@ -6,6 +6,9 @@ export type Autor = "ia" | "lead" | "atendente";
 
 export type MidiaTipo = "imagem" | "audio" | "documento";
 
+/** Estado de entrega de mensagens de saída (null = entrada do lead ou só painel). */
+export type StatusEntrega = "pendente" | "enviada" | "entregue" | "lida" | "falhou";
+
 export type Mensagem = {
   id: number;
   autor: Autor;
@@ -13,6 +16,7 @@ export type Mensagem = {
   hora: string;
   midiaUrl?: string | null; // URL assinada da mídia original (atendente vê/ouve)
   midiaTipo?: MidiaTipo | null;
+  status?: StatusEntrega | null;
 };
 
 export type Comando = "ia" | "humano";

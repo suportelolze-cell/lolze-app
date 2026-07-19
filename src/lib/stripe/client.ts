@@ -91,6 +91,9 @@ export function verificarWebhook(payload: string, sig: string | null): any | nul
   const t = partes["t"];
   const v1 = partes["v1"];
   if (!t || !v1) return null;
+  // Tolerância de timestamp (anti-replay): assinatura válida porém antiga é rejeitada.
+  const idadeS = Math.abs(Date.now() / 1000 - Number(t));
+  if (!Number.isFinite(Number(t)) || idadeS > 300) return null;
   const esperado = crypto.createHmac("sha256", secret).update(`${t}.${payload}`).digest("hex");
   try {
     if (

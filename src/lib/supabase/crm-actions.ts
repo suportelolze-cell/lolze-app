@@ -62,9 +62,11 @@ export async function exportarLeadsCsv(canal?: string): Promise<string> {
   return [titulos.join(";"), ...linhas].join("\n");
 }
 
-/** Salva as respostas rápidas do tenant (uma por linha). */
+/** Salva as respostas rápidas do tenant (uma por linha). Só gestor. */
 export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boolean; erro?: string }> {
-  const tid = await getTenantId();
+  const s = await getSessao();
+  if (!ehGestor(s.papel)) return { ok: false, erro: "Sem permissão." };
+  const tid = s.tenantId;
   if (!tid) return { ok: false, erro: "Sem empresa ativa." };
   const sb = getCrmServer();
   const { error } = await sb
@@ -103,13 +105,15 @@ export async function reativarClienteIA(leadId: number): Promise<{ ok: boolean; 
   return { ok: true };
 }
 
-/** Salva o número do especialista + horário de atendimento (abre/fecha) do tenant. */
+/** Salva o número do especialista + horário de atendimento (abre/fecha) do tenant. Só gestor. */
 export async function salvarAtendimentoCfg(input: {
   especialista: string;
   abre: number;
   fecha: number;
 }): Promise<{ ok: boolean; erro?: string }> {
-  const tid = await getTenantId();
+  const s = await getSessao();
+  if (!ehGestor(s.papel)) return { ok: false, erro: "Sem permissão." };
+  const tid = s.tenantId;
   if (!tid) return { ok: false, erro: "Sem empresa ativa." };
   const abre = Math.min(Math.max(Math.round(Number(input.abre) || 8), 0), 23);
   const fecha = Math.min(Math.max(Math.round(Number(input.fecha) || 18), abre + 1), 24);
@@ -242,7 +246,7 @@ export async function devolverConversa(id: number) {
   if (error) throw error;
 }
 
-export type ResEnviar = { ok: boolean; erro?: string };
+export type ResEnviar = { ok: boolean; erro?: string; aviso?: string };
 
 /** Envia mensagem. Só quem detém a trava da conversa pode escrever. */
 export async function enviarMensagem(leadId: number, texto: string): Promise<ResEnviar> {
@@ -263,13 +267,26 @@ export async function enviarMensagem(leadId: number, texto: string): Promise<Res
     return { ok: false, erro: "Você não está com esta conversa. Assuma antes de responder." };
   }
 
-  const { error } = await sb
+  const { data: msgRow, error } = await sb
     .from("app_mensagens")
-    .insert({ lead_id: leadId, autor: "atendente", texto, tenant_id: s.tenantId });
+    .insert({ lead_id: leadId, autor: "atendente", texto, tenant_id: s.tenantId })
+    .select("id")
+    .single();
   if (error) return { ok: false, erro: error.message };
 
-  // Entrega ao canal via n8n (best-effort).
-  await dispatchOutbound(s.tenantId, leadId, texto);
+  // Entrega ao canal com status/retentativa (a falha fica visível na conversa).
+  const entrega = await dispatchOutbound(
+    s.tenantId,
+    leadId,
+    texto,
+    (msgRow?.id as number | undefined) ?? undefined
+  );
+  if (!entrega.ok && entrega.canal !== "painel") {
+    return {
+      ok: true,
+      aviso: "A mensagem foi salva, mas a entrega no canal falhou. Verifique a conexão do canal em Configurações.",
+    };
+  }
   return { ok: true };
 }
 
@@ -287,7 +304,9 @@ export async function salvarConfig(c: {
   regras: string;
   agenteAtivo: boolean;
 }) {
-  const tid = await getTenantId();
+  const s = await getSessao();
+  if (!ehGestor(s.papel)) throw new Error("Sem permissão.");
+  const tid = s.tenantId;
   if (!tid) throw new Error("Sem tenant ativo.");
   const sb = getCrmServer();
   const { error } = await sb
