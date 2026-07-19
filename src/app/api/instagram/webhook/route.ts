@@ -1,20 +1,27 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
 import { tenantPorContaIg } from "@/lib/instagram/client";
+import { registrarErro } from "@/lib/observability/erros";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 60; // teto do processamento em background (waitUntil)
+
+type Admin = ReturnType<typeof getCrmAdmin>;
 
 /**
  * Webhook do Instagram (Meta Graph API).
  * GET  → verificação do webhook (hub.challenge) na configuração do App.
- * POST → mensagens recebidas: resolve o tenant pela conta IG, grava o lead/
- *        mensagem e dispara o SDR (que responde direto pela Graph API).
+ * POST → mensagens recebidas: valida a assinatura da Meta, deduplica pelo mid,
+ *        responde 200 imediatamente (exigência da Meta) e processa em
+ *        background: resolve tenant, grava lead/mensagem e dispara o SDR.
  *
  * Configure no App da Meta:
  *   Callback URL: https://www.app.lolze.com.br/api/instagram/webhook
  *   Verify Token: o mesmo valor de IG_VERIFY_TOKEN (env da Vercel)
+ *   App Secret:   em META_APP_SECRET (env da Vercel) — liga a validação de assinatura
  */
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams;
@@ -28,16 +35,53 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const raw = await req.text();
+
+  // Assinatura da Meta (X-Hub-Signature-256 = HMAC-SHA256 do corpo com o App
+  // Secret). Exigida quando META_APP_SECRET está configurado; sem a env, o
+  // payload é aceito (compatibilidade) — configurar é item do checklist P0.
+  const appSecret = (process.env.META_APP_SECRET || "").trim();
+  if (appSecret) {
+    const recebida = req.headers.get("x-hub-signature-256") || "";
+    const esperada =
+      "sha256=" + crypto.createHmac("sha256", appSecret).update(raw).digest("hex");
+    let valida = false;
+    try {
+      valida =
+        recebida.length === esperada.length &&
+        crypto.timingSafeEqual(Buffer.from(recebida), Buffer.from(esperada));
+    } catch {
+      valida = false;
+    }
+    if (!valida) return NextResponse.json({ erro: "assinatura invalida" }, { status: 401 });
+  }
+
   let body: any;
   try {
-    body = await req.json();
+    body = JSON.parse(raw);
   } catch {
     return NextResponse.json({ ok: true });
   }
 
-  const admin = getCrmAdmin();
+  let admin: Admin;
+  try {
+    admin = getCrmAdmin();
+  } catch {
+    return NextResponse.json({ erro: "servico indisponivel" }, { status: 500 });
+  }
+
   const entries: any[] = Array.isArray(body?.entry) ? body.entry : [];
 
+  // A Meta exige 200 rápido; o processamento segue em background.
+  waitUntil(
+    processarEntradasIg(admin, entries).catch((e) =>
+      registrarErro({ contexto: "instagram.webhook.async", erro: e, severidade: "alta" })
+    )
+  );
+  return NextResponse.json({ ok: true });
+}
+
+async function processarEntradasIg(admin: Admin, entries: any[]) {
   for (const entry of entries) {
     const eventos: any[] = Array.isArray(entry?.messaging) ? entry.messaging : [];
     for (const ev of eventos) {
@@ -51,6 +95,19 @@ export async function POST(req: NextRequest) {
 
       const tenantId = await tenantPorContaIg(contaIg);
       if (!tenantId) continue; // conta IG não vinculada a nenhum cliente
+
+      // Dedup pelo id da mensagem da Meta (reenvio do webhook não duplica).
+      const externalId = String(msg?.mid || "").trim() || null;
+      if (externalId) {
+        const { data: dup } = await admin
+          .from("app_mensagens")
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("external_message_id", externalId)
+          .limit(1)
+          .maybeSingle();
+        if (dup) continue;
+      }
 
       // Localiza/cria o lead (tenant, instagram, remetente).
       type LeadRow = { id: number; atendente_id: string | null };
@@ -91,20 +148,39 @@ export async function POST(req: NextRequest) {
         lead = data as LeadRow;
       }
 
-      await admin
-        .from("app_mensagens")
-        .insert({ tenant_id: tenantId, lead_id: lead!.id, autor: "lead", texto });
+      const { error: errM } = await admin.from("app_mensagens").insert({
+        tenant_id: tenantId,
+        lead_id: lead!.id,
+        autor: "lead",
+        texto,
+        external_message_id: externalId,
+      });
+      if (errM) {
+        // 23505 = corrida com outra entrega do mesmo evento → já processado.
+        if ((errM as { code?: string }).code === "23505") continue;
+        await registrarErro({
+          tenantId,
+          leadId: lead!.id,
+          contexto: "instagram.webhook",
+          erro: errM.message,
+          severidade: "alta",
+        });
+        continue;
+      }
 
       if (!lead!.atendente_id) {
         try {
           await executarSDR(tenantId, lead!.id);
-        } catch {
-          /* best-effort */
+        } catch (e) {
+          await registrarErro({
+            tenantId,
+            leadId: lead!.id,
+            contexto: "instagram.webhook",
+            erro: e,
+            severidade: "alta",
+          });
         }
       }
     }
   }
-
-  // Meta exige 200 rápido.
-  return NextResponse.json({ ok: true });
 }

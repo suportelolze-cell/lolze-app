@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, Send, Paperclip, Zap, Bot, ChevronLeft, PanelRight, Lock } from "lucide-react";
+import { Pause, Play, Send, Paperclip, Zap, Bot, ChevronLeft, PanelRight, Lock, AlertTriangle } from "lucide-react";
 import type { Conversa } from "@/lib/conversas";
 
 export function ChatWindow({
@@ -150,6 +150,7 @@ export function ChatWindow({
                 hora={m.hora}
                 midiaUrl={m.midiaUrl}
                 midiaTipo={m.midiaTipo}
+                status={m.status}
               />
             </div>
           );
@@ -304,12 +305,14 @@ function Balao({
   hora,
   midiaUrl,
   midiaTipo,
+  status,
 }: {
   autor: "ia" | "lead" | "atendente";
   texto: string;
   hora: string;
   midiaUrl?: string | null;
   midiaTipo?: "imagem" | "audio" | "documento" | null;
+  status?: "pendente" | "enviada" | "entregue" | "lida" | "falhou" | null;
 }) {
   if (autor === "lead") {
     return (
@@ -343,6 +346,11 @@ function Balao({
         >
           {hora}
         </span>
+        {status === "falhou" && (
+          <span className="mt-0.5 flex items-center justify-end gap-1 text-[10px] font-semibold text-red-600">
+            <AlertTriangle size={10} /> Não entregue no canal
+          </span>
+        )}
       </div>
     </div>
   );

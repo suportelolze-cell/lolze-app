@@ -324,7 +324,7 @@ export async function getConversas(): Promise<Conversa[]> {
     sb
       .from("app_leads")
       .select(
-        "id,nome,telefone,canal,origem,temperatura,comando,precisa_humano,diagnostico,atendente_id,app_mensagens(id,autor,texto,created_at,midia_url,midia_tipo)"
+        "id,nome,telefone,canal,origem,temperatura,comando,precisa_humano,diagnostico,atendente_id,app_mensagens(id,autor,texto,created_at,midia_url,midia_tipo,status)"
       )
       .eq("tenant_id", tid)
       .order("id"),
@@ -353,6 +353,7 @@ export async function getConversas(): Promise<Conversa[]> {
         created_at: string;
         midia_url: string | null;
         midia_tipo: string | null;
+        status: string | null;
       }[])
         .slice()
         .sort((a, b) => a.id - b.id);
@@ -375,6 +376,8 @@ export async function getConversas(): Promise<Conversa[]> {
           hora: hhmm(m.created_at),
           midiaUrl: m.midia_url ? urlPorCaminho.get(m.midia_url) ?? null : null,
           midiaTipo: (m.midia_tipo as "imagem" | "audio" | "documento" | null) ?? null,
+          status:
+            (m.status as "pendente" | "enviada" | "entregue" | "lida" | "falhou" | null) ?? null,
         })),
       } as Conversa;
     });

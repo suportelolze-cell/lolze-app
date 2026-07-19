@@ -182,10 +182,12 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   }
 
   if (texto) {
-    await admin
+    const { data: msgRow } = await admin
       .from("app_mensagens")
-      .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto });
-    await dispatchOutbound(tenantId, leadId, texto);
+      .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto })
+      .select("id")
+      .single();
+    await dispatchOutbound(tenantId, leadId, texto, (msgRow?.id as number | undefined) ?? undefined);
   }
 
   // Avança a régua — ou para de vez se foi a despedida do lead frio.

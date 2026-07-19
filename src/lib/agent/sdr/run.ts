@@ -354,10 +354,19 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     const partes = dividirResposta(resposta);
     for (let i = 0; i < partes.length; i++) {
       const parte = partes[i];
-      await admin
+      const { data: msgRow } = await admin
         .from("app_mensagens")
-        .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto: parte });
-      await dispatchOutbound(tenantId, leadId, parte);
+        .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto: parte })
+        .select("id")
+        .single();
+      const entrega = await dispatchOutbound(
+        tenantId,
+        leadId,
+        parte,
+        (msgRow?.id as number | undefined) ?? undefined
+      );
+      // Canal fora do ar: não adianta insistir nas próximas partes agora.
+      if (!entrega.ok) break;
       if (i < partes.length - 1) await sleep(Math.min(2600, 700 + parte.length * 18));
     }
   }

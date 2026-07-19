@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
 import { baixarMidiaBase64, uploadMidia, puxarHistoricoContato } from "@/lib/evolution/client";
@@ -6,26 +7,34 @@ import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // baixar mídia + transcrever + rodar o SDR
+export const maxDuration = 60; // teto do processamento em background (waitUntil)
+
+type Admin = ReturnType<typeof getCrmAdmin>;
 
 /**
- * Entrada direta do WhatsApp via Evolution (Opção B — sem n8n).
- * A própria instância manda o evento MESSAGES_UPSERT para cá; o app baixa e
- * transcreve a mídia, grava o lead/mensagem e dispara o SDR (que responde
- * direto pela Evolution via dispatchOutbound).
+ * Entrada direta do WhatsApp via Evolution (evento MESSAGES_UPSERT).
+ *
+ * Confiabilidade (P0):
+ * - DEDUPLICAÇÃO pelo id externo da mensagem (key.id): retentativa/reenvio do
+ *   provedor não cria lead/mensagem/resposta duplicada (índice único no banco
+ *   cobre a corrida entre execuções simultâneas).
+ * - O webhook responde em milissegundos; baixar mídia, transcrever, puxar
+ *   histórico e rodar o SDR acontecem DEPOIS da resposta (waitUntil) — o
+ *   provedor não reenvia por timeout e a IA tem o tempo dela.
+ * - Falha no processamento em background vira app_erros (alta) + alerta de
+ *   operação; como a mensagem ainda não foi gravada, um reenvio do provedor
+ *   reprocessa do zero (nada se perde em silêncio).
  *
  * URL configurada automaticamente pelo app:
  *   /api/whatsapp/inbound?t=<ingest_token do tenant>
  */
 export async function POST(req: NextRequest) {
-  // Quando a Evolution está com webhookByEvents=true, ela anexa o nome do
-  // evento na URL (ex.: ...?t=TOKEN/messages-upsert). Extraímos o token de 64
-  // hex de forma tolerante para não falhar a autenticação.
+  // Com webhookByEvents=true a Evolution anexa o evento na URL (…?t=TOKEN/messages-upsert).
   const rawT = req.nextUrl.searchParams.get("t") || "";
   const token = (rawT.match(/[a-fA-F0-9]{64}/)?.[0] || rawT).trim();
   if (!token) return NextResponse.json({ erro: "token ausente" }, { status: 401 });
 
-  let admin;
+  let admin: Admin;
   try {
     admin = getCrmAdmin();
   } catch {
@@ -58,12 +67,47 @@ export async function POST(req: NextRequest) {
   if (!remoteJid || remoteJid.includes("@g.us"))
     return NextResponse.json({ ok: true, ignorado: "sem_jid_ou_grupo" });
 
-  const canalUserId = remoteJid.replace(/@.*/, "");
+  // Dedup ANTES de responder: reenvio do provedor não reprocessa.
+  const externalId = String(key?.id || "").trim() || null;
+  if (externalId) {
+    const { data: dup } = await admin
+      .from("app_mensagens")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("external_message_id", externalId)
+      .limit(1)
+      .maybeSingle();
+    if (dup) return NextResponse.json({ ok: true, ignorado: "duplicada" });
+  }
+
+  // Responde já; o trabalho pesado segue em background.
+  waitUntil(
+    processarInboundWhatsapp(admin, tenantId, instancia, data, externalId).catch((e) =>
+      registrarErro({
+        tenantId,
+        contexto: "whatsapp.inbound.async",
+        erro: e,
+        severidade: "alta",
+      })
+    )
+  );
+  return NextResponse.json({ ok: true, aceito: true });
+}
+
+/** Pipeline completo de uma mensagem recebida (roda após a resposta do webhook). */
+async function processarInboundWhatsapp(
+  admin: Admin,
+  tenantId: string,
+  instancia: string,
+  data: any,
+  externalId: string | null
+) {
+  const key = data?.key ?? {};
+  const canalUserId = String(key?.remoteJid || "").replace(/@.*/, "");
   const nome = String(data?.pushName || canalUserId);
   const msg = data?.message ?? {};
 
-  // Detecta se o lead veio de um anúncio Click-to-WhatsApp (tráfego pago).
-  // O WhatsApp embute o anúncio em contextInfo.externalAdReply na 1ª mensagem.
+  // Detecta lead vindo de anúncio Click-to-WhatsApp (contextInfo.externalAdReply).
   const anuncioRef = (() => {
     const ctxs = [
       msg?.extendedTextMessage?.contextInfo,
@@ -90,7 +134,11 @@ export async function POST(req: NextRequest) {
     caption = String(msg.imageMessage.caption || "");
   } else if (msg?.documentMessage || msg?.documentWithCaptionMessage) {
     mediaTipo = "documento";
-    caption = String(msg.documentMessage?.caption || msg.documentWithCaptionMessage?.message?.documentMessage?.caption || "");
+    caption = String(
+      msg.documentMessage?.caption ||
+        msg.documentWithCaptionMessage?.message?.documentMessage?.caption ||
+        ""
+    );
   } else if (msg?.videoMessage) {
     // Vídeo: sem transcrição por enquanto; usa a legenda se houver.
     caption = String(msg.videoMessage.caption || "");
@@ -124,14 +172,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!texto) return NextResponse.json({ ok: true, ignorado: "sem_texto" });
+  if (!texto) return;
 
   // Localiza/cria o lead (tenant, whatsapp, canal_user_id).
   type LeadRow = { id: number; atendente_id: string | null };
   let lead: LeadRow | null = null;
   let leadNovo = false;
   {
-    const { data } = await admin
+    const { data: l } = await admin
       .from("app_leads")
       .select("id,atendente_id")
       .eq("tenant_id", tenantId)
@@ -139,7 +187,7 @@ export async function POST(req: NextRequest) {
       .eq("canal_user_id", canalUserId)
       .limit(1)
       .maybeSingle();
-    lead = data as LeadRow | null;
+    lead = l as LeadRow | null;
   }
 
   if (lead) {
@@ -148,7 +196,7 @@ export async function POST(req: NextRequest) {
       .update({ ultima_msg: texto, updated_at: new Date().toISOString() })
       .eq("id", lead.id);
   } else {
-    const { data, error } = await admin
+    const { data: novo, error } = await admin
       .from("app_leads")
       .insert({
         tenant_id: tenantId,
@@ -165,13 +213,13 @@ export async function POST(req: NextRequest) {
       })
       .select("id,atendente_id")
       .single();
-    if (error) return NextResponse.json({ erro: error.message }, { status: 500 });
-    lead = data as LeadRow;
+    if (error) throw new Error("criar lead: " + error.message);
+    lead = novo as LeadRow;
     leadNovo = true;
   }
 
-  // Contato NOVO: puxa o histórico anterior dele do WhatsApp ANTES de gravar a
-  // mensagem atual (ordem cronológica), para a IA já responder com contexto.
+  // Contato NOVO: puxa o histórico anterior dele ANTES de gravar a mensagem
+  // atual (ordem cronológica), para a IA já responder com contexto.
   if (leadNovo && instancia) {
     try {
       await puxarHistoricoContato(tenantId, lead!.id, canalUserId, instancia, texto);
@@ -188,19 +236,26 @@ export async function POST(req: NextRequest) {
     texto,
     midia_url: midiaPath,
     midia_tipo: midiaPath ? mediaTipo : null,
+    external_message_id: externalId,
   });
-  if (errM) return NextResponse.json({ erro: errM.message }, { status: 500 });
-
-  // Dispara o SDR (ele respeita handoff/agente_ativo e entrega a resposta).
-  let resposta = "";
-  if (!lead!.atendente_id) {
-    try {
-      const r = await executarSDR(tenantId, lead!.id);
-      resposta = r.resposta;
-    } catch (e) {
-      await registrarErro({ tenantId, leadId: lead!.id, contexto: "whatsapp.inbound", erro: e, severidade: "alta" });
-    }
+  if (errM) {
+    // 23505 = corrida com outra execução do mesmo evento → já processado, para.
+    if ((errM as { code?: string }).code === "23505") return;
+    throw new Error("gravar mensagem: " + errM.message);
   }
 
-  return NextResponse.json({ ok: true, leadId: lead!.id, respondeu: Boolean(resposta) });
+  // Dispara o SDR (ele respeita handoff/agente_ativo e entrega a resposta).
+  if (!lead!.atendente_id) {
+    try {
+      await executarSDR(tenantId, lead!.id);
+    } catch (e) {
+      await registrarErro({
+        tenantId,
+        leadId: lead!.id,
+        contexto: "whatsapp.inbound",
+        erro: e,
+        severidade: "alta",
+      });
+    }
+  }
 }
