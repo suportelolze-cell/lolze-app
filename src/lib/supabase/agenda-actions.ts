@@ -217,13 +217,17 @@ export async function cancelarAgendamento(id: number): Promise<Resultado> {
   return { ok: true };
 }
 
-/** Salva os toggles Anti-Faltas do tenant ativo. */
+/** Salva os toggles Anti-Faltas do tenant ativo. Só gestor (é configuração). */
 export async function salvarAntiFaltas(p: {
   c24: boolean;
   l2: boolean;
   resgate: boolean;
 }): Promise<Resultado> {
-  const tid = await getTenantId();
+  const { getSessao } = await import("./tenant");
+  const s = await getSessao();
+  if (s.papel !== "owner" && s.papel !== "superadmin")
+    return { ok: false, erro: "Sem permissão." };
+  const tid = s.tenantId;
   if (!tid) return { ok: false, erro: "Sessão inválida." };
   const admin = getCrmAdmin();
   const { error } = await admin
