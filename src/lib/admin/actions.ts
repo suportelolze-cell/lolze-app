@@ -34,6 +34,24 @@ export async function salvarInstagramCfg(
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+/** Salva a conexão WhatsApp oficial (Cloud API). Token só é atualizado se enviado. */
+export async function salvarWaCloudCfg(
+  tenantId: string,
+  cfg: { phoneNumberId: string; accessToken: string }
+) {
+  await exigirSuper();
+  const sb = getCrmServer();
+  const patch: Record<string, unknown> = {
+    tenant_id: tenantId,
+    wa_phone_number_id: cfg.phoneNumberId.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  if (cfg.accessToken.trim()) patch.wa_access_token = cfg.accessToken.trim();
+  const { error } = await sb.from("app_tenant_secrets").upsert(patch, { onConflict: "tenant_id" });
+  if (error) throw error;
+  revalidatePath(`/admin/clientes/${tenantId}`);
+}
+
 /** Salva a conexão Meta Ads do cliente. Token só é atualizado se enviado. */
 export async function salvarMetaAdsCfg(
   tenantId: string,
