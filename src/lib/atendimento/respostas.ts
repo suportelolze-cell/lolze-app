@@ -15,7 +15,7 @@ export const RESPOSTAS_PADRAO = [
 export async function getRespostasRapidasRaw(): Promise<string> {
   const tid = await getTenantId();
   if (!tid) return "";
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_config")
     .select("respostas_rapidas")
@@ -28,7 +28,7 @@ export async function getRespostasRapidasRaw(): Promise<string> {
 export async function getRespostasRapidas(): Promise<string[]> {
   const tid = await getTenantId();
   if (!tid) return RESPOSTAS_PADRAO;
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_config")
     .select("respostas_rapidas")

@@ -26,7 +26,7 @@ export async function getEquipeInfo(): Promise<EquipeInfo> {
   };
   if (!s.tenantId) return vazio;
 
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const [{ data: tenant }, { data: perfis }] = await Promise.all([
     sb.from("app_tenants").select("plano").eq("id", s.tenantId).maybeSingle(),
     sb

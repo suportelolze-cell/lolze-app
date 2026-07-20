@@ -24,7 +24,7 @@ export async function getBillingInfo(): Promise<BillingInfo> {
   const stripeAtivo = temStripe();
   const tid = await getTenantId();
   if (!tid) return { ...VAZIO, stripeAtivo };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data: t } = await sb
     .from("app_tenants")
     .select("plano,status,stripe_customer_id")

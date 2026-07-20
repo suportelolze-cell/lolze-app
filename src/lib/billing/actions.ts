@@ -41,7 +41,7 @@ export async function criarPrecosStripe(): Promise<{ ok: boolean; criados: numbe
 export async function assinarPlano(): Promise<{ url?: string; erro?: string }> {
   const s = await getSessao();
   if (!ehGestor(s.papel) || !s.tenantId) return { erro: "Sem permissão." };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data: t } = await sb
     .from("app_tenants")
     .select("plano,contato_email,stripe_customer_id")
@@ -67,7 +67,7 @@ export async function assinarPlano(): Promise<{ url?: string; erro?: string }> {
 export async function gerenciarAssinatura(): Promise<{ url?: string; erro?: string }> {
   const s = await getSessao();
   if (!ehGestor(s.papel) || !s.tenantId) return { erro: "Sem permissão." };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data: t } = await sb
     .from("app_tenants")
     .select("stripe_customer_id")

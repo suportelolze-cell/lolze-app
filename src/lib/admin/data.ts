@@ -39,7 +39,7 @@ export async function exigirSuperadmin() {
 }
 
 export async function getPlanos(): Promise<Plano[]> {
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb.from("app_plans").select("*").order("ordem");
   return (data ?? []).map((p) => ({
     id: p.id,
@@ -56,7 +56,7 @@ export async function getPlanos(): Promise<Plano[]> {
 }
 
 export async function listarClientes(): Promise<Cliente[]> {
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const [{ data: tenants }, { data: leads }, { data: profs }] = await Promise.all([
     sb.from("app_tenants").select("*").order("created_at"),
     sb.from("app_leads").select("tenant_id"),
@@ -87,7 +87,7 @@ export async function listarClientes(): Promise<Cliente[]> {
 }
 
 export async function getCliente(id: string): Promise<Cliente | null> {
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data: t } = await sb.from("app_tenants").select("*").eq("id", id).maybeSingle();
   if (!t) return null;
 
@@ -117,7 +117,7 @@ export type AcessoCliente = { userId: string | null; email: string | null };
 /** Conta de ACESSO (login) do dono do cliente — vem do Auth, espelhada em app_profiles. */
 export async function getAcessoCliente(tenantId: string): Promise<AcessoCliente> {
   await exigirSuperadmin();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_profiles")
     .select("id,email")
@@ -133,7 +133,7 @@ export type InstagramCfg = { igAccountId: string; tokenSet: boolean };
 /** Conexão Instagram do cliente. Não devolve o token (só se está setado). */
 export async function getInstagramCfg(tenantId: string): Promise<InstagramCfg> {
   await exigirSuperadmin();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_tenant_secrets")
     .select("ig_account_id,ig_access_token")
@@ -150,7 +150,7 @@ export type WaCloudCfg = { phoneNumberId: string; tokenSet: boolean };
 /** Conexão WhatsApp oficial (Cloud API) do cliente. Não devolve o token. */
 export async function getWaCloudCfg(tenantId: string): Promise<WaCloudCfg> {
   await exigirSuperadmin();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_tenant_secrets")
     .select("wa_phone_number_id,wa_access_token")
@@ -167,7 +167,7 @@ export type MetaAdsCfg = { adAccountId: string; tokenSet: boolean };
 /** Conexão Meta Ads do cliente. Não devolve o token (só se está setado). */
 export async function getMetaAdsCfg(tenantId: string): Promise<MetaAdsCfg> {
   await exigirSuperadmin();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_tenant_secrets")
     .select("meta_ad_account_id,meta_access_token")
@@ -184,7 +184,7 @@ export type EvolutionCfg = { instance: string };
 /** Nome da instância Evolution do cliente (normalmente criado pelo app). */
 export async function getEvolutionCfg(tenantId: string): Promise<EvolutionCfg> {
   await exigirSuperadmin();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_tenant_secrets")
     .select("evolution_instance")
@@ -206,7 +206,7 @@ export type Persona = {
 /** Persona/cérebro do SDR de um cliente (gerenciado só pelo admin). */
 export async function getPersona(tenantId: string): Promise<Persona> {
   await exigirSuperadmin();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_config")
     .select("oferta,publico,tom,objecoes,faq,regras,agente_ativo")

@@ -22,7 +22,7 @@ export async function cadastroPublico(form: {
 }): Promise<{ ok: boolean; checkoutUrl?: string; erro?: string }> {
   // Anti-abuso: isca (bot) + limite por IP (self-service público).
   if (honeypot(form.hp)) return { ok: false, erro: "Não foi possível concluir o cadastro." };
-  if (!(await dentroDoLimite("cadastro", ipDoCliente(), 5, 3600)))
+  if (!(await dentroDoLimite("cadastro", await ipDoCliente(), 5, 3600)))
     return { ok: false, erro: "Muitas tentativas deste dispositivo. Aguarde alguns minutos." };
 
   const nomeNegocio = (form.nomeNegocio || "").trim();

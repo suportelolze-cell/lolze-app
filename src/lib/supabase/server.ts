@@ -5,8 +5,8 @@ import { cookies } from "next/headers";
  * Cliente do CRM no servidor, com a sessão lida dos cookies.
  * Os fetches (server components) carregam o JWT do usuário → RLS "authenticated".
  */
-export function getCrmServer() {
-  const cookieStore = cookies();
+export async function getCrmServer() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_CRM_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_CRM_KEY!,
