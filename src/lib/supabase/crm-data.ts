@@ -32,7 +32,7 @@ export type RecorrenciaDados = {
 export async function getRecorrencia(): Promise<RecorrenciaDados> {
   const tid = await getTenantId();
   if (!tid) return { clientes: [], totalBase: 0, emChurn: 0, servicosMes: 0 };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
 
   const { data: ags } = await sb
     .from("app_agendamentos")
@@ -106,7 +106,7 @@ export type AtendimentoCfg = { especialista: string; abre: number; fecha: number
 export async function getAtendimentoCfg(): Promise<AtendimentoCfg> {
   const tid = await getTenantId();
   if (!tid) return { especialista: "", abre: 8, fecha: 18 };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_config")
     .select("especialista_numero,agenda_abre,agenda_fecha")
@@ -123,7 +123,7 @@ export async function getAtendimentoCfg(): Promise<AtendimentoCfg> {
 export async function getIaAtiva(): Promise<boolean> {
   const tid = await getTenantId();
   if (!tid) return true;
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_config")
     .select("agente_ativo")
@@ -162,7 +162,7 @@ function toLead(r: LeadRow): Lead {
 
 /** Perfil do usuário logado (para a saudação e gating de UI). */
 export async function getPerfil() {
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const {
     data: { user },
   } = await sb.auth.getUser();
@@ -183,7 +183,7 @@ export async function getPerfil() {
 export async function getLeads(): Promise<Lead[]> {
   const tid = await getTenantId();
   if (!tid) return [];
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data, error } = await sb
     .from("app_leads")
     .select("id,nome,telefone,email,origem,temperatura,coluna,valor,ultima_msg,diagnostico")
@@ -198,7 +198,7 @@ export async function getDashboard() {
   const tid = await getTenantId();
   if (!tid)
     return { investimento: 0, totalLeads: 0, qualificados: 0, agendamentos: 0, cpa: 0, pagos: 0, organicos: 0, topAnuncios: [] };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const [{ data: leads }, { data: trafego }] = await Promise.all([
     sb.from("app_leads").select("coluna,temperatura,aquisicao,anuncio").eq("tenant_id", tid),
     sb.from("app_trafego").select("investimento_cents,cliques").eq("tenant_id", tid),
@@ -232,7 +232,7 @@ export async function getDashboard() {
 export async function getPlanoAtual(): Promise<string> {
   const tid = await getTenantId();
   if (!tid) return "";
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb.from("app_tenants").select("plano").eq("id", tid).maybeSingle();
   return data?.plano ?? "";
 }
@@ -242,7 +242,7 @@ export type TracaoPonto = { dia: string; leads: number; agendamentos: number };
 
 export async function getTracao(): Promise<TracaoPonto[]> {
   const tid = await getTenantId();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const desde = new Date();
   desde.setHours(0, 0, 0, 0);
   desde.setDate(desde.getDate() - 29);
@@ -282,7 +282,7 @@ export type PulsoEvento = {
 export async function getPulso(): Promise<PulsoEvento[]> {
   const tid = await getTenantId();
   if (!tid) return [];
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_leads")
     .select("nome,coluna,temperatura,precisa_humano,origem")
@@ -308,7 +308,7 @@ const LOCK_TIMEOUT_MIN = 10;
 export async function getConversas(): Promise<Conversa[]> {
   const tid = await getTenantId();
   if (!tid) return [];
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
 
   // Libera travas expiradas (SDR ficou inativo) antes de ler.
   const cutoff = new Date(Date.now() - LOCK_TIMEOUT_MIN * 60_000).toISOString();
@@ -416,7 +416,7 @@ const CONFIG_VAZIO: Config = {
 export async function getConfig(): Promise<Config> {
   const tid = await getTenantId();
   if (!tid) return { ...CONFIG_VAZIO };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb.from("app_config").select("*").eq("tenant_id", tid).maybeSingle();
   const c = (data ?? {}) as Record<string, unknown>;
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
@@ -438,7 +438,7 @@ export async function getConfig(): Promise<Config> {
 /** Funil (Tela 6) — agregações por período. */
 export async function getFunilDados(): Promise<Record<Periodo, DadosFunil>> {
   const tid = await getTenantId();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const [{ data: leads }, { data: trafego }] = tid
     ? await Promise.all([
         sb.from("app_leads").select("coluna,comando,valor,created_at").eq("tenant_id", tid),

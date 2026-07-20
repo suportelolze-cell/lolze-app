@@ -22,7 +22,7 @@ export async function salvarInstagramCfg(
   cfg: { igAccountId: string; accessToken: string }
 ) {
   await exigirSuper();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const patch: Record<string, unknown> = {
     tenant_id: tenantId,
     ig_account_id: cfg.igAccountId.trim() || null,
@@ -40,7 +40,7 @@ export async function salvarWaCloudCfg(
   cfg: { phoneNumberId: string; accessToken: string }
 ) {
   await exigirSuper();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const patch: Record<string, unknown> = {
     tenant_id: tenantId,
     wa_phone_number_id: cfg.phoneNumberId.trim() || null,
@@ -58,7 +58,7 @@ export async function salvarMetaAdsCfg(
   cfg: { adAccountId: string; accessToken: string }
 ) {
   await exigirSuper();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const patch: Record<string, unknown> = {
     tenant_id: tenantId,
     meta_ad_account_id: cfg.adAccountId.trim() || null,
@@ -74,7 +74,7 @@ export async function salvarMetaAdsCfg(
 /** Salva o nome da instância Evolution do cliente. Somente superadmin. */
 export async function salvarEvolutionCfg(tenantId: string, cfg: { instance: string }) {
   await exigirSuper();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { error } = await sb.from("app_tenant_secrets").upsert(
     {
       tenant_id: tenantId,
@@ -101,7 +101,7 @@ export async function salvarPersona(
   }
 ) {
   await exigirSuper();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { error } = await sb
     .from("app_config")
     .update({
@@ -171,7 +171,7 @@ export async function atualizarCliente(
   }
 ) {
   await exigirSuper();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (campos.nome !== undefined) patch.nome = campos.nome;
   if (campos.plano !== undefined) patch.plano = campos.plano;
@@ -278,7 +278,7 @@ export async function excluirCliente(
 /** Superadmin passa a "ver como" um cliente. */
 export async function entrarComo(tenantId: string) {
   await exigirSuper();
-  cookies().set(IMPERSONATE_COOKIE, tenantId, {
+  (await cookies()).set(IMPERSONATE_COOKIE, tenantId, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -289,6 +289,6 @@ export async function entrarComo(tenantId: string) {
 
 /** Sai do modo "ver como" e volta ao admin. */
 export async function sairImpersonacao() {
-  cookies().delete(IMPERSONATE_COOKIE);
+  (await cookies()).delete(IMPERSONATE_COOKIE);
   redirect("/admin");
 }

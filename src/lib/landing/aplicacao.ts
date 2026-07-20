@@ -23,7 +23,7 @@ export async function registrarAplicacao(input: {
 }): Promise<{ ok: boolean }> {
   // Anti-abuso: bot (isca) ou excesso → sai quieto (best-effort, não cria lixo).
   if (honeypot(input.hp)) return { ok: true };
-  if (!(await dentroDoLimite("aplicacao", ipDoCliente(), 4, 900))) return { ok: true };
+  if (!(await dentroDoLimite("aplicacao", await ipDoCliente(), 4, 900))) return { ok: true };
 
   let admin;
   try {

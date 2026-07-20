@@ -8,9 +8,9 @@ import { headers } from "next/headers";
  */
 
 /** IP do cliente a partir dos headers da Vercel. */
-export function ipDoCliente(): string {
+export async function ipDoCliente(): Promise<string> {
   try {
-    const h = headers();
+    const h = await headers();
     const fwd = h.get("x-forwarded-for");
     if (fwd) return (fwd.split(",")[0].trim() || "desconhecido").slice(0, 60);
     return (h.get("x-real-ip") || "desconhecido").slice(0, 60);

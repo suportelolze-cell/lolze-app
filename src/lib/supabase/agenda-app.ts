@@ -45,7 +45,7 @@ function partesBRT(d: Date): { dia: number; hora: number; dataISO: string; dataL
 export async function getAgendamentosApp(): Promise<Agendamento[]> {
   const tid = await getTenantId();
   if (!tid) return [];
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_agendamentos")
     .select("id,nome,telefone,servico,inicio,fim,status,por_ia,origem,notas")
@@ -105,7 +105,7 @@ export async function getOcupadosGoogle(timeMinISO?: string, timeMaxISO?: string
 
   // Dedup: não mostrar eventos do Google que são espelho dos nossos agendamentos
   // (mesmo google_event_id OU mesmo horário de início) — evita card duplicado.
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data: ags } = await sb
     .from("app_agendamentos")
     .select("inicio,google_event_id")
@@ -154,7 +154,7 @@ export type AntiFaltas = { c24: boolean; l2: boolean; resgate: boolean };
 export async function getAntiFaltas(): Promise<AntiFaltas> {
   const tid = await getTenantId();
   if (!tid) return { c24: true, l2: true, resgate: false };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_config")
     .select("antifaltas_24h,antifaltas_2h,antifaltas_resgate")

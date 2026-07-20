@@ -17,17 +17,18 @@ import { temOpenAIKey } from "@/lib/kb/embed";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientePage({ params }: { params: { id: string } }) {
+export default async function ClientePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, waCloudCfg, acesso] = await Promise.all([
-    getCliente(params.id),
+    getCliente(id),
     getPlanos(),
-    listarDocs(params.id),
-    getPersona(params.id),
-    getEvolutionCfg(params.id),
-    getMetaAdsCfg(params.id),
-    getInstagramCfg(params.id),
-    getWaCloudCfg(params.id),
-    getAcessoCliente(params.id),
+    listarDocs(id),
+    getPersona(id),
+    getEvolutionCfg(id),
+    getMetaAdsCfg(id),
+    getInstagramCfg(id),
+    getWaCloudCfg(id),
+    getAcessoCliente(id),
   ]);
   if (!cliente) notFound();
   const semOpenAI = !temOpenAIKey();

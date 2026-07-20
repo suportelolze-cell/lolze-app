@@ -4,7 +4,7 @@ export type KbFile = { fileNome: string; trechos: number; criadoEm: string };
 
 /** Documentos da base de conhecimento de um cliente, agrupados por arquivo. */
 export async function listarDocs(tenantId: string): Promise<KbFile[]> {
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { data } = await sb
     .from("app_kb_documents")
     .select("file_nome,created_at")

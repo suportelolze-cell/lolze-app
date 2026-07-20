@@ -5,10 +5,11 @@ import { getTenantId } from "@/lib/supabase/tenant";
 
 export const dynamic = "force-dynamic";
 
-export default async function AgendaPage({ searchParams }: { searchParams: { ref?: string } }) {
+export default async function AgendaPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
+  const sp = await searchParams;
   // Data de referência (default hoje), no fuso BR.
-  const refValido = searchParams.ref && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.ref);
-  const ref = refValido ? new Date(`${searchParams.ref}T12:00:00-03:00`) : new Date();
+  const refValido = sp.ref && /^\d{4}-\d{2}-\d{2}$/.test(sp.ref);
+  const ref = refValido ? new Date(`${sp.ref}T12:00:00-03:00`) : new Date();
   const refISO = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(ref);
 
   // Intervalo do mês de referência (+/- 7 dias p/ cobrir semanas que cruzam a virada).

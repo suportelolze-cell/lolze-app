@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
@@ -17,15 +16,15 @@
     "@vercel/functions": "^3.7.5",
     "@xyflow/react": "^12.11.0",
     "lucide-react": "^1.18.0",
-    "next": "^14.2.35",
+    "next": "^16.2.10",
     "pdf-parse": "^1.1.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",

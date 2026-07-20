@@ -27,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   let clienteNome = "";
   if (s.impersonating && s.tenantId) {
-    const sb = getCrmServer();
+    const sb = await getCrmServer();
     const { data } = await sb
       .from("app_tenants")
       .select("nome")

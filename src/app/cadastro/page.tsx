@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 export default async function CadastroPage({
   searchParams,
 }: {
-  searchParams: { plano?: string };
+  searchParams: Promise<{ plano?: string }>;
 }) {
   const planos = await getPlanosPublicos();
-  const planoInicial = searchParams?.plano ?? planos[0]?.id ?? "";
+  const sp = await searchParams;
+  const planoInicial = sp?.plano ?? planos[0]?.id ?? "";
   return <CadastroForm planos={planos} planoInicial={planoInicial} />;
 }

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AtendimentoPage({
   searchParams,
 }: {
-  searchParams: { conversa?: string };
+  searchParams: Promise<{ conversa?: string }>;
 }) {
   const [conversas, sessao, respostas, iaAtiva] = await Promise.all([
     getConversas(),
@@ -16,7 +16,7 @@ export default async function AtendimentoPage({
     getRespostasRapidas(),
     getIaAtiva(),
   ]);
-  const conversaInicial = Number(searchParams?.conversa) || null;
+  const conversaInicial = Number((await searchParams)?.conversa) || null;
   return (
     <Atendimento
       initialConversas={conversas}

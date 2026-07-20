@@ -17,7 +17,7 @@ export type Sessao = {
  * - Superadmin: se houver cookie de impersonation, usa aquele tenant.
  */
 export async function getSessao(): Promise<Sessao> {
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const {
     data: { user },
   } = await sb.auth.getUser();
@@ -37,7 +37,7 @@ export async function getSessao(): Promise<Sessao> {
   let impersonating = false;
 
   if (papel === "superadmin") {
-    const c = cookies().get(IMPERSONATE_COOKIE)?.value;
+    const c = (await cookies()).get(IMPERSONATE_COOKIE)?.value;
     if (c) {
       tenantId = c;
       impersonating = true;

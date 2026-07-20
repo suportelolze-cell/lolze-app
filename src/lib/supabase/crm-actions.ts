@@ -18,7 +18,7 @@ export async function recarregarConversas(): Promise<Conversa[]> {
 export async function exportarLeadsCsv(canal?: string): Promise<string> {
   const tid = await getTenantId();
   if (!tid) return "";
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   let q = sb
     .from("app_leads")
     .select("nome,telefone,email,canal,origem,aquisicao,anuncio,temperatura,coluna,valor,created_at")
@@ -68,7 +68,7 @@ export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boole
   if (!ehGestor(s.papel)) return { ok: false, erro: "Sem permissão." };
   const tid = s.tenantId;
   if (!tid) return { ok: false, erro: "Sem empresa ativa." };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { error } = await sb
     .from("app_config")
     .update({ respostas_rapidas: texto, updated_at: new Date().toISOString() })
@@ -81,7 +81,7 @@ export async function salvarRespostasRapidas(texto: string): Promise<{ ok: boole
 export async function setIaAtiva(ativo: boolean): Promise<{ ok: boolean; erro?: string }> {
   const s = await getSessao();
   if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, erro: "Sem permissão." };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { error } = await sb
     .from("app_config")
     .update({ agente_ativo: ativo, updated_at: new Date().toISOString() })
@@ -117,7 +117,7 @@ export async function salvarAtendimentoCfg(input: {
   if (!tid) return { ok: false, erro: "Sem empresa ativa." };
   const abre = Math.min(Math.max(Math.round(Number(input.abre) || 8), 0), 23);
   const fecha = Math.min(Math.max(Math.round(Number(input.fecha) || 18), abre + 1), 24);
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { error } = await sb
     .from("app_config")
     .update({
@@ -161,7 +161,7 @@ export async function criarLeadManual(input: {
 /** Move um card de coluna (Pipeline). */
 export async function moverLead(id: number, coluna: ColunaId) {
   const tid = await getTenantId();
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
 
   // Voltar para uma etapa da IA reativa o agente (tira do modo humano).
   const reativaIA = coluna === "qualificacao" || coluna === "entrada";
@@ -201,7 +201,7 @@ export type ResAssumir = { ok: boolean; erro?: string; atendenteId?: string };
 export async function assumirConversa(id: number): Promise<ResAssumir> {
   const s = await getSessao();
   if (!s.userId || !s.tenantId) return { ok: false, erro: "Sessão inválida." };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
 
   let q = sb
     .from("app_leads")
@@ -231,7 +231,7 @@ export async function assumirConversa(id: number): Promise<ResAssumir> {
 export async function devolverConversa(id: number) {
   const s = await getSessao();
   if (!s.userId || !s.tenantId) throw new Error("Sessão inválida.");
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
 
   let q = sb
     .from("app_leads")
@@ -252,7 +252,7 @@ export type ResEnviar = { ok: boolean; erro?: string; aviso?: string };
 export async function enviarMensagem(leadId: number, texto: string): Promise<ResEnviar> {
   const s = await getSessao();
   if (!s.userId || !s.tenantId) return { ok: false, erro: "Sessão inválida." };
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
 
   // Renova a trava e confirma que ela é minha (atomicamente).
   const { data: dono, error: errLock } = await sb
@@ -308,7 +308,7 @@ export async function salvarConfig(c: {
   if (!ehGestor(s.papel)) throw new Error("Sem permissão.");
   const tid = s.tenantId;
   if (!tid) throw new Error("Sem tenant ativo.");
-  const sb = getCrmServer();
+  const sb = await getCrmServer();
   const { error } = await sb
     .from("app_config")
     .update({
