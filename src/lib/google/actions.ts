@@ -1,12 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTenantId } from "@/lib/supabase/tenant";
+import { getSessao } from "@/lib/supabase/tenant";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 
-/** Desconecta o Google Calendar do tenant ativo (limpa o refresh token). */
+const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
+
+/** Desconecta o Google Calendar do tenant ativo (limpa o refresh token). Só gestor. */
 export async function desconectarGoogle(): Promise<void> {
-  const tid = await getTenantId();
+  const s = await getSessao();
+  if (!ehGestor(s.papel)) return; // conectar também é só gestor (/api/google/start)
+  const tid = s.tenantId;
   if (!tid) return;
   const admin = getCrmAdmin();
   await admin
