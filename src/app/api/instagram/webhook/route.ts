@@ -5,6 +5,7 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
 import { tenantPorContaIg } from "@/lib/instagram/client";
 import { registrarErro } from "@/lib/observability/erros";
+import { registrarEvento } from "@/lib/eventos";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -110,12 +111,12 @@ async function processarEntradasIg(admin: Admin, entries: any[]) {
       }
 
       // Localiza/cria o lead (tenant, instagram, remetente).
-      type LeadRow = { id: number; atendente_id: string | null };
+      type LeadRow = { id: number; atendente_id: string | null; followup_modo: string | null };
       let lead: LeadRow | null = null;
       {
         const { data } = await admin
           .from("app_leads")
-          .select("id,atendente_id")
+          .select("id,atendente_id,followup_modo")
           .eq("tenant_id", tenantId)
           .eq("canal", "instagram")
           .eq("canal_user_id", remetente)
@@ -129,6 +130,15 @@ async function processarEntradasIg(admin: Admin, entries: any[]) {
           .from("app_leads")
           .update({ ultima_msg: texto, updated_at: new Date().toISOString() })
           .eq("id", lead.id);
+        if (lead.followup_modo === "reativacao") {
+          await registrarEvento({
+            tenantId,
+            leadId: lead.id,
+            tipo: "lead_reactivated",
+            canal: "instagram",
+            dados: { modo: "automatico" },
+          });
+        }
       } else {
         const { data, error } = await admin
           .from("app_leads")
@@ -145,7 +155,14 @@ async function processarEntradasIg(admin: Admin, entries: any[]) {
           .select("id,atendente_id")
           .single();
         if (error) continue;
-        lead = data as LeadRow;
+        lead = { ...(data as { id: number; atendente_id: string | null }), followup_modo: null };
+        await registrarEvento({
+          tenantId,
+          leadId: lead.id,
+          tipo: "lead_received",
+          canal: "instagram",
+          origem: "instagram",
+        });
       }
 
       const { error: errM } = await admin.from("app_mensagens").insert({

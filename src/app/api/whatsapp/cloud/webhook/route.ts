@@ -11,6 +11,7 @@ import {
 import { uploadMidia } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
+import { registrarEvento } from "@/lib/eventos";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -250,12 +251,12 @@ async function processarMensagemWaCloud(
   // Localiza/cria o lead (tenant, whatsapp, wa_id) — mesmo modelo da Evolution,
   // então um cliente pode migrar de canal sem duplicar contatos.
   const nome = nomePorWaId.get(de) || de;
-  type LeadRow = { id: number; atendente_id: string | null };
+  type LeadRow = { id: number; atendente_id: string | null; followup_modo: string | null };
   let lead: LeadRow | null = null;
   {
     const { data } = await admin
       .from("app_leads")
-      .select("id,atendente_id")
+      .select("id,atendente_id,followup_modo")
       .eq("tenant_id", tenantId)
       .eq("canal", "whatsapp")
       .eq("canal_user_id", de)
@@ -269,6 +270,15 @@ async function processarMensagemWaCloud(
       .from("app_leads")
       .update({ ultima_msg: texto, updated_at: new Date().toISOString() })
       .eq("id", lead.id);
+    if (lead.followup_modo === "reativacao") {
+      await registrarEvento({
+        tenantId,
+        leadId: lead.id,
+        tipo: "lead_reactivated",
+        canal: "whatsapp",
+        dados: { modo: "automatico" },
+      });
+    }
   } else {
     const { data: novo, error } = await admin
       .from("app_leads")
@@ -286,7 +296,14 @@ async function processarMensagemWaCloud(
       .select("id,atendente_id")
       .single();
     if (error) throw new Error("criar lead: " + error.message);
-    lead = novo as LeadRow;
+    lead = { ...(novo as { id: number; atendente_id: string | null }), followup_modo: null };
+    await registrarEvento({
+      tenantId,
+      leadId: lead.id,
+      tipo: "lead_received",
+      canal: "whatsapp",
+      origem: "whatsapp",
+    });
   }
 
   const { error: errM } = await admin.from("app_mensagens").insert({

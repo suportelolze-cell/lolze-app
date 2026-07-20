@@ -5,6 +5,7 @@ import { executarSDR } from "@/lib/agent/sdr/run";
 import { baixarMidiaBase64, uploadMidia, puxarHistoricoContato } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
+import { registrarEvento } from "@/lib/eventos";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -175,13 +176,13 @@ async function processarInboundWhatsapp(
   if (!texto) return;
 
   // Localiza/cria o lead (tenant, whatsapp, canal_user_id).
-  type LeadRow = { id: number; atendente_id: string | null };
+  type LeadRow = { id: number; atendente_id: string | null; followup_modo: string | null };
   let lead: LeadRow | null = null;
   let leadNovo = false;
   {
     const { data: l } = await admin
       .from("app_leads")
-      .select("id,atendente_id")
+      .select("id,atendente_id,followup_modo")
       .eq("tenant_id", tenantId)
       .eq("canal", "whatsapp")
       .eq("canal_user_id", canalUserId)
@@ -195,6 +196,16 @@ async function processarInboundWhatsapp(
       .from("app_leads")
       .update({ ultima_msg: texto, updated_at: new Date().toISOString() })
       .eq("id", lead.id);
+    // Ledger: lead em régua de reativação voltou a falar (a régua funcionou).
+    if (lead.followup_modo === "reativacao") {
+      await registrarEvento({
+        tenantId,
+        leadId: lead.id,
+        tipo: "lead_reactivated",
+        canal: "whatsapp",
+        dados: { modo: "automatico" },
+      });
+    }
   } else {
     const { data: novo, error } = await admin
       .from("app_leads")
@@ -214,8 +225,16 @@ async function processarInboundWhatsapp(
       .select("id,atendente_id")
       .single();
     if (error) throw new Error("criar lead: " + error.message);
-    lead = novo as LeadRow;
+    lead = { ...(novo as { id: number; atendente_id: string | null }), followup_modo: null };
     leadNovo = true;
+    await registrarEvento({
+      tenantId,
+      leadId: lead.id,
+      tipo: "lead_received",
+      canal: "whatsapp",
+      origem: anuncioRef ? "trafego_pago" : "whatsapp",
+      dados: anuncioRef ? { anuncio: anuncioRef } : {},
+    });
   }
 
   // Contato NOVO: puxa o histórico anterior dele ANTES de gravar a mensagem
