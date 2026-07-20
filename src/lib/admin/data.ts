@@ -145,6 +145,23 @@ export async function getInstagramCfg(tenantId: string): Promise<InstagramCfg> {
   };
 }
 
+export type WaCloudCfg = { phoneNumberId: string; tokenSet: boolean };
+
+/** Conexão WhatsApp oficial (Cloud API) do cliente. Não devolve o token. */
+export async function getWaCloudCfg(tenantId: string): Promise<WaCloudCfg> {
+  await exigirSuperadmin();
+  const sb = getCrmServer();
+  const { data } = await sb
+    .from("app_tenant_secrets")
+    .select("wa_phone_number_id,wa_access_token")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return {
+    phoneNumberId: data?.wa_phone_number_id ?? "",
+    tokenSet: Boolean(data?.wa_access_token),
+  };
+}
+
 export type MetaAdsCfg = { adAccountId: string; tokenSet: boolean };
 
 /** Conexão Meta Ads do cliente. Não devolve o token (só se está setado). */

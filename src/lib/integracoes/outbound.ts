@@ -1,6 +1,7 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
 import { enviarTextoIg } from "@/lib/instagram/client";
+import { credenciaisWaCloud, enviarTextoWaCloud } from "@/lib/whatsapp/cloud";
 import { registrarErro } from "@/lib/observability/erros";
 
 export type ResultadoEntrega = {
@@ -61,9 +62,13 @@ export async function dispatchOutbound(
       .eq("tenant_id", tenantId)
       .maybeSingle();
 
+    // WhatsApp: prefere a API OFICIAL (Cloud API) quando o tenant tem
+    // credenciais; sem elas, cai para a Evolution (migração gradual por cliente).
+    const waCloud = canal === "whatsapp" ? await credenciaisWaCloud(tenantId) : null;
+
     const configurado =
       canal === "whatsapp"
-        ? Boolean(destino && temEvolutionConfig() && sec?.evolution_instance)
+        ? Boolean(destino && (waCloud || (temEvolutionConfig() && sec?.evolution_instance)))
         : Boolean(destino && sec?.ig_access_token);
     if (!configurado) {
       const erro = `${canal}: canal não configurado ou lead sem destino`;
@@ -83,18 +88,35 @@ export async function dispatchOutbound(
     let ultimoErro = "envio recusado pelo canal";
     for (let i = 1; i <= TENTATIVAS; i++) {
       try {
-        const ok =
-          canal === "whatsapp"
-            ? await enviarTexto(sec!.evolution_instance as string, destino, texto)
-            : await enviarTextoIg(sec!.ig_access_token as string, destino, texto);
-        if (ok) {
-          await marcar({
-            status: "enviada",
-            enviada_em: new Date().toISOString(),
-            tentativas: i,
-            ultimo_erro: null,
-          });
-          return { ok: true, canal };
+        if (waCloud) {
+          // API oficial: o wamid devolvido casa com os recibos do webhook
+          // (sent/delivered/read), que evoluem o status para entregue/lida.
+          const r = await enviarTextoWaCloud(waCloud, destino, texto);
+          if (r.ok) {
+            await marcar({
+              status: "enviada",
+              enviada_em: new Date().toISOString(),
+              tentativas: i,
+              ultimo_erro: null,
+              external_message_id: r.wamid,
+            });
+            return { ok: true, canal };
+          }
+          if (r.erro) ultimoErro = r.erro;
+        } else {
+          const ok =
+            canal === "whatsapp"
+              ? await enviarTexto(sec!.evolution_instance as string, destino, texto)
+              : await enviarTextoIg(sec!.ig_access_token as string, destino, texto);
+          if (ok) {
+            await marcar({
+              status: "enviada",
+              enviada_em: new Date().toISOString(),
+              tentativas: i,
+              ultimo_erro: null,
+            });
+            return { ok: true, canal };
+          }
         }
       } catch (e) {
         ultimoErro = e instanceof Error ? e.message : String(e);

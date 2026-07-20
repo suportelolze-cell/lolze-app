@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, KanbanSquare, Users } from "lucide-react";
-import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg, getAcessoCliente } from "@/lib/admin/data";
+import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg, getWaCloudCfg, getAcessoCliente } from "@/lib/admin/data";
 import { entrarComo } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
 import { AlterarEmailAcesso } from "@/components/admin/AlterarEmailAcesso";
@@ -9,6 +9,7 @@ import { ExcluirClienteCard } from "@/components/admin/ExcluirClienteCard";
 import { PersonaForm } from "@/components/admin/PersonaForm";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
 import { InstagramForm } from "@/components/admin/InstagramForm";
+import { WhatsAppCloudForm } from "@/components/admin/WhatsAppCloudForm";
 import { MetaAdsForm } from "@/components/admin/MetaAdsForm";
 import { KbForm } from "@/components/admin/KbForm";
 import { listarDocs } from "@/lib/kb/data";
@@ -17,7 +18,7 @@ import { temOpenAIKey } from "@/lib/kb/embed";
 export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: { id: string } }) {
-  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, acesso] = await Promise.all([
+  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, waCloudCfg, acesso] = await Promise.all([
     getCliente(params.id),
     getPlanos(),
     listarDocs(params.id),
@@ -25,6 +26,7 @@ export default async function ClientePage({ params }: { params: { id: string } }
     getEvolutionCfg(params.id),
     getMetaAdsCfg(params.id),
     getInstagramCfg(params.id),
+    getWaCloudCfg(params.id),
     getAcessoCliente(params.id),
   ]);
   if (!cliente) notFound();
@@ -84,6 +86,10 @@ export default async function ClientePage({ params }: { params: { id: string } }
 
       <div className="mt-6">
         <EvolutionForm tenantId={cliente.id} cfg={evolutionCfg} />
+      </div>
+
+      <div className="mt-6">
+        <WhatsAppCloudForm tenantId={cliente.id} cfg={waCloudCfg} />
       </div>
 
       <div className="mt-6">
