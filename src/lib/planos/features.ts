@@ -7,6 +7,7 @@ const MATRIZ: Record<string, Feature[]> = {
   start: [],
   growth: ["anuncios", "instagram"],
   scale: ["anuncios", "instagram", "metaAds"],
+  enterprise: ["anuncios", "instagram", "metaAds"],
 };
 
 /** Rótulos amigáveis (usados em mensagens de upsell). */
@@ -18,11 +19,12 @@ export const FEATURE_LABEL: Record<Feature, string> = {
 
 /**
  * Plano libera a feature?
- * Plano desconhecido = não restringe (evita esconder algo por engano).
+ * FAIL-CLOSED: plano desconhecido NÃO libera nada (um plano novo precisa entrar
+ * na matriz explicitamente — nunca ganhar tudo por engano).
  */
 export function planoTemFeature(plano: string | null | undefined, f: Feature): boolean {
   const p = (plano || "").toLowerCase();
-  if (!(p in MATRIZ)) return true;
+  if (!(p in MATRIZ)) return false;
   return MATRIZ[p].includes(f);
 }
 

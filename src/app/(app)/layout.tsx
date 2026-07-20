@@ -6,24 +6,23 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-// Status que bloqueiam o uso do app até regularizar o pagamento.
-const BLOQUEADOS = ["pendente", "inadimplente", "cancelado"];
-
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSessao();
 
-  // Gate de pagamento: o superadmin NUNCA é bloqueado (nem impersonando um
-  // cliente não-pago). Falha aberta se não der pra checar (não tranca ninguém).
+  // Gate de pagamento FAIL-CLOSED: só o status "ativo" libera o app. Status
+  // desconhecido, tenant sem registro ou erro de consulta → /assinatura
+  // (Paywall), nunca acesso liberado por engano. O superadmin NUNCA é
+  // bloqueado (nem impersonando um cliente não-pago).
   if (s.papel !== "superadmin" && s.tenantId) {
-    let status = "";
+    let status: string | null = null;
     try {
       const admin = getCrmAdmin();
       const { data } = await admin.from("app_tenants").select("status").eq("id", s.tenantId).maybeSingle();
       status = ((data?.status as string | null) ?? "").toLowerCase();
     } catch {
-      status = ""; // fail-open
+      status = null; // não deu pra confirmar → trata como não-ativo
     }
-    if (BLOQUEADOS.includes(status)) redirect("/assinatura");
+    if (status !== "ativo") redirect("/assinatura");
   }
 
   let clienteNome = "";
