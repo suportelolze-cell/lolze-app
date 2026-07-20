@@ -6,6 +6,7 @@ import { getCrmAdmin } from "./admin";
 import { getSessao, getTenantId } from "./tenant";
 import { getConversas } from "./crm-data";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
+import { registrarEvento } from "@/lib/eventos";
 import type { ColunaId } from "@/lib/leads";
 import type { Conversa } from "@/lib/conversas";
 
@@ -101,6 +102,7 @@ export async function reativarClienteIA(leadId: number): Promise<{ ok: boolean; 
   } catch (e) {
     return { ok: false, erro: (e as Error).message };
   }
+  await registrarEvento({ tenantId: tid, leadId, tipo: "lead_reactivated", dados: { modo: "manual" } });
   revalidatePath("/recorrencia");
   return { ok: true };
 }
@@ -144,15 +146,26 @@ export async function criarLeadManual(input: {
   const nome = input.nome.trim();
   if (!nome) return { ok: false, erro: "Informe o nome do lead." };
   const admin = getCrmAdmin();
-  const { error } = await admin.from("app_leads").insert({
-    tenant_id: tid,
-    nome,
-    telefone: input.telefone?.trim() || null,
-    temperatura: "morno",
-    coluna: "entrada",
-    canal: "manual",
-  });
+  const { data: novo, error } = await admin
+    .from("app_leads")
+    .insert({
+      tenant_id: tid,
+      nome,
+      telefone: input.telefone?.trim() || null,
+      temperatura: "morno",
+      coluna: "entrada",
+      canal: "manual",
+    })
+    .select("id")
+    .single();
   if (error) return { ok: false, erro: error.message };
+  await registrarEvento({
+    tenantId: tid,
+    leadId: (novo?.id as number | undefined) ?? null,
+    tipo: "lead_received",
+    canal: "manual",
+    origem: "site",
+  });
   revalidatePath("/pipeline");
   revalidatePath("/painel");
   return { ok: true };
@@ -175,6 +188,22 @@ export async function moverLead(id: number, coluna: ColunaId) {
   const q = sb.from("app_leads").update(patch).eq("id", id);
   const { error } = await (tid ? q.eq("tenant_id", tid) : q);
   if (error) throw error;
+
+  // Ledger: qualificação/venda registradas como fato (one-shot deduplica).
+  if (tid && coluna === "qualificacao") {
+    await registrarEvento({ tenantId: tid, leadId: id, tipo: "qualified", dados: { por: "humano" } });
+  }
+  if (tid && coluna === "ganho") {
+    const { data: l } = await sb.from("app_leads").select("valor,canal,origem").eq("id", id).maybeSingle();
+    await registrarEvento({
+      tenantId: tid,
+      leadId: id,
+      tipo: "sale_won",
+      canal: (l?.canal as string | null) ?? null,
+      origem: (l?.origem as string | null) ?? null,
+      valorCents: l?.valor != null ? Math.round(Number(l.valor) * 100) : null,
+    });
+  }
 
   // Se reativou a IA e há uma mensagem do lead sem resposta, faz a IA já responder.
   if (reativaIA && tid) {
@@ -224,6 +253,12 @@ export async function assumirConversa(id: number): Promise<ResAssumir> {
   if (!data || data.length === 0) {
     return { ok: false, erro: "Esta conversa já está sendo atendida por outro membro." };
   }
+  await registrarEvento({
+    tenantId: s.tenantId,
+    leadId: id,
+    tipo: "handoff_requested",
+    dados: { por: "humano" },
+  });
   return { ok: true, atendenteId: s.userId };
 }
 
@@ -281,6 +316,15 @@ export async function enviarMensagem(leadId: number, texto: string): Promise<Res
     texto,
     (msgRow?.id as number | undefined) ?? undefined
   );
+  // Ledger: primeira resposta do sistema (se a IA já respondeu antes, o
+  // one-shot ignora esta gravação).
+  await registrarEvento({
+    tenantId: s.tenantId,
+    leadId,
+    tipo: "first_response_sent",
+    canal: entrega.canal ?? null,
+    dados: { autor: "atendente" },
+  });
   if (!entrega.ok && entrega.canal !== "painel") {
     return {
       ok: true,

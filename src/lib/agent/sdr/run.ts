@@ -14,6 +14,7 @@ import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
 import { registrarUsoIA } from "../uso";
 import { dentroDoLimiteIA } from "../limite";
 import { registrarErro } from "@/lib/observability/erros";
+import { registrarEvento } from "@/lib/eventos";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
 
@@ -341,12 +342,32 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     await admin.from("app_leads").update(acc.patch).eq("tenant_id", tenantId).eq("id", leadId);
   }
 
+  // Ledger: a IA qualificou o lead (fato imutável; one-shot deduplica sozinho).
+  if (acc.patch.temperatura === "quente" || acc.patch.coluna === "qualificacao") {
+    await registrarEvento({
+      tenantId,
+      leadId,
+      tipo: "qualified",
+      canal: ctx.canal,
+      origem: ctx.origem,
+      dados: { por: "ia" },
+    });
+  }
+
   // Se a IA escalou (não tinha a info / vai confirmar com a equipe), avisa o
   // contato do cliente (telefone do "Gerenciar") por WhatsApp.
   if (acc.patch.precisa_humano === true) {
     const escala = acc.acoes.find((a) => a.tipo === "escalar_humano") as { motivo?: string } | undefined;
     const diag = (acc.patch.diagnostico as string | undefined) ?? lead.diagnostico ?? undefined;
     await notificarSuporte(admin, tenantId, leadId, lead.nome ?? "um lead", escala?.motivo, diag).catch(() => {});
+    await registrarEvento({
+      tenantId,
+      leadId,
+      tipo: "handoff_requested",
+      canal: ctx.canal,
+      origem: ctx.origem,
+      dados: { por: "ia", motivo: escala?.motivo ?? null },
+    });
   }
 
   // Grava e entrega a resposta — em PARTES, com pausas, pra parecer humano.
@@ -367,6 +388,17 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
       );
       // Canal fora do ar: não adianta insistir nas próximas partes agora.
       if (!entrega.ok) break;
+      // Ledger: primeira resposta do sistema a este lead (one-shot deduplica).
+      if (i === 0) {
+        await registrarEvento({
+          tenantId,
+          leadId,
+          tipo: "first_response_sent",
+          canal: ctx.canal,
+          origem: ctx.origem,
+          dados: { autor: "ia" },
+        });
+      }
       if (i < partes.length - 1) await sleep(Math.min(2600, 700 + parte.length * 18));
     }
   }

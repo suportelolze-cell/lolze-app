@@ -81,6 +81,13 @@ export async function criarAgendamentoManual(input: {
   });
   if (ev && novo?.id) await admin.from("app_agendamentos").update({ google_event_id: ev }).eq("id", novo.id);
 
+  const { registrarEvento } = await import("@/lib/eventos");
+  await registrarEvento({
+    tenantId: tid,
+    tipo: "appointment_booked",
+    dados: { por_ia: false, servico, inicio: inicio.toISOString(), agendamento_id: novo?.id ?? null },
+  });
+
   revalidatePath("/agenda");
   return { ok: true };
 }

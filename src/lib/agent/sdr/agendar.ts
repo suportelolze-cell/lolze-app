@@ -1,5 +1,6 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { criarEventoGoogle, horarioOcupadoGoogle } from "@/lib/google/calendar";
+import { registrarEvento } from "@/lib/eventos";
 
 /**
  * Cria um agendamento no ecossistema (app_agendamentos) e move o lead para
@@ -68,6 +69,15 @@ export async function agendarReuniao(
     .update({ coluna: "agendado", temperatura: "quente", updated_at: new Date().toISOString() })
     .eq("tenant_id", tenantId)
     .eq("id", leadId);
+
+  // Ledger: agendamento criado pela IA (fato para conversão/atribuição).
+  await registrarEvento({
+    tenantId,
+    leadId,
+    tipo: "appointment_booked",
+    canal: lead?.canal ?? null,
+    dados: { por_ia: true, servico, inicio: inicio.toISOString(), agendamento_id: novo?.id ?? null },
+  });
 
   // 2ª camada: cria o evento no Google Calendar do cliente e guarda o id. Best-effort.
   const eventId = await criarEventoGoogle(tenantId, {
