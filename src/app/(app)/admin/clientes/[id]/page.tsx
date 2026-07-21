@@ -10,6 +10,9 @@ import { PersonaForm } from "@/components/admin/PersonaForm";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
 import { InstagramForm } from "@/components/admin/InstagramForm";
 import { WhatsAppCloudForm } from "@/components/admin/WhatsAppCloudForm";
+import { ProntidaoGoLive } from "@/components/admin/ProntidaoGoLive";
+import { TesteAgenteCard } from "@/components/admin/TesteAgenteCard";
+import { getProntidao } from "@/lib/admin/prontidao";
 import { MetaAdsForm } from "@/components/admin/MetaAdsForm";
 import { KbForm } from "@/components/admin/KbForm";
 import { listarDocs } from "@/lib/kb/data";
@@ -19,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, waCloudCfg, acesso] = await Promise.all([
+  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, waCloudCfg, acesso, prontidao] = await Promise.all([
     getCliente(id),
     getPlanos(),
     listarDocs(id),
@@ -29,6 +32,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
     getInstagramCfg(id),
     getWaCloudCfg(id),
     getAcessoCliente(id),
+    getProntidao(id),
   ]);
   if (!cliente) notFound();
   const semOpenAI = !temOpenAIKey();
@@ -71,6 +75,14 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
           <p className="text-xs text-texto-suave">Usuários da conta</p>
         </div>
       </section>
+
+      <div className="mb-6">
+        <ProntidaoGoLive prontidao={prontidao} />
+      </div>
+
+      <div className="mb-6">
+        <TesteAgenteCard tenantId={cliente.id} />
+      </div>
 
       <GerenciarClienteForm
         cliente={cliente}

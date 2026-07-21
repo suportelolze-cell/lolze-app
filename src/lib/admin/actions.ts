@@ -34,6 +34,21 @@ export async function salvarInstagramCfg(
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+/**
+ * Testa o agente do cliente em modo SIMULAÇÃO (bateria de implantação):
+ * mesma persona/RAG/agenda, sem gravar mensagens nem tocar leads/canal.
+ */
+export async function testarAgente(
+  tenantId: string,
+  pergunta: string
+): Promise<{ ok: boolean; resposta: string; acoes: string[]; erro?: string }> {
+  await exigirSuper();
+  const p = (pergunta || "").trim().slice(0, 400);
+  if (!p) return { ok: false, resposta: "", acoes: [], erro: "Escreva a pergunta de teste." };
+  const { simularSDR } = await import("@/lib/agent/sdr/simular");
+  return simularSDR(tenantId, p);
+}
+
 /** Salva a conexão WhatsApp oficial (Cloud API). Token só é atualizado se enviado. */
 export async function salvarWaCloudCfg(
   tenantId: string,
