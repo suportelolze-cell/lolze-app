@@ -3,7 +3,7 @@
 
 import type { Origem } from "@/lib/leads";
 
-export type StatusAgendamento = "confirmado" | "pendente";
+export type StatusAgendamento = "confirmado" | "pendente" | "concluido";
 
 export type Agendamento = {
   id: string;

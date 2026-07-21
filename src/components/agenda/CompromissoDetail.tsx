@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Clock, Phone, Sparkles, MessageSquare, Trash2 } from "lucide-react";
+import { X, Clock, Phone, Sparkles, MessageSquare, Trash2, CheckCircle2 } from "lucide-react";
 import { DIAS, type Agendamento } from "@/lib/agenda";
-import { cancelarAgendamento } from "@/lib/supabase/agenda-actions";
+import { cancelarAgendamento, marcarComparecimento } from "@/lib/supabase/agenda-actions";
 
 export function CompromissoDetail({
   agendamento,
@@ -15,11 +15,13 @@ export function CompromissoDetail({
 }) {
   const router = useRouter();
   const [cancelando, setCancelando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
 
   if (!agendamento) return null;
   const a = agendamento;
   const fim = a.inicio + a.duracao;
   const waLink = `https://wa.me/${a.telefone.replace(/\D/g, "")}`;
+  const compareceu = a.status === "concluido";
 
   async function cancelar() {
     if (!window.confirm("Cancelar este agendamento? Ele sairá da agenda.")) return;
@@ -31,6 +33,18 @@ export function CompromissoDetail({
       router.refresh();
     } else {
       window.alert(r.erro ?? "Não foi possível cancelar.");
+    }
+  }
+
+  async function comparecer() {
+    setConfirmando(true);
+    const r = await marcarComparecimento(Number(a.id));
+    setConfirmando(false);
+    if (r.ok) {
+      onClose();
+      router.refresh();
+    } else {
+      window.alert(r.erro ?? "Não foi possível marcar.");
     }
   }
 
@@ -72,10 +86,18 @@ export function CompromissoDetail({
             <div>
               <span
                 className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  a.status === "confirmado" ? "bg-marca-suave text-marca" : "bg-amber-100 text-amber-700"
+                  compareceu
+                    ? "bg-marca-suave text-marca"
+                    : a.status === "confirmado"
+                      ? "bg-marca-suave text-marca"
+                      : "bg-amber-100 text-amber-700"
                 }`}
               >
-                {a.status === "confirmado" ? "🟢 Confirmado via WhatsApp" : "🟡 Confirmação Pendente"}
+                {compareceu
+                  ? "✅ Compareceu"
+                  : a.status === "confirmado"
+                    ? "🟢 Confirmado via WhatsApp"
+                    : "🟡 Confirmação Pendente"}
               </span>
             </div>
           </div>
@@ -96,12 +118,25 @@ export function CompromissoDetail({
             </p>
           ) : (
             <>
+              {compareceu ? (
+                <p className="flex items-center justify-center gap-1.5 rounded-md bg-marca-suave py-2 text-sm font-semibold text-marca">
+                  <CheckCircle2 size={15} /> Cliente compareceu
+                </p>
+              ) : (
+                <button
+                  onClick={comparecer}
+                  disabled={confirmando}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-md bg-marca py-2.5 text-sm font-semibold text-bege-principal disabled:opacity-50"
+                >
+                  <CheckCircle2 size={16} /> {confirmando ? "Registrando…" : "Marcar comparecimento"}
+                </button>
+              )}
               {a.telefone && (
                 <a
                   href={waLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-2.5 text-sm font-semibold text-bege-principal"
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-borda py-2 text-sm font-semibold text-texto hover:bg-fundo"
                 >
                   <MessageSquare size={16} /> Abrir Chat no WhatsApp
                 </a>

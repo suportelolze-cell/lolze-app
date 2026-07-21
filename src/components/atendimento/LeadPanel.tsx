@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Phone, Sparkles, CalendarPlus, Trophy, Ban, Merge, Loader2 } from "lucide-react";
 import {
   moverLead,
+  confirmarReceita,
   buscarDuplicados,
   mesclarConversas,
   type Duplicado,
@@ -55,6 +56,21 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
 
   async function marcar(coluna: "ganho" | "perdido") {
     await moverLead(conversa!.id, coluna);
+    router.refresh();
+  }
+
+  // Marca ganho pedindo o valor fechado (opcional) — registra a receita no funil.
+  async function marcarGanho() {
+    const entrada = window.prompt(
+      "Valor fechado com este cliente (R$) — deixe em branco se ainda não souber:"
+    );
+    if (entrada === null) return; // cancelou
+    const valor = Number(entrada.replace(/[^\d,.-]/g, "").replace(".", "").replace(",", "."));
+    if (entrada.trim() && valor > 0) {
+      await confirmarReceita(conversa!.id, valor);
+    } else {
+      await moverLead(conversa!.id, "ganho");
+    }
     router.refresh();
   }
 
@@ -194,7 +210,7 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
         </button>
         <div className="flex gap-2">
           <button
-            onClick={() => marcar("ganho")}
+            onClick={marcarGanho}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-texto hover:bg-fundo"
           >
             <Trophy size={14} /> Marcar Ganho
