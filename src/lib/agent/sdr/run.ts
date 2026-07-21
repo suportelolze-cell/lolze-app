@@ -110,7 +110,7 @@ const MAX_TURNOS = 30;
 const MAX_ITER = 5;
 
 /** Lê a persona/identidade do tenant. Colunas de persona são opcionais. */
-async function carregarConfig(admin: Admin, tenantId: string): Promise<PersonaConfig> {
+export async function carregarConfig(admin: Admin, tenantId: string): Promise<PersonaConfig> {
   const { data } = await admin.from("app_config").select("*").eq("tenant_id", tenantId).maybeSingle();
   const c = (data ?? {}) as Record<string, unknown>;
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
