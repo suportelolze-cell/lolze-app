@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
-import { verificarWebhook } from "@/lib/stripe/client";
+import { verificarWebhook, statusAssinaturaStripe } from "@/lib/stripe/client";
 import { registrarErro } from "@/lib/observability/erros";
 import { registrarFunilLolze } from "@/lib/funil-lolze";
 
@@ -88,14 +88,8 @@ export async function POST(req: NextRequest) {
         await setStatusPorCustomer(obj.customer, "cancelado");
         break;
       case "customer.subscription.updated": {
-        const map: Record<string, string> = {
-          active: "ativo",
-          trialing: "ativo",
-          past_due: "inadimplente",
-          unpaid: "inadimplente",
-          canceled: "cancelado",
-        };
-        await setStatusPorCustomer(obj.customer, map[obj.status] ?? "ativo");
+        // FAIL-CLOSED (antes: `?? "ativo"` marcava incomplete/paused como ativo).
+        await setStatusPorCustomer(obj.customer, statusAssinaturaStripe(obj.status));
         break;
       }
     }
