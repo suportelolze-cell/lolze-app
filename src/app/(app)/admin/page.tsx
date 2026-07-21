@@ -6,6 +6,7 @@ import {
   Wallet,
   Eye,
   Settings2,
+  Workflow,
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
@@ -69,10 +70,14 @@ export default async function AdminPage() {
       )}
 
       {/* Resumo */}
-      <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-3">
         <Resumo icon={Building2} titulo="Clientes" valor={String(clientes.length)} />
         <Resumo icon={Users} titulo="Ativos" valor={String(ativos.length)} />
         <Resumo icon={Wallet} titulo="Receita recorrente (MRR)" valor={brl(mrr)} />
+      </section>
+
+      {/* Ferramentas do admin */}
+      <section className="mb-8 grid grid-cols-2 gap-4">
         <Link
           href="/admin/planos"
           className="flex flex-col justify-between rounded-lg border border-borda bg-superficie px-5 py-4 transition-colors hover:border-marca"
@@ -81,6 +86,16 @@ export default async function AdminPage() {
           <div>
             <p className="mt-2 text-sm font-semibold text-texto">Gerenciar planos</p>
             <p className="text-xs text-texto-suave">{planos.length} planos configurados</p>
+          </div>
+        </Link>
+        <Link
+          href="/admin/funil"
+          className="flex flex-col justify-between rounded-lg border border-borda bg-superficie px-5 py-4 transition-colors hover:border-marca"
+        >
+          <Workflow size={18} className="text-marca" />
+          <div>
+            <p className="mt-2 text-sm font-semibold text-texto">Funil da Lolze</p>
+            <p className="text-xs text-texto-suave">Aquisição: diagnóstico → ativação</p>
           </div>
         </Link>
       </section>
