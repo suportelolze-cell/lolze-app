@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Sunrise,
   LayoutDashboard,
   KanbanSquare,
   MessagesSquare,
@@ -23,7 +24,12 @@ type Item = { href: string; label: string; icon: LucideIcon; gestorOnly?: boolea
 type Grupo = { titulo?: string; itens: Item[] };
 
 const grupos: Grupo[] = [
-  { itens: [{ href: "/painel", label: "Visão Geral", icon: LayoutDashboard }] },
+  {
+    itens: [
+      { href: "/hoje", label: "Hoje", icon: Sunrise },
+      { href: "/painel", label: "Visão Geral", icon: LayoutDashboard },
+    ],
+  },
   {
     titulo: "CRM",
     itens: [
