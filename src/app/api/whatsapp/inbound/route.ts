@@ -6,6 +6,7 @@ import { baixarMidiaBase64, uploadMidia, puxarHistoricoContato } from "@/lib/evo
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
 import { registrarEvento } from "@/lib/eventos";
+import { resolverLead, vincularIdentidade } from "@/lib/identidade";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -175,26 +176,21 @@ async function processarInboundWhatsapp(
 
   if (!texto) return;
 
-  // Localiza/cria o lead (tenant, whatsapp, canal_user_id).
-  type LeadRow = { id: number; atendente_id: string | null; followup_modo: string | null };
-  let lead: LeadRow | null = null;
+  // Resolve o lead pela IDENTIDADE de canal (unifica automaticamente com um
+  // lead existente de mesmo telefone — "um cliente, uma memória").
+  let lead = await resolverLead(admin, tenantId, "whatsapp", canalUserId);
   let leadNovo = false;
-  {
-    const { data: l } = await admin
-      .from("app_leads")
-      .select("id,atendente_id,followup_modo")
-      .eq("tenant_id", tenantId)
-      .eq("canal", "whatsapp")
-      .eq("canal_user_id", canalUserId)
-      .limit(1)
-      .maybeSingle();
-    lead = l as LeadRow | null;
-  }
 
   if (lead) {
     await admin
       .from("app_leads")
-      .update({ ultima_msg: texto, updated_at: new Date().toISOString() })
+      .update({
+        ultima_msg: texto,
+        updated_at: new Date().toISOString(),
+        // canal ATIVO: a resposta sai pelo canal da última interação
+        canal: "whatsapp",
+        canal_user_id: canalUserId,
+      })
       .eq("id", lead.id);
     // Ledger: lead em régua de reativação voltou a falar (a régua funcionou).
     if (lead.followup_modo === "reativacao") {
@@ -227,6 +223,7 @@ async function processarInboundWhatsapp(
     if (error) throw new Error("criar lead: " + error.message);
     lead = { ...(novo as { id: number; atendente_id: string | null }), followup_modo: null };
     leadNovo = true;
+    await vincularIdentidade(admin, tenantId, lead.id, "whatsapp", canalUserId);
     await registrarEvento({
       tenantId,
       leadId: lead.id,

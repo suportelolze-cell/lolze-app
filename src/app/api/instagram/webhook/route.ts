@@ -6,6 +6,7 @@ import { executarSDR } from "@/lib/agent/sdr/run";
 import { tenantPorContaIg } from "@/lib/instagram/client";
 import { registrarErro } from "@/lib/observability/erros";
 import { registrarEvento } from "@/lib/eventos";
+import { resolverLead, vincularIdentidade } from "@/lib/identidade";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -110,25 +111,18 @@ async function processarEntradasIg(admin: Admin, entries: any[]) {
         if (dup) continue;
       }
 
-      // Localiza/cria o lead (tenant, instagram, remetente).
-      type LeadRow = { id: number; atendente_id: string | null; followup_modo: string | null };
-      let lead: LeadRow | null = null;
-      {
-        const { data } = await admin
-          .from("app_leads")
-          .select("id,atendente_id,followup_modo")
-          .eq("tenant_id", tenantId)
-          .eq("canal", "instagram")
-          .eq("canal_user_id", remetente)
-          .limit(1)
-          .maybeSingle();
-        lead = data as LeadRow | null;
-      }
+      // Resolve o lead pela IDENTIDADE de canal ("um cliente, uma memória").
+      let lead = await resolverLead(admin, tenantId, "instagram", remetente);
 
       if (lead) {
         await admin
           .from("app_leads")
-          .update({ ultima_msg: texto, updated_at: new Date().toISOString() })
+          .update({
+            ultima_msg: texto,
+            updated_at: new Date().toISOString(),
+            canal: "instagram",
+            canal_user_id: remetente,
+          })
           .eq("id", lead.id);
         if (lead.followup_modo === "reativacao") {
           await registrarEvento({
@@ -156,6 +150,7 @@ async function processarEntradasIg(admin: Admin, entries: any[]) {
           .single();
         if (error) continue;
         lead = { ...(data as { id: number; atendente_id: string | null }), followup_modo: null };
+        await vincularIdentidade(admin, tenantId, lead.id, "instagram", remetente);
         await registrarEvento({
           tenantId,
           leadId: lead.id,

@@ -7,6 +7,7 @@ import { getSessao, getTenantId } from "./tenant";
 import { getConversas } from "./crm-data";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { registrarEvento } from "@/lib/eventos";
+import { mesclarLeads } from "@/lib/identidade";
 import type { ColunaId } from "@/lib/leads";
 import type { Conversa } from "@/lib/conversas";
 
@@ -332,6 +333,64 @@ export async function enviarMensagem(leadId: number, texto: string): Promise<Res
     };
   }
   return { ok: true };
+}
+
+export type Duplicado = { id: number; nome: string; canal: string; telefone: string };
+
+/**
+ * Candidatos a mesmo humano em outra ficha: mesmo telefone ou mesmo nome
+ * (ex.: a pessoa do Instagram que também escreveu no WhatsApp).
+ */
+export async function buscarDuplicados(leadId: number): Promise<Duplicado[]> {
+  const s = await getSessao();
+  if (!s.tenantId) return [];
+  const admin = getCrmAdmin();
+
+  const { data: eu } = await admin
+    .from("app_leads")
+    .select("nome,telefone")
+    .eq("tenant_id", s.tenantId)
+    .eq("id", leadId)
+    .maybeSingle();
+  if (!eu) return [];
+
+  let q = admin
+    .from("app_leads")
+    .select("id,nome,canal,telefone")
+    .eq("tenant_id", s.tenantId)
+    .neq("id", leadId)
+    .limit(5);
+  const tel = (eu.telefone ?? "").trim();
+  const nome = (eu.nome ?? "").trim();
+  if (tel && nome) q = q.or(`telefone.eq.${tel},nome.ilike.${nome}`);
+  else if (tel) q = q.eq("telefone", tel);
+  else if (nome) q = q.ilike("nome", nome);
+  else return [];
+
+  const { data } = await q;
+  return ((data ?? []) as { id: number; nome: string; canal: string | null; telefone: string | null }[]).map(
+    (d) => ({ id: d.id, nome: d.nome, canal: d.canal ?? "—", telefone: d.telefone ?? "" })
+  );
+}
+
+/**
+ * Unifica dois contatos ("um cliente, uma memória"): o histórico do absorvido
+ * vem para a conversa aberta e a ficha duplicada some. Só gestor.
+ */
+export async function mesclarConversas(
+  principalId: number,
+  absorvidoId: number
+): Promise<{ ok: boolean; erro?: string }> {
+  const s = await getSessao();
+  if (!ehGestor(s.papel)) return { ok: false, erro: "Sem permissão (apenas o gestor unifica contatos)." };
+  if (!s.tenantId) return { ok: false, erro: "Sem empresa ativa." };
+  const r = await mesclarLeads(s.tenantId, principalId, absorvidoId);
+  if (r.ok) {
+    revalidatePath("/atendimento");
+    revalidatePath("/pipeline");
+    revalidatePath("/contatos");
+  }
+  return r;
 }
 
 /** Configurações: salvar identidade do negócio + persona do agente (do tenant ativo). */

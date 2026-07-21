@@ -1,8 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Phone, Sparkles, CalendarPlus, Trophy, Ban } from "lucide-react";
-import { moverLead } from "@/lib/supabase/crm-actions";
+import { Phone, Sparkles, CalendarPlus, Trophy, Ban, Merge, Loader2 } from "lucide-react";
+import {
+  moverLead,
+  buscarDuplicados,
+  mesclarConversas,
+  type Duplicado,
+} from "@/lib/supabase/crm-actions";
 import type { Conversa } from "@/lib/conversas";
 import type { Temperatura } from "@/lib/leads";
 
@@ -26,6 +32,21 @@ const termometro: Record<Temperatura, { rotulo: string; classe: string; micro: s
 
 export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
   const router = useRouter();
+
+  // Unificação de contatos ("um cliente, uma memória").
+  const [dups, setDups] = useState<Duplicado[] | null>(null);
+  const [buscando, setBuscando] = useState(false);
+  const [mesclando, setMesclando] = useState<number | null>(null);
+  const [erroUnificar, setErroUnificar] = useState("");
+
+  // Troca de conversa: limpa o estado da unificação.
+  useEffect(() => {
+    setDups(null);
+    setBuscando(false);
+    setMesclando(null);
+    setErroUnificar("");
+  }, [conversa?.id]);
+
   if (!conversa) {
     return <div className="hidden h-full w-full border-l border-borda bg-superficie xl:block" />;
   }
@@ -35,6 +56,37 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
   async function marcar(coluna: "ganho" | "perdido") {
     await moverLead(conversa!.id, coluna);
     router.refresh();
+  }
+
+  async function procurarDuplicados() {
+    setBuscando(true);
+    setErroUnificar("");
+    try {
+      setDups(await buscarDuplicados(conversa!.id));
+    } catch {
+      setErroUnificar("Não foi possível procurar agora.");
+    } finally {
+      setBuscando(false);
+    }
+  }
+
+  async function unificar(d: Duplicado) {
+    const ok = window.confirm(
+      `Unificar "${d.nome}" (${d.canal}) com esta conversa?\n\nTodo o histórico dele vem para cá e a ficha duplicada some. Não dá para desfazer.`
+    );
+    if (!ok) return;
+    setMesclando(d.id);
+    setErroUnificar("");
+    try {
+      const r = await mesclarConversas(conversa!.id, d.id);
+      if (!r.ok) setErroUnificar(r.erro ?? "Não foi possível unificar.");
+      else {
+        setDups(null);
+        router.refresh();
+      }
+    } finally {
+      setMesclando(null);
+    }
   }
 
   return (
@@ -83,16 +135,52 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
           </p>
         </div>
 
-        {/* Notas internas */}
+        {/* Unificar contato (mesmo humano em outra ficha/canal) */}
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-texto-suave">
-            Anotações (só sua equipe vê)
+          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-texto-suave">
+            <Merge size={13} /> Unificar contato
           </p>
-          <textarea
-            rows={3}
-            placeholder="Escreva aqui detalhes da negociação que só a equipe deve ver..."
-            className="w-full resize-none rounded-md border border-borda bg-fundo p-3 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca"
-          />
+          {dups === null ? (
+            <button
+              onClick={procurarDuplicados}
+              disabled={buscando}
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-borda py-2 text-xs font-semibold text-texto-suave hover:bg-fundo disabled:opacity-50"
+            >
+              {buscando ? <Loader2 size={13} className="animate-spin" /> : null}
+              Procurar fichas duplicadas
+            </button>
+          ) : dups.length === 0 ? (
+            <p className="text-xs text-texto-suave">
+              Nenhuma ficha com o mesmo telefone ou nome. ✓
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {dups.map((d) => (
+                <li
+                  key={d.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-borda bg-fundo px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-texto">{d.nome}</p>
+                    <p className="truncate text-[11px] text-texto-suave">
+                      {d.canal}
+                      {d.telefone ? ` · ${d.telefone}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => unificar(d)}
+                    disabled={mesclando !== null}
+                    className="shrink-0 rounded-sm bg-marca px-2.5 py-1.5 text-[11px] font-bold text-bege-principal disabled:opacity-50"
+                  >
+                    {mesclando === d.id ? "Unificando…" : "Unificar"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {erroUnificar && (
+            <p className="mt-2 text-xs font-medium text-red-600">{erroUnificar}</p>
+          )}
         </div>
       </div>
 
