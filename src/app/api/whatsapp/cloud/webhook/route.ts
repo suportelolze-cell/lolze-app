@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { getCrmAdmin } from "@/lib/supabase/admin";
@@ -12,6 +11,7 @@ import { uploadMidia } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
 import { registrarEvento } from "@/lib/eventos";
+import { assinaturaMetaValida } from "@/lib/seguranca/assinatura";
 import { resolverLead, vincularIdentidade } from "@/lib/identidade";
 
 export const dynamic = "force-dynamic";
@@ -51,20 +51,14 @@ export async function POST(req: NextRequest) {
 
   // Assinatura da Meta (X-Hub-Signature-256 = HMAC-SHA256 do corpo com o App
   // Secret). Exigida quando META_APP_SECRET está configurado.
-  const appSecret = (process.env.META_APP_SECRET || "").trim();
-  if (appSecret) {
-    const recebida = req.headers.get("x-hub-signature-256") || "";
-    const esperada =
-      "sha256=" + crypto.createHmac("sha256", appSecret).update(raw).digest("hex");
-    let valida = false;
-    try {
-      valida =
-        recebida.length === esperada.length &&
-        crypto.timingSafeEqual(Buffer.from(recebida), Buffer.from(esperada));
-    } catch {
-      valida = false;
-    }
-    if (!valida) return NextResponse.json({ erro: "assinatura invalida" }, { status: 401 });
+  if (
+    !assinaturaMetaValida(
+      raw,
+      req.headers.get("x-hub-signature-256") || "",
+      process.env.META_APP_SECRET || ""
+    )
+  ) {
+    return NextResponse.json({ erro: "assinatura invalida" }, { status: 401 });
   }
 
   let body: any;
