@@ -5,6 +5,7 @@ import { getCrmServer } from "@/lib/supabase/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { getSessao } from "@/lib/supabase/tenant";
 import { criarCheckout, criarPortal, criarProdutoEPreco, temStripe } from "@/lib/stripe/client";
+import { registrarFunilLolze } from "@/lib/funil-lolze";
 
 const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
 
@@ -60,6 +61,12 @@ export async function assinarPlano(): Promise<{ url?: string; erro?: string }> {
     email: t.contato_email ?? undefined,
     customerId: t.stripe_customer_id ?? undefined,
   });
+  if (url) {
+    await registrarFunilLolze("checkout_iniciado", {
+      origem: "assinatura",
+      tenant_id: s.tenantId,
+    });
+  }
   return url ? { url } : { erro: "Não foi possível iniciar o pagamento." };
 }
 

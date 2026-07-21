@@ -3,6 +3,7 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
 import { ipDoCliente, dentroDoLimite, honeypot } from "@/lib/seguranca/antiabuso";
+import { registrarFunilLolze } from "@/lib/funil-lolze";
 
 // Tenant da própria Lolze (onde caem os leads da landing). Override por env.
 const LOLZE_TENANT = process.env.LOLZE_TENANT_ID || "6196a5bb-40ea-4166-ac8e-76855c51696e";
@@ -74,6 +75,9 @@ export async function registrarAplicacao(input: {
   } catch {
     // best-effort
   }
+
+  // Funil da Lolze: aplicação enviada.
+  await registrarFunilLolze("aplicacao_enviada", { negocio: input.negocio || null });
 
   // 2) Avisa a operação no WhatsApp (best-effort).
   try {

@@ -4,6 +4,7 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 import { provisionarTenant } from "./provisionar";
 import { criarCheckout } from "@/lib/stripe/client";
 import { ipDoCliente, dentroDoLimite, honeypot } from "@/lib/seguranca/antiabuso";
+import { registrarFunilLolze } from "@/lib/funil-lolze";
 
 /**
  * Cadastro PÚBLICO (self-service): cria a conta na hora (status "pendente") e
@@ -59,6 +60,9 @@ export async function cadastroPublico(form: {
   });
   if (!prov.ok || !prov.tenantId) return { ok: false, erro: prov.erro };
 
+  // Funil da Lolze: conta criada (aguardando pagamento).
+  await registrarFunilLolze("cadastro_criado", { plano: form.plano, tenant_id: prov.tenantId });
+
   // Sem preço no Stripe? a conta foi criada pendente (você libera manualmente).
   if (!plano.stripe_price_id) return { ok: true };
 
@@ -69,5 +73,12 @@ export async function cadastroPublico(form: {
     successPath: "/onboarding",
     cancelPath: "/onboarding?assinatura=cancel",
   });
+  if (url) {
+    await registrarFunilLolze("checkout_iniciado", {
+      origem: "cadastro",
+      plano: form.plano,
+      tenant_id: prov.tenantId,
+    });
+  }
   return { ok: true, checkoutUrl: url ?? undefined };
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { verificarWebhook } from "@/lib/stripe/client";
 import { registrarErro } from "@/lib/observability/erros";
+import { registrarFunilLolze } from "@/lib/funil-lolze";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,8 @@ export async function POST(req: NextRequest) {
             })
             .eq("id", tenantId);
           if (error) throw new Error("app_tenants: " + error.message);
+          // Funil da Lolze: pagamento confirmado → conta ativa.
+          await registrarFunilLolze("pagamento_confirmado", { tenant_id: tenantId });
         }
         break;
       }
