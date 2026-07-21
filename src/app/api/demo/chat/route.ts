@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropic, temChaveIA, ROUTER_MODEL } from "@/lib/agent/anthropic";
 import { registrarFunilLolze } from "@/lib/funil-lolze";
+import { dentroDoLimite } from "@/lib/seguranca/antiabuso";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -10,23 +11,27 @@ export const maxDuration = 30;
  * Chat de DEMONSTRAÇÃO da landing (público, sem login).
  * Deixa o visitante testar a velocidade do agente da Lolze ali mesmo.
  *
- * Blindagem contra abuso/custo:
- * - Modelo barato (Haiku) + max_tokens curto.
- * - Limite de turnos por conversa (acima disso, responde um convite e PARA).
- * - Mensagens truncadas e histórico limitado.
- * - Limitador simples por IP (best-effort; em produção séria, trocar por KV).
+ * Blindagem contra abuso/custo (endpoint público que chama modelo pago):
+ * - Modelo barato (Haiku) + max_tokens curto + histórico/mensagem truncados
+ *   (cada chamada custa centavos).
+ * - TETO DIÁRIO por IP no BANCO (app_rate_hits) — sobrevive entre instâncias
+ *   serverless, então o custo total por visitante é limitado de verdade (o cap
+ *   de turnos sozinho não bastava: o cliente controla o array de mensagens).
+ * - Pré-filtro de rajada em memória (barato, sem ida ao banco).
  */
 
 const MAX_TURNOS = 7; // perguntas do visitante antes de encerrar o demo
 const MAX_CHARS = 400; // por mensagem
 const MAX_HIST = 14; // últimas mensagens consideradas
 
-// Limitador por IP (best-effort; reinicia a cada instância serverless).
+// Teto persistente por IP (o que realmente limita o custo).
+const MAX_POR_DIA = 60; // chamadas ao modelo por IP a cada 24h
+// Pré-filtro de rajada em memória (absorve spam rápido de uma mesma instância).
 const HITS = new Map<string, { n: number; t: number }>();
 const JANELA_MS = 60_000;
-const MAX_POR_JANELA = 30;
+const MAX_POR_JANELA = 20;
 
-function limitado(ip: string): boolean {
+function rajada(ip: string): boolean {
   const agora = Date.now();
   const reg = HITS.get(ip);
   if (!reg || agora - reg.t > JANELA_MS) {
@@ -63,10 +68,17 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
     "anon";
-  if (limitado(ip)) {
+
+  // 1) Pré-filtro de rajada (memória, barato).
+  if (rajada(ip)) {
     return NextResponse.json({
       reply: "Opa, muita mensagem rápida! Respira um segundinho e manda de novo. 😉",
     });
+  }
+
+  // 2) Teto diário por IP no banco — só depois disso gasta modelo/registra funil.
+  if (!(await dentroDoLimite("demo_dia", ip, MAX_POR_DIA, 86_400))) {
+    return NextResponse.json({ reply: ENCERRAMENTO, encerrado: true });
   }
 
   const bruto = (body as { messages?: unknown })?.messages;
@@ -89,13 +101,12 @@ export async function POST(req: NextRequest) {
   }
 
   const turnos = msgs.filter((m) => m.role === "user").length;
-
-  // Funil da Lolze: uso do demo (o 1º turno marca "experimentou a IA").
-  await registrarFunilLolze("demo_mensagem", { turno: turnos });
-
   if (turnos > MAX_TURNOS) {
     return NextResponse.json({ reply: ENCERRAMENTO, encerrado: true });
   }
+
+  // Funil da Lolze: uso do demo (só após passar pelos limites, pra não inflar).
+  await registrarFunilLolze("demo_mensagem", { turno: turnos });
 
   if (!temChaveIA()) {
     return NextResponse.json({
