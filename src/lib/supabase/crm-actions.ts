@@ -335,6 +335,48 @@ export async function enviarMensagem(leadId: number, texto: string): Promise<Res
   return { ok: true };
 }
 
+/**
+ * Confirma a venda com valor: fixa o valor do negócio, move para "ganho" e
+ * registra sale_won + revenue_confirmed no ledger (receita confirmada = fato
+ * que alimenta a atribuição de receita em Resultados).
+ */
+export async function confirmarReceita(
+  leadId: number,
+  valorReais: number
+): Promise<{ ok: boolean; erro?: string }> {
+  const s = await getSessao();
+  if (!s.tenantId) return { ok: false, erro: "Sem empresa ativa." };
+  const valor = Math.max(0, Math.round(Number(valorReais) * 100) / 100);
+  const sb = await getCrmServer();
+  const { data: l, error } = await sb
+    .from("app_leads")
+    .update({ valor, coluna: "ganho", updated_at: new Date().toISOString() })
+    .eq("id", leadId)
+    .eq("tenant_id", s.tenantId)
+    .select("canal,origem")
+    .single();
+  if (error) return { ok: false, erro: error.message };
+
+  const cents = Math.round(valor * 100);
+  const canal = (l?.canal as string | null) ?? null;
+  const origem = (l?.origem as string | null) ?? null;
+  // sale_won é one-shot (dedup no ledger); revenue_confirmed carrega o valor.
+  await registrarEvento({ tenantId: s.tenantId, leadId, tipo: "sale_won", canal, origem, valorCents: cents });
+  await registrarEvento({
+    tenantId: s.tenantId,
+    leadId,
+    tipo: "revenue_confirmed",
+    canal,
+    origem,
+    valorCents: cents,
+  });
+
+  revalidatePath("/pipeline");
+  revalidatePath("/atendimento");
+  revalidatePath("/painel");
+  return { ok: true };
+}
+
 export type Duplicado = { id: number; nome: string; canal: string; telefone: string };
 
 /**

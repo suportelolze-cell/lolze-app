@@ -224,6 +224,36 @@ export async function cancelarAgendamento(id: number): Promise<Resultado> {
   return { ok: true };
 }
 
+/**
+ * Marca comparecimento: o compromisso vira "concluido" e registra o evento
+ * appointment_attended no ledger (comparecimento = fato de receita do funil).
+ */
+export async function marcarComparecimento(id: number): Promise<Resultado> {
+  const tid = await getTenantId();
+  if (!tid) return { ok: false, erro: "Sessão inválida." };
+  const admin = getCrmAdmin();
+  const { data: ag, error } = await admin
+    .from("app_agendamentos")
+    .update({ status: "concluido" })
+    .eq("id", id)
+    .eq("tenant_id", tid)
+    .select("lead_id,origem,servico")
+    .single();
+  if (error) return { ok: false, erro: error.message };
+
+  const { registrarEvento } = await import("@/lib/eventos");
+  await registrarEvento({
+    tenantId: tid,
+    leadId: (ag?.lead_id as number | null) ?? null,
+    tipo: "appointment_attended",
+    canal: (ag?.origem as string | null) ?? null,
+    dados: { agendamento_id: id, servico: ag?.servico ?? null },
+  });
+
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
 /** Salva os toggles Anti-Faltas do tenant ativo. Só gestor (é configuração). */
 export async function salvarAntiFaltas(p: {
   c24: boolean;

@@ -58,7 +58,8 @@ export async function getAgendamentosApp(): Promise<Agendamento[]> {
     const fim = a.fim ? new Date(a.fim) : new Date(ini.getTime() + 3_600_000);
     const { dia, hora, dataISO, dataLabel } = partesBRT(ini);
     const duracao = Math.max(1, Math.round((fim.getTime() - ini.getTime()) / 3_600_000));
-    const confirmado = a.status === "confirmado" || a.status === "concluido";
+    const concluido = a.status === "concluido";
+    const confirmado = a.status === "confirmado" || concluido;
     const bloqueio = (a.servico || "").toLowerCase() === "bloqueio";
     return {
       id: String(a.id),
@@ -68,7 +69,7 @@ export async function getAgendamentosApp(): Promise<Agendamento[]> {
       dia,
       inicio: hora,
       duracao,
-      status: confirmado ? "confirmado" : "pendente",
+      status: concluido ? "concluido" : confirmado ? "confirmado" : "pendente",
       porIA: a.por_ia,
       telefone: a.telefone ?? "",
       dataLabel,
