@@ -12,6 +12,7 @@ import { uploadMidia } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
 import { registrarEvento } from "@/lib/eventos";
+import { resolverLead, vincularIdentidade } from "@/lib/identidade";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -248,27 +249,19 @@ async function processarMensagemWaCloud(
 
   if (!texto) return;
 
-  // Localiza/cria o lead (tenant, whatsapp, wa_id) — mesmo modelo da Evolution,
-  // então um cliente pode migrar de canal sem duplicar contatos.
+  // Resolve o lead pela IDENTIDADE de canal (unifica com lead de mesmo telefone).
   const nome = nomePorWaId.get(de) || de;
-  type LeadRow = { id: number; atendente_id: string | null; followup_modo: string | null };
-  let lead: LeadRow | null = null;
-  {
-    const { data } = await admin
-      .from("app_leads")
-      .select("id,atendente_id,followup_modo")
-      .eq("tenant_id", tenantId)
-      .eq("canal", "whatsapp")
-      .eq("canal_user_id", de)
-      .limit(1)
-      .maybeSingle();
-    lead = data as LeadRow | null;
-  }
+  let lead = await resolverLead(admin, tenantId, "whatsapp", de);
 
   if (lead) {
     await admin
       .from("app_leads")
-      .update({ ultima_msg: texto, updated_at: new Date().toISOString() })
+      .update({
+        ultima_msg: texto,
+        updated_at: new Date().toISOString(),
+        canal: "whatsapp",
+        canal_user_id: de,
+      })
       .eq("id", lead.id);
     if (lead.followup_modo === "reativacao") {
       await registrarEvento({
@@ -297,6 +290,7 @@ async function processarMensagemWaCloud(
       .single();
     if (error) throw new Error("criar lead: " + error.message);
     lead = { ...(novo as { id: number; atendente_id: string | null }), followup_modo: null };
+    await vincularIdentidade(admin, tenantId, lead.id, "whatsapp", de);
     await registrarEvento({
       tenantId,
       leadId: lead.id,
