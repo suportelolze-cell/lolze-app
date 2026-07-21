@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropic, temChaveIA, ROUTER_MODEL } from "@/lib/agent/anthropic";
+import { registrarFunilLolze } from "@/lib/funil-lolze";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -88,6 +89,10 @@ export async function POST(req: NextRequest) {
   }
 
   const turnos = msgs.filter((m) => m.role === "user").length;
+
+  // Funil da Lolze: uso do demo (o 1º turno marca "experimentou a IA").
+  await registrarFunilLolze("demo_mensagem", { turno: turnos });
+
   if (turnos > MAX_TURNOS) {
     return NextResponse.json({ reply: ENCERRAMENTO, encerrado: true });
   }

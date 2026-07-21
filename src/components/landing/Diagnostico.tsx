@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { AplicarButton } from "./AplicarButton";
+import { registrarDiagnosticoLanding } from "@/lib/landing/funil-actions";
 
 /**
  * Diagnóstico Rápido — calculadora de perda mensal.
@@ -56,6 +57,20 @@ export function Diagnostico() {
   const [foraPct, setForaPct] = useState(40);
   const [ticket, setTicket] = useState(500);
 
+  // Funil da Lolze: registra a 1ª interação com a calculadora (1x por sessão).
+  const registrou = useRef(false);
+  function marcarInteracao() {
+    if (registrou.current) return;
+    registrou.current = true;
+    try {
+      if (sessionStorage.getItem("lz_diag")) return;
+      sessionStorage.setItem("lz_diag", "1");
+    } catch {
+      /* sessionStorage indisponível: segue só com o guard em memória */
+    }
+    void registrarDiagnosticoLanding().catch(() => {});
+  }
+
   const escapando = Math.round(leadsDia * DIAS * (foraPct / 100) * RECUPERAVEL);
   const perda = Math.round((escapando * CONVERSAO * ticket) / 100) * 100;
   const brl = (n: number) => n.toLocaleString("pt-BR");
@@ -83,7 +98,7 @@ export function Diagnostico() {
             min={1}
             max={100}
             step={1}
-            onChange={setLeadsDia}
+            onChange={(v) => { marcarInteracao(); setLeadsDia(v); }}
           />
           <Linha
             label="% de leads que chegam fora do horário comercial"
@@ -91,7 +106,7 @@ export function Diagnostico() {
             min={0}
             max={100}
             step={5}
-            onChange={setForaPct}
+            onChange={(v) => { marcarInteracao(); setForaPct(v); }}
           />
           <Linha
             label="Ticket médio do seu serviço (R$)"
@@ -99,7 +114,7 @@ export function Diagnostico() {
             min={50}
             max={5000}
             step={50}
-            onChange={setTicket}
+            onChange={(v) => { marcarInteracao(); setTicket(v); }}
           />
         </div>
 

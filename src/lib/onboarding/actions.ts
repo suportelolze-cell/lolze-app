@@ -66,6 +66,9 @@ export async function concluirOnboarding(): Promise<{ ok: boolean; erro?: string
     .update({ onboarding_ok: true, agente_ativo: true, updated_at: new Date().toISOString() })
     .eq("tenant_id", s.tenantId);
   if (error) return { ok: false, erro: error.message };
+  // Funil da Lolze: cliente ativado (onboarding concluído, IA ligada).
+  const { registrarFunilLolze } = await import("@/lib/funil-lolze");
+  await registrarFunilLolze("onboarding_concluido", { tenant_id: s.tenantId });
   revalidatePath("/painel");
   return { ok: true };
 }
