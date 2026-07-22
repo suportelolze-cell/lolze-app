@@ -8,6 +8,7 @@ import {
   Settings2,
   Workflow,
   ScrollText,
+  Coins,
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
@@ -107,6 +108,16 @@ export default async function AdminPage() {
           <div>
             <p className="mt-2 text-sm font-semibold text-texto">Auditoria</p>
             <p className="text-xs text-texto-suave">Quem alterou o agente e a config</p>
+          </div>
+        </Link>
+        <Link
+          href="/admin/custos"
+          className="flex flex-col justify-between rounded-lg border border-borda bg-superficie px-5 py-4 transition-colors hover:border-marca"
+        >
+          <Coins size={18} className="text-marca" />
+          <div>
+            <p className="mt-2 text-sm font-semibold text-texto">Custo &amp; margem</p>
+            <p className="text-xs text-texto-suave">Custo de IA vs. mensalidade por cliente</p>
           </div>
         </Link>
       </section>
