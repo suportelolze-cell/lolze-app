@@ -142,7 +142,21 @@ async function processarEntradasIg(admin: Admin, entries: any[]) {
           })
           .select("id,atendente_id")
           .single();
-        if (error) continue;
+        if (error) {
+          // 23505 = corrida com outra entrega já criou o lead (benigno; a outra
+          // entrega processa a mensagem). Qualquer outro erro NÃO pode sumir em
+          // silêncio — registra para o operador ver (dossiê: nada de exceção
+          // engolida em fluxo de negócio).
+          if ((error as { code?: string }).code !== "23505") {
+            await registrarErro({
+              tenantId,
+              contexto: "instagram.webhook.criar_lead",
+              erro: error.message,
+              severidade: "alta",
+            });
+          }
+          continue;
+        }
         lead = { ...(data as { id: number; atendente_id: string | null }), followup_modo: null };
         await vincularIdentidade(admin, tenantId, lead.id, "instagram", remetente);
         await registrarEvento({
