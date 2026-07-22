@@ -7,6 +7,7 @@ import {
   Eye,
   Settings2,
   Workflow,
+  ScrollText,
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
@@ -77,7 +78,7 @@ export default async function AdminPage() {
       </section>
 
       {/* Ferramentas do admin */}
-      <section className="mb-8 grid grid-cols-2 gap-4">
+      <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-3">
         <Link
           href="/admin/planos"
           className="flex flex-col justify-between rounded-lg border border-borda bg-superficie px-5 py-4 transition-colors hover:border-marca"
@@ -96,6 +97,16 @@ export default async function AdminPage() {
           <div>
             <p className="mt-2 text-sm font-semibold text-texto">Funil da Lolze</p>
             <p className="text-xs text-texto-suave">Aquisição: diagnóstico → ativação</p>
+          </div>
+        </Link>
+        <Link
+          href="/admin/auditoria"
+          className="flex flex-col justify-between rounded-lg border border-borda bg-superficie px-5 py-4 transition-colors hover:border-marca"
+        >
+          <ScrollText size={18} className="text-marca" />
+          <div>
+            <p className="mt-2 text-sm font-semibold text-texto">Auditoria</p>
+            <p className="text-xs text-texto-suave">Quem alterou o agente e a config</p>
           </div>
         </Link>
       </section>
