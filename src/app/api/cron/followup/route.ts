@@ -3,6 +3,7 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 import { enviarFollowup } from "@/lib/agent/followup";
 import { processarLembretes } from "@/lib/agent/lembretes";
 import { processarCaptacao } from "@/lib/captacao/enviar";
+import { reenviarFalhados } from "@/lib/integracoes/reenvio-cron";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -58,5 +59,13 @@ export async function GET(req: NextRequest) {
     // best-effort
   }
 
-  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes, captacao });
+  // Outbox: reenvia mensagens de saída que falharam (canal caído) com backoff.
+  let reenvio = { reenviadas: 0, mortas: 0 };
+  try {
+    reenvio = await reenviarFalhados();
+  } catch {
+    // best-effort
+  }
+
+  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes, captacao, reenvio });
 }
