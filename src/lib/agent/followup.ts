@@ -18,39 +18,16 @@ import { registrarErro } from "@/lib/observability/erros";
  *   humano assumiu → para. "Não" definitivo (encerrar_lead) → para.
  */
 
-export const CADENCIA_MIN = [60, 240, 1440, 4320]; // +1h, +4h, +1d, +3d
-export const REATIVACAO_MIN = [21600, 43200, 64800]; // +15d, +30d, +45d
-
-function ts(minutos: number) {
-  return new Date(Date.now() + minutos * 60000).toISOString();
-}
-
-/** Agenda o 1º toque da cadência (chamado logo após a IA responder). */
-export function primeiroFollowup() {
-  return { proximo: ts(CADENCIA_MIN[0]), modo: "cadencia" as const, count: 0 };
-}
-
-/** Agenda reativação manual (lead pediu pra falar depois). */
-export function agendarReativacao(dias: number) {
-  return { proximo: ts(Math.max(1, dias) * 1440), modo: "reativacao" as const, count: 0 };
-}
-
-/** Calcula o próximo passo depois de enviar um toque em (modo, count). */
-export function avancar(
-  modo: string | null,
-  count: number
-): { proximo: string | null; modo: string | null; count: number } {
-  const novo = count + 1;
-  if (modo === "cadencia") {
-    if (novo < CADENCIA_MIN.length) return { proximo: ts(CADENCIA_MIN[novo]), modo: "cadencia", count: novo };
-    return { proximo: ts(REATIVACAO_MIN[0]), modo: "reativacao", count: 0 }; // cadência → reativação
-  }
-  if (modo === "reativacao") {
-    if (novo < REATIVACAO_MIN.length) return { proximo: ts(REATIVACAO_MIN[novo]), modo: "reativacao", count: novo };
-    return { proximo: null, modo: null, count: novo }; // fim da régua
-  }
-  return { proximo: null, modo: null, count: novo };
-}
+// Cadência (pura, testável) vive em followup-cadencia.ts. Reexporta o que outros
+// módulos importam daqui e usa avancar/ts/CADENCIA_MIN internamente.
+import { CADENCIA_MIN, avancar, ts } from "./followup-cadencia";
+export {
+  CADENCIA_MIN,
+  REATIVACAO_MIN,
+  primeiroFollowup,
+  agendarReativacao,
+  avancar,
+} from "./followup-cadencia";
 
 type LeadFu = {
   id: number;
@@ -187,7 +164,32 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
       .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto })
       .select("id")
       .single();
-    await dispatchOutbound(tenantId, leadId, texto, (msgRow?.id as number | undefined) ?? undefined);
+    const entrega = await dispatchOutbound(
+      tenantId,
+      leadId,
+      texto,
+      (msgRow?.id as number | undefined) ?? undefined
+    );
+    // Entrega falhou (canal externo caiu): NÃO consome o toque. A mensagem já
+    // fica com status "falhou" (dispatchOutbound) e visível na tela "Hoje";
+    // reprograma um retry curto e sai SEM avançar a régua — assim o cliente não
+    // perde um contato de verdade por causa de uma falha de canal. (canal
+    // "painel" = sem canal externo → ok:true de propósito, fica só no painel.)
+    if (!entrega.ok) {
+      await registrarErro({
+        tenantId,
+        leadId,
+        contexto: "followup.entrega",
+        erro: entrega.erro ?? "falha na entrega",
+        severidade: "media",
+      });
+      await admin
+        .from("app_leads")
+        .update({ proximo_followup: ts(60), updated_at: new Date().toISOString() })
+        .eq("tenant_id", tenantId)
+        .eq("id", leadId);
+      return;
+    }
   }
 
   // Avança a régua — ou para de vez se foi a despedida do lead frio.

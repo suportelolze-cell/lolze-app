@@ -1,5 +1,6 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
+import { registrarErro } from "@/lib/observability/erros";
 
 /**
  * Lembretes de reunião (anti no-show). Roda no cron.
@@ -63,9 +64,25 @@ export async function processarLembretes(): Promise<{ enviados24h: number; envia
 
     const nome = (a.nome || "").split(" ")[0] || "tudo bem";
     const msg = `Oi ${nome}, passando pra confirmar nosso ${a.servico || "compromisso"} em ${quando(a.inicio)}. Tá tudo certo pra você? Se precisar reagendar, é só me avisar por aqui! 😊`;
-    await dispatchOutbound(a.tenant_id, a.lead_id, msg);
-    await admin.from("app_agendamentos").update({ lembrete_24h_em: agoraISO }).eq("id", a.id);
-    enviados24h++;
+    const entrega = await dispatchOutbound(a.tenant_id, a.lead_id, msg);
+    // Só marca como enviado se a entrega deu certo — senão o lembrete some em
+    // silêncio (e a confirmação anti-falta nunca acontece). Falhou → deixa
+    // lembrete_24h_em null pra reintentar no próximo ciclo e registra o erro.
+    if (entrega.ok) {
+      await admin
+        .from("app_agendamentos")
+        .update({ lembrete_24h_em: agoraISO })
+        .eq("id", a.id)
+        .eq("tenant_id", a.tenant_id);
+      enviados24h++;
+    } else {
+      await registrarErro({
+        tenantId: a.tenant_id,
+        contexto: "lembrete.24h.entrega",
+        erro: entrega.erro ?? "falha na entrega",
+        severidade: "media",
+      });
+    }
   }
 
   // 2h antes: reunião entre agora e +2h, ainda sem lembrete de 2h.
@@ -86,9 +103,22 @@ export async function processarLembretes(): Promise<{ enviados24h: number; envia
 
     const nome = (a.nome || "").split(" ")[0] || "";
     const msg = `Olá ${nome}! Daqui a pouco temos nosso ${a.servico || "compromisso"} (${quando(a.inicio)}). Qualquer coisa, tô por aqui. Até já! 👋`;
-    await dispatchOutbound(a.tenant_id, a.lead_id, msg);
-    await admin.from("app_agendamentos").update({ lembrete_2h_em: agoraISO }).eq("id", a.id);
-    enviados2h++;
+    const entrega = await dispatchOutbound(a.tenant_id, a.lead_id, msg);
+    if (entrega.ok) {
+      await admin
+        .from("app_agendamentos")
+        .update({ lembrete_2h_em: agoraISO })
+        .eq("id", a.id)
+        .eq("tenant_id", a.tenant_id);
+      enviados2h++;
+    } else {
+      await registrarErro({
+        tenantId: a.tenant_id,
+        contexto: "lembrete.2h.entrega",
+        erro: entrega.erro ?? "falha na entrega",
+        severidade: "media",
+      });
+    }
   }
 
   return { enviados24h, enviados2h };
