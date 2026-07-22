@@ -78,6 +78,27 @@ export async function criarPortal(customerId: string): Promise<string | null> {
   return r.ok ? (r.json?.url ?? null) : null;
 }
 
+/**
+ * Mapeia o status da assinatura do Stripe → status do tenant.
+ * FAIL-CLOSED: só `active`/`trialing` liberam o app ("ativo"). Qualquer outro
+ * status — inclusive os que ANTES caíam no default `?? "ativo"`
+ * (incomplete, incomplete_expired, paused, ou desconhecido) — resulta em um
+ * status que NÃO libera acesso. Uma assinatura sem 1º pagamento nunca vira ativa.
+ */
+export function statusAssinaturaStripe(stripeStatus: string | null | undefined): string {
+  const map: Record<string, string> = {
+    active: "ativo",
+    trialing: "ativo",
+    past_due: "inadimplente",
+    unpaid: "inadimplente",
+    incomplete: "inadimplente",
+    incomplete_expired: "cancelado",
+    paused: "suspenso",
+    canceled: "cancelado",
+  };
+  return map[(stripeStatus || "").toLowerCase()] ?? "inadimplente";
+}
+
 /** Verifica a assinatura do webhook do Stripe e devolve o evento, ou null. */
 export function verificarWebhook(payload: string, sig: string | null): any | null {
   const secret = process.env.STRIPE_WEBHOOK_SECRET || "";
