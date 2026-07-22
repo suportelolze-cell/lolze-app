@@ -256,7 +256,8 @@ async function processarMensagemWaCloud(
         canal: "whatsapp",
         canal_user_id: de,
       })
-      .eq("id", lead.id);
+      .eq("id", lead.id)
+      .eq("tenant_id", tenantId);
     if (lead.followup_modo === "reativacao") {
       await registrarEvento({
         tenantId,
