@@ -7,6 +7,7 @@ import { getCrmServer } from "@/lib/supabase/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { getSessao, IMPERSONATE_COOKIE } from "@/lib/supabase/tenant";
 import { provisionarTenant } from "@/lib/cadastro/provisionar";
+import { registrarAuditoria } from "./auditoria";
 
 async function exigirSuper() {
   const s = await getSessao();
@@ -188,6 +189,11 @@ export async function salvarPersona(
     })
     .eq("tenant_id", tenantId);
   if (error) throw error;
+  await registrarAuditoria({
+    acao: origem === "rollback" ? "persona.revertida" : "persona.editada",
+    tenantId,
+    detalhe: { agenteAtivo: p.agenteAtivo },
+  });
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
@@ -297,6 +303,12 @@ export async function criarCliente(form: {
   });
   if (!prov.ok) return { ok: false, erro: prov.erro };
 
+  await registrarAuditoria({
+    acao: "cliente.criado",
+    tenantId: (prov as { tenantId?: string }).tenantId ?? null,
+    alvo: nomeNegocio,
+    detalhe: { plano: form.plano },
+  });
   revalidatePath("/admin");
   return { ok: true, email: emailDono, senha: form.senha };
 }
@@ -327,6 +339,15 @@ export async function atualizarCliente(
 
   const { error } = await sb.from("app_tenants").update(patch).eq("id", id);
   if (error) throw error;
+  await registrarAuditoria({
+    acao: "cliente.atualizado",
+    tenantId: id,
+    detalhe: {
+      campos: Object.keys(campos).filter((k) => campos[k as keyof typeof campos] !== undefined),
+      plano: campos.plano,
+      status: campos.status,
+    },
+  });
   revalidatePath("/admin");
   revalidatePath(`/admin/clientes/${id}`);
 }
@@ -371,6 +392,7 @@ export async function alterarEmailAcesso(
   await admin.from("app_profiles").update({ email }).eq("id", dono.id);
   await admin.from("app_config").update({ email }).eq("tenant_id", tenantId);
 
+  await registrarAuditoria({ acao: "acesso.email_alterado", tenantId, detalhe: { novoEmail: email } });
   revalidatePath(`/admin/clientes/${tenantId}`);
   return { ok: true };
 }
@@ -415,6 +437,8 @@ export async function excluirCliente(
   const { error } = await admin.from("app_tenants").delete().eq("id", tenantId);
   if (error) return { ok: false, erro: error.message };
 
+  // tenantId agora não existe mais (FK zeraria): registra com alvo preservado.
+  await registrarAuditoria({ acao: "cliente.excluido", tenantId: null, alvo: tenant.nome });
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -422,6 +446,8 @@ export async function excluirCliente(
 /** Superadmin passa a "ver como" um cliente. */
 export async function entrarComo(tenantId: string) {
   await exigirSuper();
+  // Auditoria ANTES do redirect (redirect() lança para interromper o fluxo).
+  await registrarAuditoria({ acao: "impersonacao.iniciada", tenantId });
   (await cookies()).set(IMPERSONATE_COOKIE, tenantId, {
     httpOnly: true,
     sameSite: "lax",

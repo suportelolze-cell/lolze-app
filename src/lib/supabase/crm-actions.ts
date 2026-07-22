@@ -89,6 +89,8 @@ export async function setIaAtiva(ativo: boolean): Promise<{ ok: boolean; erro?: 
     .update({ agente_ativo: ativo, updated_at: new Date().toISOString() })
     .eq("tenant_id", s.tenantId);
   if (error) return { ok: false, erro: error.message };
+  const { registrarAuditoria } = await import("@/lib/admin/auditoria");
+  await registrarAuditoria({ acao: ativo ? "ia.reativada" : "ia.pausada", tenantId: s.tenantId });
   revalidatePath("/configuracoes");
   return { ok: true };
 }
