@@ -117,7 +117,8 @@ async function processarEntradasIg(admin: Admin, entries: any[]) {
             canal: "instagram",
             canal_user_id: remetente,
           })
-          .eq("id", lead.id);
+          .eq("id", lead.id)
+          .eq("tenant_id", tenantId);
         if (lead.followup_modo === "reativacao") {
           await registrarEvento({
             tenantId,

@@ -191,7 +191,8 @@ async function processarInboundWhatsapp(
         canal: "whatsapp",
         canal_user_id: canalUserId,
       })
-      .eq("id", lead.id);
+      .eq("id", lead.id)
+      .eq("tenant_id", tenantId);
     // Ledger: lead em régua de reativação voltou a falar (a régua funcionou).
     if (lead.followup_modo === "reativacao") {
       await registrarEvento({
