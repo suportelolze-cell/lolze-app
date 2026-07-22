@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, KanbanSquare, Users } from "lucide-react";
 import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg, getWaCloudCfg, getAcessoCliente } from "@/lib/admin/data";
-import { entrarComo } from "@/lib/admin/actions";
+import { entrarComo, listarVersoesPersona } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
 import { AlterarEmailAcesso } from "@/components/admin/AlterarEmailAcesso";
 import { ExcluirClienteCard } from "@/components/admin/ExcluirClienteCard";
 import { PersonaForm } from "@/components/admin/PersonaForm";
+import { PersonaHistorico } from "@/components/admin/PersonaHistorico";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
 import { InstagramForm } from "@/components/admin/InstagramForm";
 import { WhatsAppCloudForm } from "@/components/admin/WhatsAppCloudForm";
@@ -22,11 +23,12 @@ export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [cliente, planos, docs, persona, evolutionCfg, metaAdsCfg, instagramCfg, waCloudCfg, acesso, prontidao] = await Promise.all([
+  const [cliente, planos, docs, persona, versoesPersona, evolutionCfg, metaAdsCfg, instagramCfg, waCloudCfg, acesso, prontidao] = await Promise.all([
     getCliente(id),
     getPlanos(),
     listarDocs(id),
     getPersona(id),
+    listarVersoesPersona(id),
     getEvolutionCfg(id),
     getMetaAdsCfg(id),
     getInstagramCfg(id),
@@ -95,6 +97,10 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
 
       <div className="mt-6">
         <PersonaForm tenantId={cliente.id} persona={persona} />
+      </div>
+
+      <div className="mt-6">
+        <PersonaHistorico tenantId={cliente.id} versoes={versoesPersona} />
       </div>
 
       <div className="mt-6">

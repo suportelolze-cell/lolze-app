@@ -102,6 +102,60 @@ export async function salvarEvolutionCfg(tenantId: string, cfg: { instance: stri
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+const CAMPOS_PERSONA = ["oferta", "publico", "tom", "objecoes", "faq", "regras"] as const;
+
+/** Há algum texto de persona preenchido? (não snapshota um estado 100% vazio) */
+function personaTemConteudo(r: Record<string, unknown> | null | undefined): boolean {
+  if (!r) return false;
+  return CAMPOS_PERSONA.some((c) => String(r[c] ?? "").trim() !== "");
+}
+
+/**
+ * Snapshota a persona ATUAL de app_config em app_persona_versoes ANTES de
+ * sobrescrever — é isso que permite reverter (undo). Best-effort: o histórico
+ * é observação e nunca pode impedir o save em si.
+ */
+async function snapshotPersona(
+  sb: Awaited<ReturnType<typeof getCrmServer>>,
+  tenantId: string,
+  origem: "edicao" | "rollback",
+  userId: string | null
+) {
+  try {
+    const { data: atual } = await sb
+      .from("app_config")
+      .select("oferta,publico,tom,objecoes,faq,regras")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    if (!personaTemConteudo(atual)) return; // nada de útil para versionar
+
+    let nome: string | null = null;
+    if (userId) {
+      const { data: perfil } = await sb
+        .from("app_profiles")
+        .select("nome")
+        .eq("id", userId)
+        .maybeSingle();
+      nome = (perfil?.nome as string | null) ?? null;
+    }
+
+    await sb.from("app_persona_versoes").insert({
+      tenant_id: tenantId,
+      oferta: atual?.oferta ?? null,
+      publico: atual?.publico ?? null,
+      tom: atual?.tom ?? null,
+      objecoes: atual?.objecoes ?? null,
+      faq: atual?.faq ?? null,
+      regras: atual?.regras ?? null,
+      origem,
+      criado_por: userId,
+      criado_por_nome: nome,
+    });
+  } catch {
+    /* histórico é best-effort */
+  }
+}
+
 /** Salva a persona/cérebro do SDR de um cliente. Somente superadmin. */
 export async function salvarPersona(
   tenantId: string,
@@ -113,10 +167,13 @@ export async function salvarPersona(
     faq: string;
     regras: string;
     agenteAtivo: boolean;
-  }
+  },
+  origem: "edicao" | "rollback" = "edicao"
 ) {
-  await exigirSuper();
+  const s = await exigirSuper();
   const sb = await getCrmServer();
+  // Versiona o estado anterior (permite reverter) antes de sobrescrever.
+  await snapshotPersona(sb, tenantId, origem, s.userId ?? null);
   const { error } = await sb
     .from("app_config")
     .update({
@@ -132,6 +189,78 @@ export async function salvarPersona(
     .eq("tenant_id", tenantId);
   if (error) throw error;
   revalidatePath(`/admin/clientes/${tenantId}`);
+}
+
+export type VersaoPersona = {
+  id: number;
+  quando: string;
+  quem: string | null;
+  origem: string;
+  preview: string; // trecho da oferta, para identificar a versão
+};
+
+/** Lista as versões anteriores da persona (mais recentes primeiro). Superadmin. */
+export async function listarVersoesPersona(tenantId: string): Promise<VersaoPersona[]> {
+  await exigirSuper();
+  const sb = await getCrmServer();
+  const { data } = await sb
+    .from("app_persona_versoes")
+    .select("id,created_at,criado_por_nome,origem,oferta,publico")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  return ((data as Record<string, unknown>[] | null) ?? []).map((v) => {
+    const base = String(v.oferta ?? v.publico ?? "").trim();
+    return {
+      id: Number(v.id),
+      quando: String(v.created_at),
+      quem: (v.criado_por_nome as string | null) ?? null,
+      origem: String(v.origem ?? "edicao"),
+      preview: base ? base.slice(0, 120) : "(sem oferta preenchida)",
+    };
+  });
+}
+
+/**
+ * Reverte a persona para uma versão anterior. O estado atual é versionado
+ * antes (então reverter também é desfazível). Preserva o toggle agente_ativo
+ * atual — reverter é sobre o TEXTO da persona, não sobre ligar/desligar a IA.
+ */
+export async function reverterPersona(
+  tenantId: string,
+  versaoId: number
+): Promise<{ ok: boolean; erro?: string }> {
+  await exigirSuper();
+  const sb = await getCrmServer();
+  const { data: v, error: eSel } = await sb
+    .from("app_persona_versoes")
+    .select("oferta,publico,tom,objecoes,faq,regras")
+    .eq("id", versaoId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  if (eSel) return { ok: false, erro: eSel.message };
+  if (!v) return { ok: false, erro: "Versão não encontrada." };
+
+  const { data: cfg } = await sb
+    .from("app_config")
+    .select("agente_ativo")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  await salvarPersona(
+    tenantId,
+    {
+      oferta: (v.oferta as string | null) ?? "",
+      publico: (v.publico as string | null) ?? "",
+      tom: (v.tom as string | null) ?? "",
+      objecoes: (v.objecoes as string | null) ?? "",
+      faq: (v.faq as string | null) ?? "",
+      regras: (v.regras as string | null) ?? "",
+      agenteAtivo: (cfg?.agente_ativo as boolean | null) ?? true,
+    },
+    "rollback"
+  );
+  return { ok: true };
 }
 
 /**
