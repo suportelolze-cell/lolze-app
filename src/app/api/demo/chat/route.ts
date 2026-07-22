@@ -3,6 +3,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropic, temChaveIA, ROUTER_MODEL } from "@/lib/agent/anthropic";
 import { registrarFunilLolze } from "@/lib/funil-lolze";
 import { dentroDoLimite } from "@/lib/seguranca/antiabuso";
+import { sanitizarMensagensDemo, contarTurnos, MAX_TURNOS } from "@/lib/demo/sanitizar";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -19,10 +20,6 @@ export const maxDuration = 30;
  *   de turnos sozinho não bastava: o cliente controla o array de mensagens).
  * - Pré-filtro de rajada em memória (barato, sem ida ao banco).
  */
-
-const MAX_TURNOS = 7; // perguntas do visitante antes de encerrar o demo
-const MAX_CHARS = 400; // por mensagem
-const MAX_HIST = 14; // últimas mensagens consideradas
 
 // Teto persistente por IP (o que realmente limita o custo).
 const MAX_POR_DIA = 60; // chamadas ao modelo por IP a cada 24h
@@ -81,26 +78,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply: ENCERRAMENTO, encerrado: true });
   }
 
-  const bruto = (body as { messages?: unknown })?.messages;
-  const lista = Array.isArray(bruto) ? bruto : [];
-
-  // Sanitiza: só user/assistant, conteúdo string truncado, e começa em 'user'.
-  const limpo: { role: "user" | "assistant"; content: string }[] = [];
-  for (const m of lista.slice(-MAX_HIST)) {
-    const role = (m as { role?: string })?.role;
-    const content = String((m as { content?: unknown })?.content ?? "").slice(0, MAX_CHARS).trim();
-    if ((role === "user" || role === "assistant") && content) {
-      limpo.push({ role, content });
-    }
-  }
-  const primeiroUser = limpo.findIndex((m) => m.role === "user");
-  const msgs = primeiroUser >= 0 ? limpo.slice(primeiroUser) : [];
+  // Sanitiza: só user/assistant, conteúdo truncado, e começa em 'user'.
+  const msgs = sanitizarMensagensDemo((body as { messages?: unknown })?.messages);
 
   if (msgs.length === 0) {
     return NextResponse.json({ reply: "Me conta: qual é o seu tipo de negócio? 😊" });
   }
 
-  const turnos = msgs.filter((m) => m.role === "user").length;
+  const turnos = contarTurnos(msgs);
   if (turnos > MAX_TURNOS) {
     return NextResponse.json({ reply: ENCERRAMENTO, encerrado: true });
   }
