@@ -45,21 +45,28 @@ export async function assinarPlano(): Promise<{ url?: string; erro?: string }> {
   const sb = await getCrmServer();
   const { data: t } = await sb
     .from("app_tenants")
-    .select("plano,contato_email,stripe_customer_id")
+    .select("plano,contato_email,stripe_customer_id,stripe_subscription_id")
     .eq("id", s.tenantId)
     .maybeSingle();
   if (!t) return { erro: "Empresa não encontrada." };
   const { data: plano } = await sb
     .from("app_plans")
-    .select("stripe_price_id")
+    .select("nome,stripe_price_id,setup_cents,carencia_dias")
     .eq("id", t.plano)
     .maybeSingle();
   if (!plano?.stripe_price_id) return { erro: "Plano sem preço configurado no Stripe." };
+
+  // Implantação e carência só na PRIMEIRA assinatura — re-assinatura (após churn)
+  // não recobra o setup nem concede novo trial.
+  const primeira = !t.stripe_subscription_id;
   const url = await criarCheckout({
     tenantId: s.tenantId,
     priceId: plano.stripe_price_id,
     email: t.contato_email ?? undefined,
     customerId: t.stripe_customer_id ?? undefined,
+    nomePlano: (plano.nome as string | null) ?? undefined,
+    setupCents: primeira ? Number(plano.setup_cents ?? 0) : 0,
+    trialDays: primeira ? Number(plano.carencia_dias ?? 0) : 0,
   });
   if (url) {
     await registrarFunilLolze("checkout_iniciado", {
