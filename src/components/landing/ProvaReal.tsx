@@ -103,11 +103,11 @@ export function ProvaReal() {
           <div className="flex h-[30rem] flex-col overflow-hidden rounded-3xl border border-borda bg-superficie shadow-xl">
             {/* Cabeçalho */}
             <div className="flex items-center gap-3 bg-escuro-quente px-5 py-4">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-marca text-sm font-bold text-bege-principal">
-                A
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-marca text-[11px] font-bold text-bege-principal">
+                IA
               </span>
               <div>
-                <div className="text-sm font-bold text-bege-principal">Atendente · Abner Oliveira</div>
+                <div className="text-sm font-bold text-bege-principal">Agente de IA · Lolze</div>
                 <div className="flex items-center gap-1.5 text-[11px] text-bege-principal/60">
                   <span className="h-1.5 w-1.5 rounded-full bg-marca" /> online · respondendo agora
                 </div>

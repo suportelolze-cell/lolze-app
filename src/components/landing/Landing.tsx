@@ -121,7 +121,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             <span className="font-semibold text-texto">
               atende, qualifica e agenda clientes em menos de 7 segundos,
             </span>{" "}
-            transformando tráfego frio em lucro no piloto automático.
+            colocando cada lead em atendimento e no caminho do agendamento — sem fila e sem horário.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -151,6 +151,9 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             WebkitMaskImage: "linear-gradient(to bottom, black 80%, transparent)",
           }}
         >
+          <span className="absolute right-3 top-3 z-10 rounded-full bg-escuro-quente/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-bege-principal/80 backdrop-blur">
+            Demonstração ilustrativa
+          </span>
           <DashboardMock />
         </div>
       </section>
@@ -384,8 +387,8 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           <div className="sm:col-span-2 lg:col-span-1">
             <Logo variante="lockup" tom="branco" height={26} />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-bege-principal/50">
-              A infraestrutura de aquisição que transforma cliques em clientes
-              pagantes, no piloto automático.
+              A infraestrutura de aquisição que atende cada lead na hora e conduz
+              a conversa até o agendamento.
             </p>
           </div>
           <FooterCol titulo="Navegação" links={[["Solução", "#solucao"], ["Resultados", "#resultados"], ["Como funciona", "#funciona"], ["Dúvidas", "#faq"]]} />
