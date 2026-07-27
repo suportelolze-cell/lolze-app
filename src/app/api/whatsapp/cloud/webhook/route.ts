@@ -13,6 +13,7 @@ import { registrarErro } from "@/lib/observability/erros";
 import { registrarEvento } from "@/lib/eventos";
 import { assinaturaMetaValida } from "@/lib/seguranca/assinatura";
 import { resolverLead, vincularIdentidade } from "@/lib/identidade";
+import { MAPA_RECIBO_WA, STATUS_ANTERIORES } from "@/lib/whatsapp/status-recibo";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -86,13 +87,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-/** Hierarquia de status: um recibo nunca REBAIXA o estado da mensagem. */
-const STATUS_ANTERIORES: Record<string, string[]> = {
-  enviada: ["pendente"],
-  entregue: ["pendente", "enviada"],
-  lida: ["pendente", "enviada", "entregue"],
-};
-
 async function processarEntradasWaCloud(admin: Admin, entries: any[]) {
   for (const entry of entries) {
     const changes: any[] = Array.isArray(entry?.changes) ? entry.changes : [];
@@ -156,8 +150,7 @@ async function aplicarStatus(admin: Admin, tenantId: string, st: any) {
     return;
   }
 
-  const mapa: Record<string, string> = { sent: "enviada", delivered: "entregue", read: "lida" };
-  const novo = mapa[tipo];
+  const novo = MAPA_RECIBO_WA[tipo];
   if (!novo) return;
   await admin
     .from("app_mensagens")
