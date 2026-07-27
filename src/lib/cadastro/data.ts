@@ -16,6 +16,7 @@ export async function getPlanosPublicos(): Promise<PlanoPublico[]> {
     const { data } = await sb
       .from("app_plans")
       .select("id,nome,ordem,mensal_cents,setup_cents,recursos,stripe_price_id")
+      .eq("ativo", true) // só planos ATIVOS aparecem no público (landing/cadastro)
       .order("ordem");
     return (data ?? []).map((p) => ({
       id: p.id,
