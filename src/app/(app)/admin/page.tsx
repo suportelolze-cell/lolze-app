@@ -9,6 +9,7 @@ import {
   Workflow,
   ScrollText,
   Coins,
+  ShieldAlert,
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
@@ -118,6 +119,16 @@ export default async function AdminPage() {
           <div>
             <p className="mt-2 text-sm font-semibold text-texto">Custo &amp; margem</p>
             <p className="text-xs text-texto-suave">Custo de IA vs. mensalidade por cliente</p>
+          </div>
+        </Link>
+        <Link
+          href="/admin/alertas"
+          className="flex flex-col justify-between rounded-lg border border-borda bg-superficie px-5 py-4 transition-colors hover:border-marca"
+        >
+          <ShieldAlert size={18} className="text-marca" />
+          <div>
+            <p className="mt-2 text-sm font-semibold text-texto">Central de alertas</p>
+            <p className="text-xs text-texto-suave">Problemas em todos os clientes, sem esperar erro</p>
           </div>
         </Link>
       </section>
