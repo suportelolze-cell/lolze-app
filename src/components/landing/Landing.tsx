@@ -299,7 +299,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             <div className="space-y-4">
               <Passo icon={LayoutDashboard} n="01" titulo="Dashboard de Vaidade Zero" texto="Veja exatamente quanto você investiu e qual foi o custo exato de cada agendamento confirmado na semana." />
               <Passo icon={KanbanSquare} n="02" titulo="Pipeline Visual (Kanban)" texto="Arraste e solte clientes até o fechamento. Chega de esquecer quem precisava de um retorno financeiro." />
-              <Passo icon={GraduationCap} n="03" titulo="Universidade Interna" texto="Treinamentos de 3 minutos já embutidos na plataforma para sua equipe extrair o máximo do sistema no primeiro dia." />
+              <Passo icon={GraduationCap} n="03" titulo="Onboarding guiado" texto="Um passo a passo dentro da plataforma leva você e sua equipe a dominar o painel desde o primeiro dia." />
             </div>
             <BarrasMock />
           </div>
