@@ -533,7 +533,15 @@ function Planos({ planos }: { planos: PlanoPublico[] }) {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div
+          className={`mt-12 grid gap-5 ${
+            planos.length <= 2
+              ? "mx-auto max-w-3xl sm:grid-cols-2"
+              : planos.length === 3
+                ? "md:grid-cols-3"
+                : "md:grid-cols-2 lg:grid-cols-4"
+          }`}
+        >
           {planos.map((p) => (
             <PlanoCard key={p.id} p={p} destaque={p.id === "growth"} />
           ))}
