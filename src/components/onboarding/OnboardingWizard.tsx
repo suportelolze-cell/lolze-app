@@ -163,12 +163,12 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
                 </button>
               ))}
             </div>
-            <Campo label="O que você oferece" valor={oferta} onChange={setOferta} textarea />
-            <Campo label="Público-alvo" valor={publico} onChange={setPublico} textarea />
-            <Campo label="Tom de voz" valor={tom} onChange={setTom} textarea />
-            <Campo label="Objeções comuns (e como responder)" valor={objecoes} onChange={setObjecoes} textarea />
-            <Campo label="Perguntas frequentes" valor={faq} onChange={setFaq} textarea />
-            <Campo label="Regras (o que a IA deve/não deve fazer)" valor={regras} onChange={setRegras} textarea />
+            <Campo label="O que você oferece" valor={oferta} onChange={setOferta} textarea dica="Seus serviços ou produtos, em linguagem simples. Ex.: 'corte e barba', 'bolos por encomenda', 'conserto de celular'." />
+            <Campo label="Público-alvo" valor={publico} onChange={setPublico} textarea dica="Quem é o seu cliente típico. Ex.: 'moradores do bairro', 'mães da região', 'quem quebrou a tela'." />
+            <Campo label="Tom de voz" valor={tom} onChange={setTom} textarea dica="Como a IA deve falar. Ex.: 'próximo e simpático, como no balcão', 'sem gírias, direto ao ponto'." />
+            <Campo label="Objeções comuns (e como responder)" valor={objecoes} onChange={setObjecoes} textarea dica="O que o cliente costuma questionar e a melhor resposta. Ex.: 'Tá caro → explico que inclui X e faço em Y'." />
+            <Campo label="Perguntas frequentes" valor={faq} onChange={setFaq} textarea dica="As perguntas que você mais recebe no WhatsApp, com a resposta. Ex.: 'Tem estacionamento? Sim, na frente.'" />
+            <Campo label="Regras (o que a IA deve/não deve fazer)" valor={regras} onChange={setRegras} textarea dica="Limites claros. Ex.: 'nunca dar desconto sem eu autorizar', 'não confirmar horário fora do funcionamento'." />
           </div>
         )}
 
