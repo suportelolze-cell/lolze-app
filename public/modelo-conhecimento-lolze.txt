@@ -1,0 +1,128 @@
+============================================================
+   DOSSIÊ DO SEU NEGÓCIO  —  para a IA da Lolze atender como você
+============================================================
+
+Como usar:
+ • Preencha com o MÁXIMO de detalhe possível. Quanto mais completo,
+   melhor a IA vai atender, qualificar e agendar seus clientes.
+ • Onde tiver o sinal  » , escreva a sua resposta ao lado ou embaixo.
+ • Pode apagar os exemplos entre parênteses.
+ • Quando terminar, salve o arquivo e envie na Lolze em
+   Configurações → Base de conhecimento (ou no passo de onboarding).
+
+------------------------------------------------------------
+1. SOBRE O NEGÓCIO
+------------------------------------------------------------
+Nome do negócio: »
+O que você faz (em 1 ou 2 frases): »
+Endereço completo: »
+Bairro / cidade / região que atende: »
+Horário de funcionamento: »   (ex.: Seg a Sex 9h–18h, Sáb 9h–13h, fecha domingo)
+WhatsApp / telefone de contato: »
+Instagram / site (se tiver): »
+
+------------------------------------------------------------
+2. SERVIÇOS E PRODUTOS   (a parte MAIS importante!)
+------------------------------------------------------------
+Liste cada serviço ou produto. Se for serviço com hora marcada,
+informe a DURAÇÃO — a IA usa isso para agendar no horário certo.
+
+Serviço / Produto 1
+  • Nome: »
+  • O que é / o que está incluído: »
+  • Preço: »
+  • Duração (se for agendado): »   (ex.: 45 min, 2 horas)
+
+Serviço / Produto 2
+  • Nome: »
+  • O que é / o que está incluído: »
+  • Preço: »
+  • Duração (se for agendado): »
+
+(Copie e cole o bloco acima para adicionar quantos serviços/produtos quiser.)
+
+------------------------------------------------------------
+3. FORMAS DE PAGAMENTO
+------------------------------------------------------------
+Aceita: »   (ex.: Pix, dinheiro, cartão de crédito/débito, parcela em até Nx)
+Exige sinal / entrada para agendar? »   (ex.: não; ou 50% adiantado)
+
+------------------------------------------------------------
+4. AGENDAMENTO
+------------------------------------------------------------
+Como o cliente costuma agendar: »
+Antecedência mínima para marcar: »   (ex.: no mínimo 2 horas antes)
+Política de remarcação / cancelamento: »   (ex.: pode remarcar até 4h antes)
+O que acontece se o cliente faltar (no-show): »
+
+------------------------------------------------------------
+5. SEU CLIENTE IDEAL
+------------------------------------------------------------
+Quem é o cliente típico: »   (ex.: mulheres da região, 25–45 anos)
+Qual problema ou desejo dele você resolve: »
+
+------------------------------------------------------------
+6. COMO A IA DEVE FALAR   (tom de voz)
+------------------------------------------------------------
+Tom de voz: »   (ex.: próximo e simpático, como no balcão; ou direto e profissional)
+Pode usar emojis? »   (ex.: sim, com moderação / não)
+Como a IA deve se apresentar: »   (ex.: "Aqui é a assistente da [nome]")
+
+------------------------------------------------------------
+7. PERGUNTAS FREQUENTES (FAQ)
+------------------------------------------------------------
+As perguntas que você MAIS recebe no WhatsApp, com a resposta certa:
+
+P: »
+R: »
+
+P: »
+R: »
+
+P: »
+R: »
+
+(Adicione quantas precisar — quanto mais, menos a IA erra.)
+
+------------------------------------------------------------
+8. OBJEÇÕES COMUNS   (e como responder)
+------------------------------------------------------------
+O que o cliente costuma questionar e a melhor resposta:
+
+"Está caro"            → »
+"Vou pensar e retorno" → »
+Outra objeção: »       → »
+
+------------------------------------------------------------
+9. REGRAS — o que a IA DEVE e NÃO DEVE fazer
+------------------------------------------------------------
+A IA NUNCA deve: »   (ex.: dar desconto sem eu autorizar; prometer resultado garantido;
+                       confirmar horário fora do funcionamento)
+Quando a IA não souber responder, ela deve: »   (ex.: dizer que vai verificar com você)
+Quando a IA deve passar a conversa para VOCÊ (humano): »   (ex.: cliente quer fechar
+                       negócio; reclamação; assunto delicado)
+
+------------------------------------------------------------
+10. DIFERENCIAIS E PROVAS REAIS
+------------------------------------------------------------
+Por que escolher você (diferenciais verdadeiros): »
+Garantias reais que você oferece (se houver): »
+
+IMPORTANTE: use só o que é VERDADE. Não invente depoimentos, números
+ou promessas — isso quebra a confiança do cliente.
+
+------------------------------------------------------------
+11. PROMOÇÕES / OFERTAS ATUAIS   (se houver)
+------------------------------------------------------------
+»
+
+------------------------------------------------------------
+12. QUALQUER OUTRA COISA que a IA precisa saber
+------------------------------------------------------------
+»
+
+============================================================
+Pronto! Salve este arquivo e envie na Lolze:
+Configurações → Base de conhecimento → Enviar documento.
+A IA passa a atender já com todo o contexto do seu negócio.
+============================================================
