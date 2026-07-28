@@ -78,6 +78,49 @@ export async function enviarTextoWaCloud(
 }
 
 /**
+ * Envia uma mídia pela Cloud API a partir de um LINK público (URL assinada).
+ * `tipo` = image | video | audio | document. Caption só vale para não-áudio;
+ * document aceita filename. Devolve o wamid (casa com os recibos de status).
+ */
+export async function enviarMidiaWaCloud(
+  cred: CredenciaisWaCloud,
+  para: string,
+  tipo: "image" | "video" | "audio" | "document",
+  link: string,
+  caption?: string,
+  filename?: string
+): Promise<{ ok: boolean; wamid: string | null; erro?: string }> {
+  try {
+    const media: Record<string, unknown> = { link };
+    if (caption && tipo !== "audio") media.caption = caption;
+    if (tipo === "document" && filename) media.filename = filename;
+
+    const res = await fetch(`${graphBase()}/${encodeURIComponent(cred.phoneNumberId)}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${cred.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: para.replace(/\D/g, ""),
+        type: tipo,
+        [tipo]: media,
+      }),
+      cache: "no-store",
+    });
+    const json: any = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, wamid: null, erro: json?.error?.message || `HTTP ${res.status}` };
+    }
+    return { ok: true, wamid: json?.messages?.[0]?.id ?? null };
+  } catch (e) {
+    return { ok: false, wamid: null, erro: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
  * Baixa uma mídia recebida (áudio/imagem/documento) como base64.
  * Cloud API: GET /{media_id} devolve a URL temporária; o download exige o token.
  */

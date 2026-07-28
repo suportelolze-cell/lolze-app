@@ -1,8 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, Send, Zap, Bot, ChevronLeft, PanelRight, Lock, AlertTriangle } from "lucide-react";
-import type { Conversa } from "@/lib/conversas";
+import {
+  Pause,
+  Play,
+  Send,
+  Zap,
+  Bot,
+  ChevronLeft,
+  PanelRight,
+  Lock,
+  AlertTriangle,
+  Paperclip,
+  Loader2,
+  FileText,
+} from "lucide-react";
+import type { Conversa, MidiaTipo } from "@/lib/conversas";
 
 export function ChatWindow({
   conversa,
@@ -12,6 +25,8 @@ export function ChatWindow({
   onAssumir,
   onDevolver,
   onEnviar,
+  onAnexar,
+  anexando = false,
   onVoltar,
   onAbrirPainel,
   respostasRapidas = [],
@@ -23,6 +38,8 @@ export function ChatWindow({
   onAssumir: () => void;
   onDevolver: () => void;
   onEnviar: (texto: string) => void;
+  onAnexar?: (file: File, caption?: string) => void;
+  anexando?: boolean;
   onVoltar?: () => void;
   onAbrirPainel?: () => void;
   respostasRapidas?: string[];
@@ -30,6 +47,17 @@ export function ChatWindow({
   const [texto, setTexto] = useState("");
   const [mostrarRespostas, setMostrarRespostas] = useState(false);
   const listaRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function escolherArquivo(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = ""; // permite reanexar o mesmo arquivo
+    if (f && onAnexar) {
+      const legenda = texto.trim();
+      onAnexar(f, legenda || undefined); // o texto digitado vira legenda do anexo
+      setTexto("");
+    }
+  }
 
   // Rola o container das mensagens até o fim quando troca de conversa ou
   // chega algo novo. Usa rAF + um respiro para esperar o layout/mídia.
@@ -210,6 +238,30 @@ export function ChatWindow({
             >
               <Zap size={18} />
             </button>
+            {onAnexar && conversa.canal === "whatsapp" && (
+              <>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                  className="hidden"
+                  onChange={escolherArquivo}
+                />
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={anexando}
+                  title="Anexar arquivo"
+                  type="button"
+                  className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo disabled:opacity-50"
+                >
+                  {anexando ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Paperclip size={18} />
+                  )}
+                </button>
+              </>
+            )}
             <textarea
               rows={1}
               value={texto}
@@ -253,45 +305,30 @@ function Divisor() {
   );
 }
 
-function MidiaLead({
-  midiaUrl,
-  midiaTipo,
-  texto,
-}: {
-  midiaUrl?: string | null;
-  midiaTipo?: "imagem" | "audio" | "documento" | null;
-  texto: string;
-}) {
-  if (!midiaUrl) return <p className="text-sm text-texto break-words">{texto}</p>;
-  if (midiaTipo === "imagem") {
+function Anexo({ url, tipo }: { url: string; tipo?: MidiaTipo | null }) {
+  if (tipo === "imagem") {
     return (
-      <a href={midiaUrl} target="_blank" rel="noopener noreferrer">
+      <a href={url} target="_blank" rel="noopener noreferrer" className="block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={midiaUrl}
-          alt="Imagem enviada pelo cliente"
-          className="max-h-64 w-full rounded-lg object-cover"
-        />
+        <img src={url} alt="Imagem" className="max-h-64 w-full rounded-lg object-cover" />
       </a>
     );
   }
-  if (midiaTipo === "audio") {
-    return (
-      <div>
-        <audio controls src={midiaUrl} className="w-56 max-w-full" />
-        {texto && <p className="mt-1 text-xs italic text-texto-suave">📝 {texto}</p>}
-      </div>
-    );
+  if (tipo === "video") {
+    return <video controls src={url} className="max-h-64 w-full rounded-lg" />;
   }
-  // documento
+  if (tipo === "audio") {
+    return <audio controls src={url} className="w-56 max-w-full" />;
+  }
+  // documento (ou desconhecido com URL)
   return (
     <a
-      href={midiaUrl}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2 text-sm font-medium text-marca underline"
+      className="flex items-center gap-2 text-sm font-medium underline"
     >
-      📄 Abrir documento
+      <FileText size={15} /> Abrir arquivo
     </a>
   );
 }
@@ -308,17 +345,18 @@ function Balao({
   texto: string;
   hora: string;
   midiaUrl?: string | null;
-  midiaTipo?: "imagem" | "audio" | "documento" | null;
+  midiaTipo?: MidiaTipo | null;
   status?: "pendente" | "enviada" | "entregue" | "lida" | "falhou" | null;
 }) {
   if (autor === "lead") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[75%] rounded-2xl rounded-tl-sm bg-superficie px-4 py-2 shadow-sm">
-          <MidiaLead midiaUrl={midiaUrl} midiaTipo={midiaTipo} texto={texto} />
-          <span className="mt-1 block text-right text-[10px] text-texto-suave">
-            {hora}
-          </span>
+        <div className="max-w-[75%] space-y-1.5 rounded-2xl rounded-tl-sm bg-superficie px-4 py-2 shadow-sm">
+          {midiaUrl && <Anexo url={midiaUrl} tipo={midiaTipo} />}
+          {texto && (
+            <p className="text-sm text-texto break-words whitespace-pre-wrap">{texto}</p>
+          )}
+          <span className="block text-right text-[10px] text-texto-suave">{hora}</span>
         </div>
       </div>
     );
@@ -328,16 +366,17 @@ function Balao({
   return (
     <div className="flex justify-end">
       <div
-        className={`max-w-[75%] rounded-2xl rounded-tr-sm px-4 py-2 ${
+        className={`max-w-[75%] space-y-1.5 rounded-2xl rounded-tr-sm px-4 py-2 ${
           ia ? "bg-cinza-200 text-texto" : "bg-marca text-bege-principal"
         }`}
       >
-        <span className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold opacity-80">
+        <span className="flex items-center gap-1 text-[10px] font-semibold opacity-80">
           {ia ? <><Bot size={11} /> IA</> : <>👤 Atendente</>}
         </span>
-        <p className="text-sm break-words whitespace-pre-wrap">{texto}</p>
+        {midiaUrl && <Anexo url={midiaUrl} tipo={midiaTipo} />}
+        {texto && <p className="text-sm break-words whitespace-pre-wrap">{texto}</p>}
         <span
-          className={`mt-1 block text-right text-[10px] ${
+          className={`block text-right text-[10px] ${
             ia ? "text-texto-suave" : "text-bege-principal/70"
           }`}
         >

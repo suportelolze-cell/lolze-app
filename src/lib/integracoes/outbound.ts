@@ -1,7 +1,7 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
-import { enviarTexto, temEvolutionConfig } from "@/lib/evolution/client";
+import { enviarTexto, enviarMidia, temEvolutionConfig } from "@/lib/evolution/client";
 import { enviarTextoIg } from "@/lib/instagram/client";
-import { credenciaisWaCloud, enviarTextoWaCloud } from "@/lib/whatsapp/cloud";
+import { credenciaisWaCloud, enviarTextoWaCloud, enviarMidiaWaCloud } from "@/lib/whatsapp/cloud";
 import { registrarErro } from "@/lib/observability/erros";
 
 export type ResultadoEntrega = {
@@ -9,6 +9,14 @@ export type ResultadoEntrega = {
   /** "painel" = lead sem canal externo (manual/site): mensagem fica só no painel. */
   canal?: string;
   erro?: string;
+};
+
+/** Mídia a enviar junto (URL já assinada/pública que o canal vai buscar). */
+export type MidiaSaida = {
+  url: string;
+  tipo: "image" | "video" | "audio" | "document";
+  mime?: string;
+  filename?: string;
 };
 
 /** Tentativas de envio antes de marcar a mensagem como falhada. */
@@ -28,7 +36,8 @@ export async function dispatchOutbound(
   tenantId: string,
   leadId: number,
   texto: string,
-  mensagemId?: number
+  mensagemId?: number,
+  midia?: MidiaSaida
 ): Promise<ResultadoEntrega> {
   const admin = getCrmAdmin();
 
@@ -55,6 +64,14 @@ export async function dispatchOutbound(
 
     // Sem canal externo (lead manual/site): a mensagem é só do painel.
     if (canal !== "whatsapp" && canal !== "instagram") return { ok: true, canal: "painel" };
+
+    // Instagram ainda não envia mídia pelo painel — falha CLARA e imediata, sem
+    // postar texto vazio nem gastar as 3 tentativas (não é falha de infra).
+    if (midia && canal === "instagram") {
+      const erro = "Instagram ainda não envia mídia pelo painel (envie por texto).";
+      await marcar({ status: "falhou", ultimo_erro: erro });
+      return { ok: false, canal, erro };
+    }
 
     const { data: sec } = await admin
       .from("app_tenant_secrets")
@@ -91,7 +108,9 @@ export async function dispatchOutbound(
         if (waCloud) {
           // API oficial: o wamid devolvido casa com os recibos do webhook
           // (sent/delivered/read), que evoluem o status para entregue/lida.
-          const r = await enviarTextoWaCloud(waCloud, destino, texto);
+          const r = midia
+            ? await enviarMidiaWaCloud(waCloud, destino, midia.tipo, midia.url, texto || undefined, midia.filename)
+            : await enviarTextoWaCloud(waCloud, destino, texto);
           if (r.ok) {
             await marcar({
               status: "enviada",
@@ -104,10 +123,22 @@ export async function dispatchOutbound(
           }
           if (r.erro) ultimoErro = r.erro;
         } else {
-          const ok =
-            canal === "whatsapp"
-              ? await enviarTexto(sec!.evolution_instance as string, destino, texto)
-              : await enviarTextoIg(sec!.ig_access_token as string, destino, texto);
+          let ok = false;
+          if (canal === "whatsapp") {
+            const inst = sec!.evolution_instance as string;
+            ok = midia
+              ? await enviarMidia(inst, destino, {
+                  tipo: midia.tipo,
+                  url: midia.url,
+                  mime: midia.mime,
+                  caption: texto || undefined,
+                  fileName: midia.filename,
+                })
+              : await enviarTexto(inst, destino, texto);
+          } else {
+            // Instagram: envio de mídia não implementado — manda a legenda.
+            ok = await enviarTextoIg(sec!.ig_access_token as string, destino, texto);
+          }
           if (ok) {
             await marcar({
               status: "enviada",

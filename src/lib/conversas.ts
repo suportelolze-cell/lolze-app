@@ -4,7 +4,7 @@ import type { Temperatura, Origem } from "@/lib/leads";
 
 export type Autor = "ia" | "lead" | "atendente";
 
-export type MidiaTipo = "imagem" | "audio" | "documento";
+export type MidiaTipo = "imagem" | "video" | "audio" | "documento";
 
 /** Estado de entrega de mensagens de saída (null = entrada do lead ou só painel). */
 export type StatusEntrega = "pendente" | "enviada" | "entregue" | "lida" | "falhou";
