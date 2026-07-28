@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Loader2, Check, Upload, Sparkles, MessageSquare, Rocket } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, Check, Upload, Sparkles, MessageSquare, Rocket, Download, FileText } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { WhatsAppCard } from "@/components/config/WhatsAppCard";
 import { PERSONA_TEMPLATES } from "@/lib/admin/persona-templates";
@@ -181,6 +181,25 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
                 Suba documentos com seus serviços, preços, durações e regras. É o que deixa a IA precisa (e agenda melhor). Opcional — dá pra fazer depois.
               </p>
             </div>
+
+            {/* Modelo pronto para o cliente preencher e subir */}
+            <div className="rounded-lg border border-marca/30 bg-marca-suave/30 p-4">
+              <p className="flex items-center gap-2 text-sm font-semibold text-texto">
+                <FileText size={16} className="text-marca" /> Não sabe o que escrever?
+              </p>
+              <p className="mt-1 text-xs text-texto-suave">
+                Baixe nosso modelo, preencha com as informações do seu negócio e envie aqui. É o
+                jeito mais rápido e completo de ensinar a IA.
+              </p>
+              <a
+                href="/modelo-conhecimento-lolze.txt"
+                download
+                className="mt-3 inline-flex items-center gap-2 rounded-md bg-escuro-quente px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
+              >
+                <Download size={16} /> Baixar modelo (.txt)
+              </a>
+            </div>
+
             <input ref={fileRef} type="file" accept=".pdf,.txt,.md" onChange={onArquivo} className="hidden" />
             <button
               onClick={() => fileRef.current?.click()}
