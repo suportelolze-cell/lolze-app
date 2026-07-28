@@ -560,7 +560,10 @@ function Planos({ planos }: { planos: PlanoPublico[] }) {
 }
 
 function PlanoCard({ p, destaque }: { p: PlanoPublico; destaque?: boolean }) {
-  const enterprise = p.mensalCents <= 0;
+  // "Consulta" = Advanced (sob_consulta, com piso "a partir de") ou plano sem preço.
+  const consulta = p.sobConsulta || p.mensalCents <= 0;
+  const temMensal = p.mensalCents > 0;
+  const temOferta = p.setupCentsDe > p.setupCents; // preço oficial > cobrado → lançamento
   return (
     <div
       className={`relative flex flex-col rounded-2xl bg-superficie p-6 ${
@@ -569,21 +572,41 @@ function PlanoCard({ p, destaque }: { p: PlanoPublico; destaque?: boolean }) {
     >
       {destaque && (
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-marca px-3 py-1 text-[11px] font-bold text-bege-principal">
-          Mais popular
+          Mais escolhido
         </span>
       )}
       <h3 className="font-corpo text-lg font-bold text-texto">{p.nome}</h3>
 
-      {enterprise ? (
-        <div className="mt-2 font-display text-2xl font-medium italic text-texto">Sob consulta</div>
+      {consulta ? (
+        <div className="mt-2">
+          {temMensal ? (
+            <div className="flex items-baseline gap-1">
+              <span className="text-xs text-texto-suave">a partir de</span>
+              <span className="text-3xl font-semibold text-texto">{moeda(p.mensalCents)}</span>
+              <span className="text-sm text-texto-suave">/mês</span>
+            </div>
+          ) : (
+            <div className="font-display text-2xl font-medium italic text-texto">Sob consulta</div>
+          )}
+        </div>
       ) : (
         <div className="mt-2 flex items-baseline gap-1">
           <span className="text-3xl font-semibold text-texto">{moeda(p.mensalCents)}</span>
           <span className="text-sm text-texto-suave">/mês</span>
         </div>
       )}
-      {!enterprise && p.setupCents > 0 && (
-        <p className="mt-1 text-xs text-texto-suave">Implementação: {moeda(p.setupCents)} (única)</p>
+      {!consulta && p.setupCents > 0 && (
+        <p className="mt-1 text-xs text-texto-suave">
+          Implantação:{" "}
+          {temOferta && <span className="text-texto-suave/60 line-through">{moeda(p.setupCentsDe)}</span>}{" "}
+          <strong className="text-texto">{moeda(p.setupCents)}</strong>{" "}
+          {temOferta ? <span className="font-semibold text-marca">(lançamento)</span> : "(única)"}
+        </p>
+      )}
+      {consulta && p.setupCents > 0 && (
+        <p className="mt-1 text-xs text-texto-suave">
+          Implantação a partir de {moeda(p.setupCents)}
+        </p>
       )}
 
       <ul className="mt-5 flex-1 space-y-2.5 text-sm">
@@ -595,7 +618,7 @@ function PlanoCard({ p, destaque }: { p: PlanoPublico; destaque?: boolean }) {
         ))}
       </ul>
 
-      {enterprise ? (
+      {consulta ? (
         <AplicarButton className="mt-6 flex items-center justify-center gap-2 rounded-full border border-borda bg-fundo px-5 py-3 text-sm font-bold text-texto transition-colors hover:border-marca hover:text-marca">
           Falar com a gente
         </AplicarButton>
