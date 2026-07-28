@@ -14,6 +14,7 @@ import {
   FileDown,
   Radar,
   BookOpen,
+  Gauge,
 } from "lucide-react";
 import { salvarConfig, salvarRespostasRapidas } from "@/lib/supabase/crm-actions";
 import { assinarPlano, gerenciarAssinatura } from "@/lib/billing/actions";
@@ -379,6 +380,8 @@ function Faturamento({ billing }: { billing: BillingInfo }) {
         )}
       </div>
 
+      <UsoIACard billing={billing} />
+
       {erro && <p className="mt-3 text-sm font-medium text-red-600">{erro}</p>}
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -405,6 +408,58 @@ function Faturamento({ billing }: { billing: BillingInfo }) {
         )}
       </div>
     </Painel>
+  );
+}
+
+/* ---------- Uso de IA do mês (franquia — transparência) ---------- */
+function UsoIACard({ billing }: { billing: BillingInfo }) {
+  const ilimitado = billing.iaTetoCents <= 0;
+  const pct = billing.iaPct;
+  const mes = new Date().toLocaleDateString("pt-BR", { month: "long" });
+
+  const nivel = pct >= 100 ? "cheio" : pct >= 80 ? "alto" : "ok";
+  const corBarra =
+    nivel === "cheio" ? "bg-red-500" : nivel === "alto" ? "bg-amber-500" : "bg-marca";
+  const corRotulo =
+    nivel === "cheio" ? "text-red-600" : nivel === "alto" ? "text-amber-600" : "text-texto-suave";
+  const rotulo = nivel === "cheio" ? "No limite" : nivel === "alto" ? "Uso elevado" : "Dentro da franquia";
+
+  const microcopy =
+    pct === 0
+      ? "Nenhum uso de IA ainda neste mês."
+      : nivel === "cheio"
+      ? "Você atingiu a franquia de IA deste mês. O atendimento automático pode pausar até o próximo ciclo — fale com o suporte para ampliar seu plano."
+      : nivel === "alto"
+      ? "Uso elevado neste mês. Se chegar a 100%, o atendimento por IA pode pausar até o próximo ciclo — fale com o suporte para ampliar."
+      : "Tudo tranquilo — você está bem dentro da sua franquia de IA.";
+
+  return (
+    <div className="mt-4 rounded-lg border border-borda bg-superficie p-5">
+      <div className="flex items-center gap-2">
+        <Gauge size={16} className="text-marca" />
+        <span className="text-sm font-bold capitalize text-texto">Uso de IA em {mes}</span>
+      </div>
+
+      {ilimitado ? (
+        <p className="mt-2 text-sm text-texto-suave">
+          Seu plano tem <strong className="text-texto">uso de IA ilimitado</strong>. 🎉
+        </p>
+      ) : (
+        <>
+          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-fundo">
+            <div
+              className={`h-full rounded-full ${corBarra} transition-all`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-texto">{pct}% da franquia</span>
+            <span className={`text-xs font-semibold ${corRotulo}`}>{rotulo}</span>
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-texto-suave">{microcopy}</p>
+        </>
+      )}
+    </div>
   );
 }
 
