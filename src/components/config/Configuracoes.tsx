@@ -13,6 +13,7 @@ import {
   Target,
   FileDown,
   Radar,
+  BookOpen,
 } from "lucide-react";
 import { salvarConfig, salvarRespostasRapidas } from "@/lib/supabase/crm-actions";
 import { assinarPlano, gerenciarAssinatura } from "@/lib/billing/actions";
@@ -20,6 +21,8 @@ import type { BillingInfo } from "@/lib/billing/data";
 import type { Config } from "@/lib/supabase/crm-data";
 import type { EquipeInfo } from "@/lib/team/data";
 import { EquipeManager } from "./EquipeManager";
+import { ConhecimentoCard } from "./ConhecimentoCard";
+import type { KbFile } from "@/lib/kb/data";
 import { AtendimentoCard } from "./AtendimentoCard";
 import type { AtendimentoCfg } from "@/lib/supabase/crm-data";
 import { WhatsAppCard } from "./WhatsAppCard";
@@ -28,11 +31,12 @@ import { CaptacaoNumerosCard } from "./CaptacaoNumerosCard";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
 
-type Aba = "identidade" | "integracoes" | "equipe" | "faturamento";
+type Aba = "identidade" | "integracoes" | "conhecimento" | "equipe" | "faturamento";
 
 const abas: { id: Aba; rotulo: string; icon: typeof Building2 }[] = [
   { id: "identidade", rotulo: "Identidade do Negócio", icon: Building2 },
   { id: "integracoes", rotulo: "Integrações e APIs", icon: Plug },
+  { id: "conhecimento", rotulo: "Base de Conhecimento", icon: BookOpen },
   { id: "equipe", rotulo: "Gestão de Equipe", icon: Users },
   { id: "faturamento", rotulo: "Faturamento e Plano", icon: CreditCard },
 ];
@@ -46,6 +50,7 @@ export function Configuracoes({
   atendimento,
   iaAtiva = true,
   numerosCaptacao,
+  docsKb = [],
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
@@ -55,6 +60,7 @@ export function Configuracoes({
   atendimento?: AtendimentoCfg;
   iaAtiva?: boolean;
   numerosCaptacao?: { instancias: string[]; max: number };
+  docsKb?: KbFile[];
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -132,6 +138,7 @@ export function Configuracoes({
               <AtendimentoCard inicial={atendimento ?? { especialista: "", abre: 8, fecha: 18 }} />
             </div>
           )}
+          {aba === "conhecimento" && <ConhecimentoCard docs={docsKb} />}
           {aba === "faturamento" && <Faturamento billing={billing} />}
         </div>
       </div>
