@@ -127,3 +127,26 @@ export async function criarEventoGoogle(
     return null;
   }
 }
+
+/**
+ * Apaga um evento no Google Calendar do cliente (best-effort). Usado ao
+ * excluir/anonimizar um titular (LGPD): sem isto, nome/telefone/serviço do
+ * consumidor sobrevivem espelhados no calendário do cliente. Nunca lança —
+ * falha de rede/token não pode travar a exclusão dos dados no nosso banco.
+ */
+export async function excluirEventoGoogle(tenantId: string, eventId: string): Promise<boolean> {
+  if (!eventId) return false;
+  const token = await getAccessToken(tenantId);
+  if (!token) return false;
+  const cal = await calendarioDoTenant(tenantId);
+  try {
+    const r = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal)}/events/${encodeURIComponent(eventId)}`,
+      { method: "DELETE", headers: { authorization: `Bearer ${token}` } }
+    );
+    // 2xx = apagado; 404/410 = já não existe (idempotente → tratar como sucesso).
+    return r.ok || r.status === 404 || r.status === 410;
+  } catch {
+    return false;
+  }
+}

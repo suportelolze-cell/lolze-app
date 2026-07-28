@@ -6,6 +6,7 @@ import { entrarComo, listarVersoesPersona } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
 import { AlterarEmailAcesso } from "@/components/admin/AlterarEmailAcesso";
 import { ExcluirClienteCard } from "@/components/admin/ExcluirClienteCard";
+import { ExportarContaButton } from "@/components/admin/ExportarContaButton";
 import { PersonaForm } from "@/components/admin/PersonaForm";
 import { PersonaHistorico } from "@/components/admin/PersonaHistorico";
 import { EvolutionForm } from "@/components/admin/EvolutionForm";
@@ -124,6 +125,10 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="mt-10">
+        <ExportarContaButton tenantId={cliente.id} nome={cliente.nome} />
+      </div>
+
+      <div className="mt-6">
         <ExcluirClienteCard tenantId={cliente.id} nome={cliente.nome} />
       </div>
     </div>

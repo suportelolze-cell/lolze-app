@@ -20,7 +20,11 @@ export type AcaoAuditoria =
   | "cliente.excluido"
   | "acesso.email_alterado"
   | "impersonacao.iniciada"
-  | "canal.configurado";
+  | "canal.configurado"
+  | "lead.exportado"
+  | "lead.anonimizado"
+  | "lead.excluido"
+  | "conta.exportada";
 
 export const ROTULO_ACAO: Record<string, string> = {
   "persona.editada": "Persona do agente editada",
@@ -33,6 +37,10 @@ export const ROTULO_ACAO: Record<string, string> = {
   "acesso.email_alterado": "E-mail de acesso alterado",
   "impersonacao.iniciada": "Entrou como cliente",
   "canal.configurado": "Canal configurado",
+  "lead.exportado": "Dados do contato exportados (LGPD)",
+  "lead.anonimizado": "Dados do contato anonimizados (LGPD)",
+  "lead.excluido": "Contato excluído (LGPD)",
+  "conta.exportada": "Conta exportada (LGPD)",
 };
 
 /** Registra um evento de auditoria. Best-effort — não lança. */

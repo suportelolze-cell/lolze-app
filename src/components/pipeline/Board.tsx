@@ -17,7 +17,13 @@ import { Column } from "./Column";
 import { LeadCard } from "./LeadCard";
 import { LeadDetail } from "./LeadDetail";
 
-export function Board({ initialLeads }: { initialLeads: Lead[] }) {
+export function Board({
+  initialLeads,
+  podeGerir = false,
+}: {
+  initialLeads: Lead[];
+  podeGerir?: boolean;
+}) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [busca, setBusca] = useState("");
   const [ativo, setAtivo] = useState<Lead | null>(null); // card em arrasto
@@ -114,7 +120,7 @@ export function Board({ initialLeads }: { initialLeads: Lead[] }) {
       </DndContext>
 
       {/* Painel Raio-X */}
-      <LeadDetail lead={perfil} onClose={() => setPerfil(null)} />
+      <LeadDetail lead={perfil} onClose={() => setPerfil(null)} podeGerir={podeGerir} />
     </div>
   );
 }

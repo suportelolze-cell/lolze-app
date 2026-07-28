@@ -3,13 +3,16 @@
 import { useRouter } from "next/navigation";
 import { X, Phone, Mail, Sparkles, MessageSquare } from "lucide-react";
 import type { Lead } from "@/lib/leads";
+import { LgpdLeadActions } from "./LgpdLeadActions";
 
 export function LeadDetail({
   lead,
   onClose,
+  podeGerir = false,
 }: {
   lead: Lead | null;
   onClose: () => void;
+  podeGerir?: boolean;
 }) {
   const router = useRouter();
   return (
@@ -87,6 +90,9 @@ export function LeadDetail({
                   className="w-full resize-none rounded-md border border-borda bg-fundo p-3 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca"
                 />
               </div>
+
+              {/* Privacidade (LGPD) — só para gestor */}
+              {podeGerir && <LgpdLeadActions leadId={lead.id} nome={lead.nome} />}
             </div>
 
             {/* Ação principal */}

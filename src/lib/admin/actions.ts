@@ -8,6 +8,7 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 import { getSessao, IMPERSONATE_COOKIE } from "@/lib/supabase/tenant";
 import { provisionarTenant } from "@/lib/cadastro/provisionar";
 import { registrarAuditoria } from "./auditoria";
+import { ORFAOS_TENANT } from "@/lib/lgpd/lgpd-core";
 
 async function exigirSuper() {
   const s = await getSessao();
@@ -432,6 +433,25 @@ export async function excluirCliente(
 
   // 2. Perfis (FK tenant_id = SET NULL não remove sozinho; some o vínculo).
   await admin.from("app_profiles").delete().eq("tenant_id", tenantId).neq("papel", "superadmin");
+
+  // 2.5 Mídias no Storage (bucket 'midias'): o CASCADE do banco NÃO toca no
+  // Storage — sem isto, fotos/áudios/documentos do consumidor sobrevivem à
+  // exclusão. Best-effort: falha de Storage não impede apagar a conta.
+  const { data: comMidia } = await admin
+    .from("app_mensagens")
+    .select("midia_url")
+    .eq("tenant_id", tenantId)
+    .not("midia_url", "is", null);
+  const paths = (comMidia ?? []).map((m) => m.midia_url as string).filter(Boolean);
+  if (paths.length) await admin.storage.from("midias").remove(paths);
+
+  // 2.6 Tabelas SEM FK ao tenant (o CASCADE não as limpa) — evita PII órfã
+  // (app_erros, app_prospects [PII de terceiros], app_uso_ia, app_ideias;
+  // app_ideia_comentarios/likes cascateiam de app_ideias).
+  for (const tabela of ORFAOS_TENANT) {
+    const { error: eOrfao } = await admin.from(tabela).delete().eq("tenant_id", tenantId);
+    if (eOrfao) return { ok: false, erro: `${tabela}: ${eOrfao.message}` };
+  }
 
   // 3. Tenant — CASCADE limpa o resto dos dados do cliente.
   const { error } = await admin.from("app_tenants").delete().eq("id", tenantId);
