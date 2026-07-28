@@ -6,12 +6,13 @@ import { getBillingInfo } from "@/lib/billing/data";
 import { getEquipeInfo } from "@/lib/team/data";
 import { getGoogleStatus } from "@/lib/google/oauth";
 import { getTenantId } from "@/lib/supabase/tenant";
+import { listarDocs } from "@/lib/kb/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracoesPage() {
   const tid = await getTenantId();
-  const [config, equipeInfo, respostas, billing, google, atendimento, iaAtiva, numerosCaptacao] =
+  const [config, equipeInfo, respostas, billing, google, atendimento, iaAtiva, numerosCaptacao, docsKb] =
     await Promise.all([
       getConfig(),
       getEquipeInfo(),
@@ -21,6 +22,7 @@ export default async function ConfiguracoesPage() {
       getAtendimentoCfg(),
       getIaAtiva(),
       getNumerosCaptacaoInfo(),
+      tid ? listarDocs(tid) : Promise.resolve([]),
     ]);
   return (
     <Configuracoes
@@ -32,6 +34,7 @@ export default async function ConfiguracoesPage() {
       atendimento={atendimento}
       iaAtiva={iaAtiva}
       numerosCaptacao={numerosCaptacao}
+      docsKb={docsKb}
     />
   );
 }

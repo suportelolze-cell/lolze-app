@@ -88,3 +88,18 @@ export async function removerDocumento(tenantId: string, fileNome: string): Prom
   revalidatePath(`/admin/clientes/${tenantId}`);
   return { ok: true };
 }
+
+/** Remove um documento da PRÓPRIA base (gestor do tenant, escopo pela sessão). */
+export async function removerDocumentoCliente(fileNome: string): Promise<ResDoc> {
+  const s = await getSessao();
+  if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, erro: "Sem permissão." };
+  const admin = getCrmAdmin();
+  const { error } = await admin
+    .from("app_kb_documents")
+    .delete()
+    .eq("tenant_id", s.tenantId)
+    .eq("file_nome", fileNome);
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/configuracoes");
+  return { ok: true };
+}
