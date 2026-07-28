@@ -55,7 +55,7 @@ export default async function AdminFunilPage({
               <Link
                 key={p.d}
                 href={`/admin/funil?d=${p.d}`}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                className={`rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
                   ativo === p.d ? "bg-marca text-bege-principal" : "text-texto-suave hover:text-texto"
                 }`}
               >
@@ -106,8 +106,8 @@ export default async function AdminFunilPage({
               {r.jornada.map((e) => {
                 const largura = e.pctBase != null ? Math.max(e.pctBase, e.total > 0 ? 4 : 0) : 0;
                 return (
-                  <div key={e.chave} className="flex items-center gap-4">
-                    <div className="w-44 shrink-0 text-sm font-semibold text-texto">{e.label}</div>
+                  <div key={e.chave} className="flex items-center gap-2 sm:gap-4">
+                    <div className="w-24 shrink-0 text-sm font-semibold text-texto sm:w-44">{e.label}</div>
                     <div className="relative h-9 flex-1 overflow-hidden rounded-md bg-fundo">
                       <div
                         className="flex h-full items-center rounded-md bg-marca/85 px-3 transition-all"

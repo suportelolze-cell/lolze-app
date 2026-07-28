@@ -186,14 +186,14 @@ export default async function AdminPage() {
                           <form action={entrarComo.bind(null, c.id)}>
                             <button
                               type="submit"
-                              className="flex items-center gap-1.5 rounded-sm border border-borda px-3 py-1.5 text-xs font-semibold text-texto transition-colors hover:border-marca hover:text-marca"
+                              className="flex items-center gap-1.5 rounded-sm border border-borda px-3 py-2 text-xs font-semibold text-texto transition-colors hover:border-marca hover:text-marca"
                             >
                               <Eye size={14} /> Entrar como
                             </button>
                           </form>
                           <Link
                             href={`/admin/clientes/${c.id}`}
-                            className="rounded-sm bg-escuro-quente px-3 py-1.5 text-xs font-semibold text-bege-principal transition-transform hover:scale-[1.03]"
+                            className="rounded-sm bg-escuro-quente px-3 py-2 text-xs font-semibold text-bege-principal transition-transform hover:scale-[1.03]"
                           >
                             Gerenciar
                           </Link>

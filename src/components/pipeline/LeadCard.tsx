@@ -74,7 +74,7 @@ export function LeadCard({
             router.push(`/atendimento?conversa=${lead.id}`);
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex flex-1 items-center justify-center gap-1 rounded bg-marca px-2 py-1.5 text-[11px] font-semibold text-bege-principal"
+          className="flex flex-1 items-center justify-center gap-1 rounded bg-marca px-2 py-2.5 text-xs font-semibold text-bege-principal"
         >
           <MessageSquare size={12} /> Abrir Chat
         </button>
@@ -83,7 +83,7 @@ export function LeadCard({
             e.stopPropagation();
             onPerfil?.(lead);
           }}
-          className="flex flex-1 items-center justify-center gap-1 rounded border border-borda px-2 py-1.5 text-[11px] font-semibold text-texto hover:bg-fundo"
+          className="flex flex-1 items-center justify-center gap-1 rounded border border-borda px-2 py-2.5 text-xs font-semibold text-texto hover:bg-fundo"
         >
           <User size={12} /> Ver Perfil
         </button>

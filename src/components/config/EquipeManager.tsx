@@ -215,18 +215,18 @@ function MembroRow({
 }) {
   return (
     <div className="flex items-center justify-between rounded-md border border-borda bg-fundo px-4 py-3">
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-escuro-quente text-sm font-bold text-bege-principal">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-escuro-quente text-sm font-bold text-bege-principal">
           {(nome[0] || "?").toUpperCase()}
         </span>
-        <div>
-          <p className="text-sm font-semibold text-texto">{nome}</p>
-          <p className="text-xs text-texto-suave">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-texto">{nome}</p>
+          <p className="truncate text-xs text-texto-suave">
             {papel} · {email}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <span
           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
             inicial ? "bg-escuro-quente/10 text-texto" : "bg-marca-suave text-marca"
@@ -238,7 +238,7 @@ function MembroRow({
           <button
             onClick={onRemover}
             aria-label="Remover"
-            className="rounded-md p-1.5 text-texto-suave transition-colors hover:bg-red-50 hover:text-red-600"
+            className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-red-50 hover:text-red-600"
           >
             <Trash2 size={16} />
           </button>

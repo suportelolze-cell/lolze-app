@@ -27,7 +27,7 @@ export default async function AdminAlertasPage() {
       </header>
 
       {/* Contadores */}
-      <section className="mb-6 grid grid-cols-3 gap-4">
+      <section className="mb-6 grid grid-cols-3 gap-2 sm:gap-4">
         <Contador rotulo="Críticos" valor={r.criticos} tom={r.criticos > 0 ? "critico" : "ok"} />
         <Contador rotulo="Atenção" valor={r.atencao} tom={r.atencao > 0 ? "atencao" : "ok"} />
         <Contador rotulo="Clientes afetados" valor={r.tenantsComAlerta} tom="neutro" />
@@ -88,7 +88,7 @@ function Contador({
           ? "border-borda bg-superficie text-marca"
           : "border-borda bg-superficie text-texto";
   return (
-    <div className={`rounded-xl border p-4 text-center ${cor}`}>
+    <div className={`rounded-xl border p-3 text-center sm:p-4 ${cor}`}>
       <p className="text-2xl font-bold">{valor}</p>
       <p className="mt-1 text-xs font-medium uppercase tracking-wide opacity-80">{rotulo}</p>
     </div>

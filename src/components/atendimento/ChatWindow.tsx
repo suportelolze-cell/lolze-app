@@ -81,7 +81,7 @@ export function ChatWindow({
             <button
               onClick={onVoltar}
               aria-label="Voltar"
-              className="rounded-md p-1.5 text-texto hover:bg-fundo lg:hidden"
+              className="rounded-md p-2.5 text-texto hover:bg-fundo lg:hidden"
             >
               <ChevronLeft size={20} />
             </button>
@@ -96,7 +96,7 @@ export function ChatWindow({
             <button
               onClick={onAbrirPainel}
               aria-label="Raio-X do cliente"
-              className="rounded-md border border-borda p-2 text-texto hover:bg-fundo xl:hidden"
+              className="rounded-md border border-borda p-2.5 text-texto hover:bg-fundo xl:hidden"
             >
               <PanelRight size={16} />
             </button>
@@ -137,7 +137,7 @@ export function ChatWindow({
       </div>
 
       {/* Mensagens */}
-      <div ref={listaRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
+      <div ref={listaRef} className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-6 py-5">
         {conversa.mensagens.map((m, i) => {
           const divisorAqui =
             primeiroAtendente !== -1 && i === primeiroAtendente;
@@ -202,7 +202,7 @@ export function ChatWindow({
           <div className="flex items-end gap-2">
             <button
               onClick={() => setMostrarRespostas((v) => !v)}
-              className={`rounded-md p-2 transition-colors hover:bg-fundo ${
+              className={`rounded-md p-2.5 transition-colors hover:bg-fundo ${
                 mostrarRespostas ? "text-marca" : "text-texto-suave"
               }`}
               title="Respostas rápidas"
@@ -262,7 +262,7 @@ function MidiaLead({
   midiaTipo?: "imagem" | "audio" | "documento" | null;
   texto: string;
 }) {
-  if (!midiaUrl) return <p className="text-sm text-texto">{texto}</p>;
+  if (!midiaUrl) return <p className="text-sm text-texto break-words">{texto}</p>;
   if (midiaTipo === "imagem") {
     return (
       <a href={midiaUrl} target="_blank" rel="noopener noreferrer">
@@ -335,7 +335,7 @@ function Balao({
         <span className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold opacity-80">
           {ia ? <><Bot size={11} /> IA</> : <>👤 Atendente</>}
         </span>
-        <p className="text-sm">{texto}</p>
+        <p className="text-sm break-words whitespace-pre-wrap">{texto}</p>
         <span
           className={`mt-1 block text-right text-[10px] ${
             ia ? "text-texto-suave" : "text-bege-principal/70"

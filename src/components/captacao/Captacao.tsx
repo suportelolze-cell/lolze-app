@@ -148,8 +148,8 @@ export function Captacao({
                 Escolha o número dedicado que a Lolze liberou para você.
               </p>
             </div>
-            <div className="flex items-end gap-4">
-              <div className="w-32">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="w-full sm:w-32">
                 <label className="mb-1 block text-sm font-semibold text-texto">Envios por dia</label>
                 <input
                   type="number"
@@ -255,7 +255,7 @@ export function Captacao({
                     <button
                       onClick={() => descartar(p.id)}
                       aria-label="Descartar"
-                      className="shrink-0 text-texto-suave hover:text-red-600"
+                      className="-mr-1.5 shrink-0 p-2 text-texto-suave hover:text-red-600"
                     >
                       <Trash2 size={15} />
                     </button>

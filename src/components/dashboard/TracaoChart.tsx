@@ -48,7 +48,7 @@ export function TracaoChart({ dados }: { dados: TracaoPonto[] }) {
             <button
               key={p}
               onClick={() => setPeriodo(p)}
-              className={`rounded px-3 py-1 text-xs font-semibold transition-colors ${
+              className={`rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
                 periodo === p ? "bg-superficie text-texto shadow-sm" : "text-texto-suave hover:text-texto"
               }`}
             >
@@ -75,7 +75,8 @@ export function TracaoChart({ dados }: { dados: TracaoPonto[] }) {
           </p>
         </div>
       ) : (
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-[240px] w-full" preserveAspectRatio="none">
+        <div className="overflow-x-auto">
+        <svg viewBox={`0 0 ${W} ${H}`} className="h-[240px] w-full min-w-[520px]" preserveAspectRatio="none">
           <defs>
             <linearGradient id="grad-leads" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#15803D" stopOpacity="0.18" />
@@ -90,6 +91,7 @@ export function TracaoChart({ dados }: { dados: TracaoPonto[] }) {
           <path d={linha(ptsLeads)} fill="none" stroke="#15803D" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
           <path d={linha(ptsAgend)} fill="none" stroke="#5A554C" strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
         </svg>
+        </div>
       )}
     </div>
   );

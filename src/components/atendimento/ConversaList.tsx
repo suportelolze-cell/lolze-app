@@ -62,7 +62,7 @@ export function ConversaList({
           />
         </div>
         {/* Filtros */}
-        <div className="mt-2 flex gap-1">
+        <div className="mt-2 flex flex-wrap gap-1">
           {filtros.map((f) => (
             <button
               key={f.id}

@@ -50,11 +50,11 @@ export function CompromissoDetail({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-escuro-quente/40 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-escuro-quente/40 p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-lg bg-superficie shadow-2xl"
+        className="my-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-superficie shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-borda px-6 py-4">

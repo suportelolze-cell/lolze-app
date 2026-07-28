@@ -144,7 +144,7 @@ export function Agenda({
       </header>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex gap-1 rounded-md bg-superficie p-1">
             {(["dia", "semana", "mes"] as View[]).map((v) => (
               <button
@@ -160,11 +160,11 @@ export function Agenda({
           </div>
           {/* Navegação de período */}
           <div className="flex items-center gap-1">
-            <button onClick={() => navegar(-1)} className="rounded-md border border-borda p-1.5 text-texto-suave hover:bg-superficie hover:text-texto">
+            <button onClick={() => navegar(-1)} className="rounded-md border border-borda p-2.5 text-texto-suave hover:bg-superficie hover:text-texto">
               <ChevronLeft size={16} />
             </button>
             <span className="min-w-[120px] text-center text-sm font-semibold text-texto">{label}</span>
-            <button onClick={() => navegar(1)} className="rounded-md border border-borda p-1.5 text-texto-suave hover:bg-superficie hover:text-texto">
+            <button onClick={() => navegar(1)} className="rounded-md border border-borda p-2.5 text-texto-suave hover:bg-superficie hover:text-texto">
               <ChevronRight size={16} />
             </button>
             <button onClick={() => router.push("/agenda")} className="ml-1 rounded-md border border-borda px-2.5 py-1.5 text-xs font-semibold text-texto-suave hover:bg-superficie hover:text-texto">
@@ -179,7 +179,7 @@ export function Agenda({
         </div>
       </div>
 
-      <div className="flex gap-5">
+      <div className="flex flex-col gap-5 lg:flex-row">
         <div className="min-w-0 flex-1">
           {view === "mes" ? (
             <MonthGrid agendamentos={filtrados} ano={ano} mes={mes} onSelect={setSelecionado} />

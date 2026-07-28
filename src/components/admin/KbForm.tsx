@@ -198,7 +198,7 @@ export function KbForm({
                 <button
                   onClick={() => remover(d.fileNome)}
                   aria-label="Remover"
-                  className="rounded-md p-1.5 text-texto-suave transition-colors hover:bg-red-50 hover:text-red-600"
+                  className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-red-50 hover:text-red-600"
                 >
                   <Trash2 size={16} />
                 </button>
