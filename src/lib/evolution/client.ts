@@ -351,6 +351,61 @@ export async function enviarTexto(
 }
 
 /**
+ * Envia uma mídia pela Evolution a partir de uma URL (a Evolution baixa e
+ * reencaminha). Áudio vai por /sendWhatsAppAudio (nota de voz); os demais por
+ * /sendMedia. Tolerante a variações de formato entre builds (tenta vários).
+ * `tipo` = image | video | document | audio.
+ */
+export async function enviarMidia(
+  instancia: string,
+  numero: string,
+  opts: {
+    tipo: "image" | "video" | "document" | "audio";
+    url: string;
+    mime?: string;
+    caption?: string;
+    fileName?: string;
+  }
+): Promise<boolean> {
+  const dest = numero.replace(/@.*/, "");
+
+  if (opts.tipo === "audio") {
+    const tentativas: Record<string, unknown>[] = [
+      { number: dest, audio: opts.url },
+      { number: dest, audioMessage: { audio: opts.url } },
+    ];
+    for (const body of tentativas) {
+      const r = await evo(`/message/sendWhatsAppAudio/${encodeURIComponent(instancia)}`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (r.ok) return true;
+    }
+    return false;
+  }
+
+  const campos = {
+    mediatype: opts.tipo,
+    media: opts.url,
+    ...(opts.caption ? { caption: opts.caption } : {}),
+    ...(opts.fileName ? { fileName: opts.fileName } : {}),
+    ...(opts.mime ? { mimetype: opts.mime } : {}),
+  };
+  const tentativas: Record<string, unknown>[] = [
+    { number: dest, ...campos },
+    { number: dest, mediaMessage: campos },
+  ];
+  for (const body of tentativas) {
+    const r = await evo(`/message/sendMedia/${encodeURIComponent(instancia)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (r.ok) return true;
+  }
+  return false;
+}
+
+/**
  * Baixa a mídia de uma mensagem (áudio/imagem/documento) como base64.
  * Recebe o objeto `message` cru vindo do webhook da Evolution.
  */
@@ -394,15 +449,36 @@ export async function uploadMidia(
   }
 }
 
-/** Gera URLs assinadas (1h) para caminhos do bucket 'midias'. */
+// Cache de URLs assinadas por caminho. A assinatura muda a cada chamada de
+// createSignedUrls; sem cache, cada poll (8s) trocaria o `src` da mídia e
+// reiniciaria vídeo/áudio (e re-baixaria imagens). Reusa a MESMA URL enquanto
+// válida, para o elemento <video>/<audio> não recarregar.
+const TTL_ASSINATURA_S = 3600; // 1h de validade da URL
+const REUSAR_ATE_MS = 55 * 60 * 1000; // reusa até 55min (margem antes de expirar)
+const _cacheMidiaUrl = new Map<string, { url: string; exp: number }>();
+
+/** Gera (e cacheia) URLs assinadas para caminhos do bucket 'midias'. */
 export async function urlsAssinadasMidia(paths: string[]): Promise<Map<string, string>> {
   const mapa = new Map<string, string>();
   if (paths.length === 0) return mapa;
+
+  const agora = Date.now();
+  const faltando: string[] = [];
+  for (const p of paths) {
+    const c = _cacheMidiaUrl.get(p);
+    if (c && c.exp > agora) mapa.set(p, c.url);
+    else faltando.push(p);
+  }
+  if (faltando.length === 0) return mapa;
+
   try {
     const admin = getCrmAdmin();
-    const { data } = await admin.storage.from("midias").createSignedUrls(paths, 3600);
+    const { data } = await admin.storage.from("midias").createSignedUrls(faltando, TTL_ASSINATURA_S);
     (data ?? []).forEach((d) => {
-      if (d.path && d.signedUrl) mapa.set(d.path, d.signedUrl);
+      if (d.path && d.signedUrl) {
+        _cacheMidiaUrl.set(d.path, { url: d.signedUrl, exp: agora + REUSAR_ATE_MS });
+        mapa.set(d.path, d.signedUrl);
+      }
     });
   } catch {
     /* best-effort */

@@ -375,7 +375,7 @@ export async function getConversas(): Promise<Conversa[]> {
           texto: m.texto,
           hora: hhmm(m.created_at),
           midiaUrl: m.midia_url ? urlPorCaminho.get(m.midia_url) ?? null : null,
-          midiaTipo: (m.midia_tipo as "imagem" | "audio" | "documento" | null) ?? null,
+          midiaTipo: (m.midia_tipo as "imagem" | "video" | "audio" | "documento" | null) ?? null,
           status:
             (m.status as "pendente" | "enviada" | "entregue" | "lida" | "falhou" | null) ?? null,
         })),

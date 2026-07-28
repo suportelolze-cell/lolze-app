@@ -9,6 +9,8 @@ import {
   enviarMensagem,
   recarregarConversas,
 } from "@/lib/supabase/crm-actions";
+import { criarUploadAnexo, enviarAnexo } from "@/lib/atendimento/anexos";
+import { tipoDeMime, dentroDoLimite, extDeNome, limiteMb } from "@/lib/atendimento/midia-core";
 import { crmBrowser } from "@/lib/supabase/browser";
 import { ConversaList, type Filtro } from "./ConversaList";
 import { ChatWindow } from "./ChatWindow";
@@ -73,6 +75,7 @@ export function Atendimento({
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [painelAberto, setPainelAberto] = useState(false); // Raio-X no mobile
   const [aviso, setAviso] = useState("");
+  const [anexando, setAnexando] = useState(false);
   const enviando = useRef(false); // evita sobrescrever envio otimista em andamento
   const snapshotRef = useRef<{ msgs: number; aguardando: number } | null>(null);
 
@@ -193,6 +196,61 @@ export function Atendimento({
     }
   }
 
+  async function onAnexar(file: File, caption?: string) {
+    if (!selecionada) return;
+    setAviso("");
+    const tipo = tipoDeMime(file.type);
+    if (!tipo) {
+      setAviso("Tipo de arquivo não suportado.");
+      return;
+    }
+    if (!dentroDoLimite(tipo, file.size)) {
+      setAviso(`Arquivo muito grande para ${tipo}. Limite: ${limiteMb(tipo)} MB.`);
+      return;
+    }
+    const id = selecionada.id;
+    const tempId = Date.now();
+    setAnexando(true);
+    enviando.current = true;
+    // Bolha otimista enquanto o arquivo sobe (reconciliada no recarregar).
+    patch(id, (c) => ({
+      ...c,
+      mensagens: [
+        ...c.mensagens,
+        { id: tempId, autor: "atendente", texto: caption || `📎 ${file.name}`, hora: agora() },
+      ],
+    }));
+    try {
+      const up = await criarUploadAnexo(id, extDeNome(file.name));
+      if (!up.ok || !up.path || !up.token) {
+        setAviso(up.erro ?? "Não foi possível preparar o envio.");
+        return;
+      }
+      const { error } = await crmBrowser.storage
+        .from("midias")
+        .uploadToSignedUrl(up.path, up.token, file);
+      if (error) {
+        setAviso("Falha no upload do arquivo.");
+        return;
+      }
+      const r = await enviarAnexo(id, up.path, file.type || "application/octet-stream", file.name, caption);
+      if (!r.ok) {
+        setAviso(r.erro ?? "Não foi possível enviar o anexo.");
+        // Sem mensagem apontando pro arquivo: remove o órfão do Storage.
+        await crmBrowser.storage.from("midias").remove([up.path]).catch(() => {});
+      } else if (r.aviso) {
+        setAviso(r.aviso);
+      }
+    } catch {
+      setAviso("Não foi possível enviar o anexo.");
+    } finally {
+      setAnexando(false);
+      enviando.current = false;
+      patch(id, (c) => ({ ...c, mensagens: c.mensagens.filter((m) => m.id !== tempId) }));
+      recarregar();
+    }
+  }
+
   const ativas = conversas.length;
   const aguardando = conversas.filter((c) => c.precisaHumano).length;
 
@@ -263,6 +321,8 @@ export function Atendimento({
             onAssumir={onAssumir}
             onDevolver={onDevolver}
             onEnviar={onEnviar}
+            onAnexar={onAnexar}
+            anexando={anexando}
             onVoltar={() => setSelecionadaId(null)}
             onAbrirPainel={() => setPainelAberto(true)}
             respostasRapidas={respostasRapidas}
