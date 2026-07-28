@@ -28,28 +28,65 @@ async function stripePost(path: string, params: Record<string, string>) {
   return { ok: res.ok, json };
 }
 
-/** Cria uma sessão de Checkout (assinatura) e devolve a URL de pagamento. */
-export async function criarCheckout(opts: {
+export type CheckoutOpts = {
   tenantId: string;
   priceId: string;
   email?: string;
   customerId?: string | null;
+  /** Taxa de implantação (centavos). Cobrada NA CONTRATAÇÃO como item avulso. */
+  setupCents?: number;
+  /** Carência em dias = trial real: a mensalidade só começa depois disso. */
+  trialDays?: number;
+  /** Nome do plano, só para rotular o item de implantação na fatura. */
+  nomePlano?: string;
   successPath?: string;
   cancelPath?: string;
-}): Promise<string | null> {
+  /** Base URL (para teste); sem ela usa APP_PUBLIC_URL. */
+  baseUrl?: string;
+};
+
+/**
+ * Monta os params do Checkout (PURO, testável). Modela a oferta do dossiê (§7):
+ * implantação como item AVULSO (vai na fatura inicial → cobrada no ato do
+ * checkout) + mensalidade RECORRENTE com carência como trial real (só o
+ * recorrente é adiado; a implantação não). Ver docs Stripe "one-time setup fee".
+ */
+export function montarParamsCheckout(opts: CheckoutOpts): Record<string, string> {
+  const base = (opts.baseUrl ?? appUrl()).replace(/\/+$/, "");
   const params: Record<string, string> = {
     mode: "subscription",
     "line_items[0][price]": opts.priceId,
     "line_items[0][quantity]": "1",
-    success_url: `${appUrl()}${opts.successPath ?? "/configuracoes?assinatura=ok"}`,
-    cancel_url: `${appUrl()}${opts.cancelPath ?? "/configuracoes?assinatura=cancel"}`,
+    success_url: `${base}${opts.successPath ?? "/configuracoes?assinatura=ok"}`,
+    cancel_url: `${base}${opts.cancelPath ?? "/configuracoes?assinatura=cancel"}`,
     "metadata[tenant_id]": opts.tenantId,
     "subscription_data[metadata][tenant_id]": opts.tenantId,
     allow_promotion_codes: "true",
   };
+
+  // Implantação (taxa única, na contratação): item avulso via price_data inline —
+  // sem precisar de um Price pré-criado. Cobrado no checkout mesmo com trial.
+  if (opts.setupCents && opts.setupCents > 0) {
+    params["line_items[1][price_data][currency]"] = "brl";
+    params["line_items[1][price_data][product_data][name]"] =
+      `Implantação — Lolze ${opts.nomePlano ?? ""}`.trim();
+    params["line_items[1][price_data][unit_amount]"] = String(Math.round(opts.setupCents));
+    params["line_items[1][quantity]"] = "1";
+  }
+
+  // Carência = trial real: a mensalidade só arranca no go-live (dossiê §4.3/§7).
+  if (opts.trialDays && opts.trialDays > 0) {
+    params["subscription_data[trial_period_days]"] = String(Math.round(opts.trialDays));
+  }
+
   if (opts.customerId) params.customer = opts.customerId;
   else if (opts.email) params.customer_email = opts.email;
-  const r = await stripePost("/checkout/sessions", params);
+  return params;
+}
+
+/** Cria uma sessão de Checkout (assinatura + implantação + carência) e devolve a URL. */
+export async function criarCheckout(opts: CheckoutOpts): Promise<string | null> {
+  const r = await stripePost("/checkout/sessions", montarParamsCheckout(opts));
   return r.ok ? (r.json?.url ?? null) : null;
 }
 
