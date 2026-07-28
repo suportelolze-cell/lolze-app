@@ -4,7 +4,7 @@ export const metadata = { title: "Política de Privacidade · Lolze" };
 
 export default function PrivacidadePage() {
   return (
-    <LegalPage titulo="Política de Privacidade" atualizado="14 de junho de 2026">
+    <LegalPage titulo="Política de Privacidade" atualizado="28 de julho de 2026">
       <P>
         Esta Política de Privacidade descreve como a <strong>Lolze</strong>,
         operada por <strong>Abner Oliveira</strong> (atualmente como pessoa
@@ -83,6 +83,11 @@ export default function PrivacidadePage() {
         de acessos exigido pelo Marco Civil). Encerrado o tratamento, os dados são
         eliminados ou anonimizados, salvo hipóteses legais de guarda.
       </P>
+      <P>
+        Registros de pagamento (faturas e recibos de assinatura) ficam retidos
+        pelo nosso provedor de pagamentos pelo prazo legal/fiscal aplicável,
+        mesmo após a exclusão da conta, para cumprimento de obrigação legal.
+      </P>
 
       <H2>8. Segurança</H2>
       <P>
@@ -106,6 +111,15 @@ export default function PrivacidadePage() {
       <P>
         Para exercer seus direitos, contate nosso Encarregado (DPO) pelo e-mail{" "}
         <strong>suporte.lolze@gmail.com</strong>.
+      </P>
+      <P>
+        Quando a Lolze atua como <strong>operadora</strong> (dados de
+        contatos/leads que um cliente trata na plataforma), o titular deve
+        dirigir o pedido ao cliente responsável (controlador); solicitações
+        recebidas por nós são encaminhadas a ele. Para facilitar, a plataforma
+        oferece ao cliente ferramentas para <strong>exportar</strong> (portabilidade)
+        e <strong>anonimizar ou eliminar</strong> os dados de um contato diretamente
+        no painel.
       </P>
 
       <H2>10. Encarregado pelo Tratamento de Dados (DPO)</H2>
