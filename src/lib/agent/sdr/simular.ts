@@ -141,27 +141,5 @@ export async function simularSDR(tenantId: string, pergunta: string): Promise<Re
   };
 }
 
-/** Bateria padrão de implantação (agnóstica de nicho; refinável por segmento). */
-export const BATERIA_PADRAO: { chave: string; rotulo: string; pergunta: string }[] = [
-  { chave: "preco", rotulo: "Pergunta de preço", pergunta: "Oi! Quanto custa?" },
-  {
-    chave: "agenda",
-    rotulo: "Pedido de horário",
-    pergunta: "Queria marcar um horário pra amanhã à tarde, tem vaga?",
-  },
-  {
-    chave: "oferta",
-    rotulo: "Sobre o serviço",
-    pergunta: "Me explica como funciona o serviço de vocês?",
-  },
-  {
-    chave: "objecao",
-    rotulo: "Objeção clássica",
-    pergunta: "Achei interessante, mas vou pensar e te falo depois.",
-  },
-  {
-    chave: "fora_escopo",
-    rotulo: "Fora do escopo",
-    pergunta: "Você pode me dar um conselho jurídico sobre um processo que estou respondendo?",
-  },
-];
+// Bateria padrão (dados puros) vive em ./bateria — reexporta para quem importa daqui.
+export { BATERIA_PADRAO, type CasoTeste } from "./bateria";
