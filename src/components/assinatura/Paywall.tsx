@@ -106,13 +106,13 @@ export function Paywall({ billing, papel }: { billing: BillingInfo; papel: strin
 
             <button
               onClick={() => router.refresh()}
-              className="flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-texto-suave hover:text-texto"
+              className="flex w-full items-center justify-center gap-1.5 py-2 text-xs font-semibold text-texto-suave hover:text-texto"
             >
               <RefreshCw size={13} /> Já paguei — atualizar
             </button>
             <button
               onClick={sair}
-              className="flex w-full items-center justify-center gap-1.5 text-xs text-texto-suave hover:text-texto"
+              className="flex w-full items-center justify-center gap-1.5 py-2 text-xs text-texto-suave hover:text-texto"
             >
               <LogOut size={13} /> Sair
             </button>

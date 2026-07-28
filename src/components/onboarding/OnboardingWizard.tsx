@@ -115,7 +115,7 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
     <div className="mx-auto max-w-2xl py-2">
       <div className="mb-6 flex items-center justify-between">
         <Logo variante="lockup" tom="escuro" height={26} />
-        <button onClick={() => router.push("/painel")} className="text-xs text-texto-suave hover:text-texto">
+        <button onClick={() => router.push("/painel")} className="py-2 text-xs text-texto-suave hover:text-texto">
           Fazer isso depois →
         </button>
       </div>
@@ -235,7 +235,7 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
         {/* Navegação */}
         <div className="mt-6 flex items-center justify-between">
           {step > 0 ? (
-            <button onClick={() => setStep((s) => s - 1)} className="flex items-center gap-1.5 text-sm font-semibold text-texto-suave hover:text-texto">
+            <button onClick={() => setStep((s) => s - 1)} className="-mx-2 flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-texto-suave hover:text-texto">
               <ArrowLeft size={15} /> Voltar
             </button>
           ) : (
@@ -250,7 +250,7 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
           )}
           {step === 2 && (
             <div className="flex items-center gap-3">
-              <button onClick={() => setStep(3)} className="text-sm font-semibold text-texto-suave hover:text-texto">
+              <button onClick={() => setStep(3)} className="-mx-2 px-2 py-2 text-sm font-semibold text-texto-suave hover:text-texto">
                 Pular
               </button>
               <BtnContinuar onClick={() => setStep(3)} />

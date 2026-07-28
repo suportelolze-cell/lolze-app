@@ -173,7 +173,7 @@ export function CaptacaoNumerosCard({ instancias, max }: { instancias: string[];
                     })();
                   }}
                   aria-label="Reconectar"
-                  className="text-texto-suave hover:text-marca"
+                  className="-m-1 p-2 text-texto-suave hover:text-marca"
                   title="Gerar QR"
                 >
                   <RefreshCw size={14} />
@@ -182,7 +182,7 @@ export function CaptacaoNumerosCard({ instancias, max }: { instancias: string[];
               <button
                 onClick={() => remover(inst)}
                 aria-label="Remover"
-                className="text-texto-suave hover:text-red-600"
+                className="-m-1 p-2 text-texto-suave hover:text-red-600"
               >
                 <Trash2 size={14} />
               </button>

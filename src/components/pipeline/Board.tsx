@@ -85,7 +85,7 @@ export function Board({ initialLeads }: { initialLeads: Lead[] }) {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar lead por nome, telefone ou tag..."
-              className="w-72 rounded-md border border-borda bg-superficie py-2.5 pl-9 pr-3 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca"
+              className="w-full rounded-md border border-borda bg-superficie py-2.5 pl-9 pr-3 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca sm:w-72"
             />
           </div>
         </div>
@@ -97,7 +97,7 @@ export function Board({ initialLeads }: { initialLeads: Lead[] }) {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <div className="flex flex-1 gap-4 overflow-x-auto pb-4">
+        <div className="flex flex-1 snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
           {COLUNAS.map((col) => (
             <Column
               key={col.id}

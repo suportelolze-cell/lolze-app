@@ -64,7 +64,7 @@ export default async function PainelPage() {
       </header>
 
       {/* Bloco 1: Métricas de Ouro */}
-      <section className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <section className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <MetricCard
           titulo="Investimento em Tráfego"
           valor={brl(m.investimento)}

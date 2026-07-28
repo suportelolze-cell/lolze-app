@@ -57,7 +57,7 @@ export function AntiFaltasPanel({
   }
 
   return (
-    <div className="flex w-80 shrink-0 flex-col rounded-lg border border-borda bg-superficie">
+    <div className="flex w-full flex-col rounded-lg border border-borda bg-superficie lg:w-80 lg:shrink-0">
       <div className="border-b border-borda px-5 py-4">
         <h2 className="flex items-center gap-2 font-corpo text-base font-bold text-texto">
           <ShieldCheck size={18} className="text-marca" /> Blindagem Anti-Faltas

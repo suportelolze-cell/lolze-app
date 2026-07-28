@@ -66,11 +66,11 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4" onClick={onClose}>
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={salvar}
-        className="w-full max-w-md space-y-4 rounded-xl border border-borda bg-superficie p-6"
+        className="my-auto max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-xl border border-borda bg-superficie p-6"
       >
         <div className="flex items-center justify-between">
           <h2 className="font-corpo text-lg font-bold text-texto">
@@ -129,7 +129,7 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {!emMassa && (
             <Campo label="Data">
               <input type="date" value={data} onChange={(e) => setData(e.target.value)} required={!emMassa} className={inputCls} />

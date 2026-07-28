@@ -36,7 +36,7 @@ export function LeadDetail({
               </h2>
               <button
                 onClick={onClose}
-                className="rounded-md p-1.5 text-texto-suave hover:bg-fundo"
+                className="rounded-md p-2.5 text-texto-suave hover:bg-fundo"
               >
                 <X size={18} />
               </button>

@@ -81,7 +81,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
                       href={`https://wa.me/${c.telefone.replace(/\D/g, "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-md border border-borda px-3 py-1.5 text-xs font-semibold text-texto hover:bg-fundo"
+                      className="flex items-center gap-1.5 rounded-md border border-borda px-3 py-2.5 text-xs font-semibold text-texto hover:bg-fundo sm:py-1.5"
                     >
                       <MessageSquare size={14} /> WhatsApp
                     </a>
@@ -89,7 +89,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
                   <button
                     onClick={() => reativar(c)}
                     disabled={reativando === c.leadId || feito.has(c.leadId)}
-                    className="flex items-center gap-1.5 rounded-md bg-marca px-3 py-1.5 text-xs font-bold text-bege-principal disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded-md bg-marca px-3 py-2.5 text-xs font-bold text-bege-principal disabled:opacity-50 sm:py-1.5"
                   >
                     {reativando === c.leadId ? (
                       <Loader2 size={14} className="animate-spin" />

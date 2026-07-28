@@ -224,7 +224,9 @@ function Secao({
                   <p className="truncate text-sm font-semibold text-texto">{i.titulo}</p>
                   <p className="truncate text-xs text-texto-suave">{i.detalhe}</p>
                 </div>
-                <span className="shrink-0 text-xs font-semibold text-marca">{i.acao} →</span>
+                <span className="shrink-0 text-xs font-semibold text-marca">
+                  <span className="hidden sm:inline">{i.acao} </span>→
+                </span>
               </Link>
             </li>
           ))}

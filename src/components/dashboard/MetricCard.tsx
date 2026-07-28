@@ -33,7 +33,7 @@ export function MetricCard({
       </div>
 
       <div className="flex items-baseline gap-2">
-        <span className="font-corpo text-3xl font-bold tracking-tight text-texto">
+        <span className="font-corpo text-2xl font-bold tracking-tight text-texto sm:text-3xl">
           {valor}
         </span>
         {selo && (

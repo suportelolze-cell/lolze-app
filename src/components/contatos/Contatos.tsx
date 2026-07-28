@@ -93,7 +93,7 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
             <button
               key={c}
               onClick={() => setFiltro(c)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
                 filtro === c ? "bg-marca text-bege-principal" : "border border-borda bg-superficie text-texto-suave hover:text-texto"
               }`}
             >

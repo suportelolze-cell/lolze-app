@@ -94,12 +94,12 @@ export function Configuracoes({
 
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Menu interno */}
-        <nav className="flex shrink-0 gap-1 md:w-60 md:flex-col">
+        <nav className="flex shrink-0 gap-1 overflow-x-auto md:w-60 md:flex-col md:overflow-visible">
           {abas.map(({ id, rotulo, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setAba(id)}
-              className={`flex items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-md px-3 py-2.5 text-left text-sm font-medium transition-colors ${
                 aba === id
                   ? "bg-marca-suave text-marca"
                   : "text-texto-suave hover:bg-superficie hover:text-texto"
@@ -317,7 +317,7 @@ function Integracoes({
               <span className="text-xs text-texto-suave">ID do Pixel da Meta:</span>
               <input
                 defaultValue="612873490012345"
-                className="w-44 rounded-md border border-borda bg-superficie px-2 py-1.5 text-xs text-texto outline-none focus:border-marca"
+                className="w-full rounded-md border border-borda bg-superficie px-2 py-1.5 text-xs text-texto outline-none focus:border-marca sm:w-44"
               />
             </div>
           </div>

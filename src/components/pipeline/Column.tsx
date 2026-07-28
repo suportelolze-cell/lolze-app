@@ -16,7 +16,7 @@ export function Column({
   const { setNodeRef, isOver } = useDroppable({ id: config.id });
 
   return (
-    <div className="flex w-72 shrink-0 flex-col">
+    <div className="flex w-72 shrink-0 snap-start flex-col">
       {/* Cabeçalho da coluna */}
       <div className="mb-3 px-1">
         <div className="flex items-center justify-between">
@@ -36,7 +36,7 @@ export function Column({
       {/* Área de drop */}
       <div
         ref={setNodeRef}
-        className={`flex flex-1 flex-col gap-2 rounded-lg border border-dashed p-2 transition-colors ${
+        className={`flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-dashed p-2 transition-colors ${
           isOver ? "border-marca bg-marca-suave/40" : "border-borda bg-fundo"
         }`}
       >

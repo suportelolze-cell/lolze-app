@@ -57,7 +57,7 @@ export default async function ResultadosPage({
             <Link
               key={p.d}
               href={`/resultados?d=${p.d}`}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
                 r.dias === p.d ? "bg-marca text-bege-principal" : "text-texto-suave hover:text-texto"
               }`}
             >
@@ -125,8 +125,8 @@ export default async function ResultadosPage({
               {r.etapas.map((e) => {
                 const largura = e.pctDaBase != null ? Math.max(e.pctDaBase, e.total > 0 ? 4 : 0) : 0;
                 return (
-                  <div key={e.chave} className="flex items-center gap-4">
-                    <div className="w-40 shrink-0">
+                  <div key={e.chave} className="flex items-center gap-2 sm:gap-4">
+                    <div className="w-28 shrink-0 sm:w-40">
                       <p className="text-sm font-semibold text-texto">{e.label}</p>
                       <p className="text-[11px] text-texto-suave">{e.descricao}</p>
                     </div>
@@ -138,7 +138,7 @@ export default async function ResultadosPage({
                         <span className="text-sm font-bold text-bege-principal">{e.total}</span>
                       </div>
                     </div>
-                    <div className="w-24 shrink-0 text-right">
+                    <div className="w-16 shrink-0 text-right sm:w-24">
                       {e.pctDoAnterior != null ? (
                         <span className="text-xs font-semibold text-texto-suave">
                           {e.pctDoAnterior}%<span className="text-[10px] font-normal"> da etapa</span>
@@ -171,15 +171,15 @@ export default async function ResultadosPage({
                 {r.canais.map((c) => {
                   const pct = r.receitaConfirmada > 0 ? (c.receita / r.receitaConfirmada) * 100 : 0;
                   return (
-                    <li key={c.canal} className="flex items-center gap-4">
-                      <span className="w-28 shrink-0 text-sm font-semibold text-texto">{c.canal}</span>
+                    <li key={c.canal} className="flex items-center gap-2 sm:gap-4">
+                      <span className="w-20 shrink-0 text-sm font-semibold text-texto sm:w-28">{c.canal}</span>
                       <div className="relative h-7 flex-1 overflow-hidden rounded-md bg-fundo">
                         <div
                           className="h-full rounded-md bg-marca/70"
                           style={{ width: `${Math.max(pct, 3)}%` }}
                         />
                       </div>
-                      <span className="w-32 shrink-0 text-right text-sm font-bold text-texto">
+                      <span className="w-24 shrink-0 text-right text-sm font-bold text-texto sm:w-32">
                         {brl(c.receita)}
                         <span className="ml-1 text-[11px] font-normal text-texto-suave">
                           · {c.vendas} {c.vendas === 1 ? "venda" : "vendas"}

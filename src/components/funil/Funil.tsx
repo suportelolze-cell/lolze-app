@@ -146,7 +146,7 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
           fitViewOptions={{ padding: 0.15 }}
           nodesDraggable={false}
           nodesConnectable={false}
-          minZoom={0.3}
+          minZoom={0.15}
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color="#d8d3c7" />
