@@ -48,5 +48,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico|logo/|fonts/|.*\\.svg$).*)"],
+  matcher: [
+    // Roda em tudo, MENOS APIs, assets do Next e arquivos estáticos (por extensão)
+    // — assim /public (ex.: o modelo .txt) é servido direto, sem passar pela auth.
+    "/((?!api/|_next/static|_next/image|favicon.ico|logo/|fonts/|.*\\.(?:svg|txt|pdf|png|jpe?g|webp|gif|ico|xml|csv|woff2?)$).*)",
+  ],
+
 };
