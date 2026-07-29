@@ -14,8 +14,40 @@ import {
   Paperclip,
   Loader2,
   FileText,
+  Mic,
+  Square,
+  Trash2,
 } from "lucide-react";
 import type { Conversa, MidiaTipo } from "@/lib/conversas";
+
+/** Escolhe o formato de gravação mais compatível com o WhatsApp que o navegador suporta. */
+function escolherMimeGravacao(): string {
+  if (typeof MediaRecorder === "undefined") return "";
+  // ogg/opus (Firefox) e mp4/aac (Safari) o WhatsApp aceita como nota de voz;
+  // webm (Chrome/Edge) é o fallback (pode depender do canal converter).
+  const candidatos = ["audio/ogg;codecs=opus", "audio/mp4", "audio/webm;codecs=opus", "audio/webm"];
+  for (const c of candidatos) {
+    try {
+      if (MediaRecorder.isTypeSupported(c)) return c;
+    } catch {
+      /* ignora */
+    }
+  }
+  return "";
+}
+
+function extDeMimeAudio(mime: string): string {
+  if (mime.includes("ogg")) return "ogg";
+  if (mime.includes("mp4")) return "m4a";
+  if (mime.includes("mpeg")) return "mp3";
+  return "webm";
+}
+
+function mmss(seg: number): string {
+  const m = Math.floor(seg / 60);
+  const s = seg % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 export function ChatWindow({
   conversa,
@@ -58,6 +90,99 @@ export function ChatWindow({
       setTexto("");
     }
   }
+
+  // ---- Gravação de áudio (nota de voz) ----
+  const [gravando, setGravando] = useState(false);
+  const [segundos, setSegundos] = useState(0);
+  const [erroMic, setErroMic] = useState("");
+  const recRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelarRef = useRef(false);
+
+  function limparGravacao() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    recRef.current = null;
+    chunksRef.current = [];
+    setGravando(false);
+    setSegundos(0);
+  }
+
+  async function iniciarGravacao() {
+    setErroMic("");
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setErroMic("Seu navegador não permite gravar áudio aqui.");
+      return;
+    }
+    const mime = escolherMimeGravacao();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      recRef.current = rec;
+      chunksRef.current = [];
+      cancelarRef.current = false;
+      rec.ondataavailable = (ev) => {
+        if (ev.data && ev.data.size > 0) chunksRef.current.push(ev.data);
+      };
+      rec.onstop = () => {
+        const partes = chunksRef.current.slice();
+        const cancelado = cancelarRef.current;
+        limparGravacao();
+        if (cancelado || partes.length === 0) return;
+        const tipoReal = rec.mimeType || mime || "audio/webm";
+        const base = tipoReal.split(";")[0];
+        const blob = new Blob(partes, { type: base });
+        const file = new File([blob], `nota-de-voz-${Date.now()}.${extDeMimeAudio(base)}`, {
+          type: base,
+        });
+        if (onAnexar) onAnexar(file); // nota de voz vai sem legenda
+      };
+      rec.start();
+      setGravando(true);
+      setSegundos(0);
+      timerRef.current = setInterval(() => {
+        setSegundos((s) => {
+          if (s >= 300) pararGravacao(); // corta em 5 min por segurança
+          return s + 1;
+        });
+      }, 1000);
+    } catch {
+      limparGravacao();
+      setErroMic("Não consegui acessar o microfone. Verifique a permissão do navegador.");
+    }
+  }
+
+  function pararGravacao() {
+    cancelarRef.current = false;
+    try {
+      recRef.current?.stop();
+    } catch {
+      limparGravacao();
+    }
+  }
+
+  function cancelarGravacao() {
+    cancelarRef.current = true;
+    try {
+      recRef.current?.stop();
+    } catch {
+      /* ignora */
+    }
+    limparGravacao();
+  }
+
+  // Encerra a gravação se a conversa trocar ou o componente desmontar.
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [conversa?.id]);
 
   // Rola o container das mensagens até o fim quando troca de conversa ou
   // chega algo novo. Usa rAF + um respiro para esperar o layout/mídia.
@@ -227,67 +352,103 @@ export function ChatWindow({
             {podeOverride && " Clique em Assumir para tomar o atendimento."}
           </div>
         ) : souAtendente ? (
-          <div className="flex items-end gap-2">
-            <button
-              onClick={() => setMostrarRespostas((v) => !v)}
-              className={`rounded-md p-2.5 transition-colors hover:bg-fundo ${
-                mostrarRespostas ? "text-marca" : "text-texto-suave"
-              }`}
-              title="Respostas rápidas"
-              type="button"
-            >
-              <Zap size={18} />
-            </button>
-            {onAnexar && conversa.canal === "whatsapp" && (
-              <>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
-                  className="hidden"
-                  onChange={escolherArquivo}
-                />
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  disabled={anexando}
-                  title="Anexar arquivo"
-                  type="button"
-                  className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo disabled:opacity-50"
-                >
-                  {anexando ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    <Paperclip size={18} />
-                  )}
-                </button>
-              </>
-            )}
-            <textarea
-              rows={1}
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  enviar();
-                }
-              }}
-              placeholder="Digite sua mensagem para fechar a venda..."
-              className="max-h-32 flex-1 resize-none rounded-md border border-borda bg-fundo px-3 py-2 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca"
-            />
-            <button
-              onClick={enviar}
-              className="rounded-md bg-marca p-2.5 text-bege-principal transition-transform hover:scale-105"
-            >
-              <Send size={18} />
-            </button>
-          </div>
+          gravando ? (
+            <div className="flex items-center gap-3 py-1">
+              <span className="flex items-center gap-2 text-sm font-semibold text-red-600">
+                <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" />
+                Gravando… {mmss(segundos)}
+              </span>
+              <div className="flex-1" />
+              <button
+                onClick={cancelarGravacao}
+                title="Cancelar gravação"
+                type="button"
+                className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo"
+              >
+                <Trash2 size={18} />
+              </button>
+              <button
+                onClick={pararGravacao}
+                title="Enviar áudio"
+                type="button"
+                className="flex items-center gap-2 rounded-md bg-marca px-4 py-2.5 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
+              >
+                <Send size={16} /> Enviar
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-end gap-2">
+              <button
+                onClick={() => setMostrarRespostas((v) => !v)}
+                className={`rounded-md p-2.5 transition-colors hover:bg-fundo ${
+                  mostrarRespostas ? "text-marca" : "text-texto-suave"
+                }`}
+                title="Respostas rápidas"
+                type="button"
+              >
+                <Zap size={18} />
+              </button>
+              {onAnexar && conversa.canal === "whatsapp" && (
+                <>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                    className="hidden"
+                    onChange={escolherArquivo}
+                  />
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={anexando}
+                    title="Anexar arquivo"
+                    type="button"
+                    className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo disabled:opacity-50"
+                  >
+                    {anexando ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Paperclip size={18} />
+                    )}
+                  </button>
+                  <button
+                    onClick={iniciarGravacao}
+                    disabled={anexando}
+                    title="Gravar áudio"
+                    type="button"
+                    className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo disabled:opacity-50"
+                  >
+                    <Mic size={18} />
+                  </button>
+                </>
+              )}
+              <textarea
+                rows={1}
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    enviar();
+                  }
+                }}
+                placeholder="Digite sua mensagem para fechar a venda..."
+                className="max-h-32 flex-1 resize-none rounded-md border border-borda bg-fundo px-3 py-2 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca"
+              />
+              <button
+                onClick={enviar}
+                className="rounded-md bg-marca p-2.5 text-bege-principal transition-transform hover:scale-105"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          )
         ) : (
           <div className="flex items-center justify-center gap-2 py-2 text-xs text-texto-suave">
             <Bot size={14} /> A IA está respondendo. Clique em{" "}
             <b className="text-texto">Pausar IA e Assumir</b> para escrever.
           </div>
         )}
+        {erroMic && <p className="mt-2 text-xs font-medium text-red-600">{erroMic}</p>}
       </div>
     </div>
   );
