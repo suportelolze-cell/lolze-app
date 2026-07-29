@@ -114,7 +114,11 @@ const MAX_ITER = 5;
 
 /** Lê a persona/identidade do tenant. Colunas de persona são opcionais. */
 export async function carregarConfig(admin: Admin, tenantId: string): Promise<PersonaConfig> {
-  const { data } = await admin.from("app_config").select("*").eq("tenant_id", tenantId).maybeSingle();
+  const { data } = await admin
+    .from("app_config")
+    .select("nome_negocio,endereco,email,horario,oferta,publico,tom,objecoes,faq,regras,agente_ativo")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
   const c = (data ?? {}) as Record<string, unknown>;
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
   return {
@@ -206,10 +210,6 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
   if (!cfg.agenteAtivo) {
     return { ok: true, resposta: "", acoes: [], skipped: "agente_inativo" };
   }
-  // Trava de custo por plano: se estourou o teto de IA do mês, a IA para.
-  if (!(await dentroDoLimiteIA(tenantId))) {
-    return { ok: true, resposta: "", acoes: [], skipped: "limite_ia" };
-  }
 
   const ctx: LeadContexto = {
     id: lead.id,
@@ -221,17 +221,26 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     diagnostico: lead.diagnostico ?? "",
   };
 
-  // "Catraca": cliente da base = já tem ao menos 1 agendamento confirmado/concluído.
-  const { count: nServicos } = await admin
-    .from("app_agendamentos")
-    .select("id", { count: "exact", head: true })
-    .eq("tenant_id", tenantId)
-    .eq("lead_id", leadId)
-    .in("status", ["confirmado", "concluido"]);
-  const ehBase = (nServicos ?? 0) > 0;
+  // Leituras de pré-voo independentes em paralelo (cortam latência fixa antes do
+  // 1º token): trava de custo, "catraca" (cliente da base), biblioteca e histórico.
+  const [limiteOk, catraca, arquivos, historico] = await Promise.all([
+    dentroDoLimiteIA(tenantId),
+    admin
+      .from("app_agendamentos")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("lead_id", leadId)
+      .in("status", ["confirmado", "concluido"]),
+    listarBibliotecaAtiva(tenantId),
+    carregarHistorico(admin, tenantId, leadId),
+  ]);
 
-  // Biblioteca de mídia do tenant: a IA pode enviar esses arquivos prontos.
-  const arquivos = await listarBibliotecaAtiva(tenantId);
+  // Trava de custo por plano: se estourou o teto de IA do mês, a IA para.
+  if (!limiteOk) {
+    return { ok: true, resposta: "", acoes: [], skipped: "limite_ia" };
+  }
+
+  const ehBase = (catraca.count ?? 0) > 0;
   const system = montarSystemSDR(
     cfg,
     ctx,
@@ -242,7 +251,7 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
   const enviadosArquivo = new Set<string>();
   const MAX_ARQUIVOS = 2; // teto de arquivos que a IA envia por turno
 
-  const messages = montarMensagens(await carregarHistorico(admin, tenantId, leadId));
+  const messages = montarMensagens(historico);
 
   const client = getAnthropic();
   const acc: SdrPatch = { patch: {}, acoes: [] };
@@ -361,35 +370,9 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     await admin.from("app_leads").update(acc.patch).eq("tenant_id", tenantId).eq("id", leadId);
   }
 
-  // Ledger: a IA qualificou o lead (fato imutável; one-shot deduplica sozinho).
-  if (acc.patch.temperatura === "quente" || acc.patch.coluna === "qualificacao") {
-    await registrarEvento({
-      tenantId,
-      leadId,
-      tipo: "qualified",
-      canal: ctx.canal,
-      origem: ctx.origem,
-      dados: { por: "ia" },
-    });
-  }
-
-  // Se a IA escalou (não tinha a info / vai confirmar com a equipe), avisa o
-  // contato do cliente (telefone do "Gerenciar") por WhatsApp.
-  if (acc.patch.precisa_humano === true) {
-    const escala = acc.acoes.find((a) => a.tipo === "escalar_humano") as { motivo?: string } | undefined;
-    const diag = (acc.patch.diagnostico as string | undefined) ?? lead.diagnostico ?? undefined;
-    await notificarSuporte(admin, tenantId, leadId, lead.nome ?? "um lead", escala?.motivo, diag).catch(() => {});
-    await registrarEvento({
-      tenantId,
-      leadId,
-      tipo: "handoff_requested",
-      canal: ctx.canal,
-      origem: ctx.origem,
-      dados: { por: "ia", motivo: escala?.motivo ?? null },
-    });
-  }
-
-  // Grava e entrega a resposta — em PARTES, com pausas, pra parecer humano.
+  // Grava e ENTREGA a resposta primeiro — em PARTES, com pausas, pra parecer
+  // humano. Fica ANTES da notificação de handoff para o lead ver a mensagem de
+  // transição sem esperar os SELECTs/envios do notificarSuporte.
   if (resposta) {
     const partes = dividirResposta(resposta);
     for (let i = 0; i < partes.length; i++) {
@@ -420,6 +403,35 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
       }
       if (i < partes.length - 1) await sleep(Math.min(2600, 700 + parte.length * 18));
     }
+  }
+
+  // Ledger: a IA qualificou o lead (fato imutável; one-shot deduplica sozinho).
+  if (acc.patch.temperatura === "quente" || acc.patch.coluna === "qualificacao") {
+    await registrarEvento({
+      tenantId,
+      leadId,
+      tipo: "qualified",
+      canal: ctx.canal,
+      origem: ctx.origem,
+      dados: { por: "ia" },
+    });
+  }
+
+  // Se a IA escalou (não tinha a info / vai confirmar com a equipe), avisa o
+  // contato do cliente (telefone do "Gerenciar") por WhatsApp — DEPOIS de o lead
+  // já ter recebido a mensagem de transição.
+  if (acc.patch.precisa_humano === true) {
+    const escala = acc.acoes.find((a) => a.tipo === "escalar_humano") as { motivo?: string } | undefined;
+    const diag = (acc.patch.diagnostico as string | undefined) ?? lead.diagnostico ?? undefined;
+    await notificarSuporte(admin, tenantId, leadId, lead.nome ?? "um lead", escala?.motivo, diag).catch(() => {});
+    await registrarEvento({
+      tenantId,
+      leadId,
+      tipo: "handoff_requested",
+      canal: ctx.canal,
+      origem: ctx.origem,
+      dados: { por: "ia", motivo: escala?.motivo ?? null },
+    });
   }
 
   const latenciaMs = Date.now() - inicio;

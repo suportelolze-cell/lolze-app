@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { getCrmServer } from "./server";
 
@@ -16,7 +17,7 @@ export type Sessao = {
  * - Cliente comum: o tenant é o do próprio perfil.
  * - Superadmin: se houver cookie de impersonation, usa aquele tenant.
  */
-export async function getSessao(): Promise<Sessao> {
+export const getSessao = cache(async (): Promise<Sessao> => {
   const sb = await getCrmServer();
   const {
     data: { user },
@@ -45,7 +46,7 @@ export async function getSessao(): Promise<Sessao> {
   }
 
   return { userId: user.id, papel, tenantId, impersonating };
-}
+});
 
 /** Atalho: só o tenant efetivo (null se superadmin sem impersonar). */
 export async function getTenantId(): Promise<string | null> {

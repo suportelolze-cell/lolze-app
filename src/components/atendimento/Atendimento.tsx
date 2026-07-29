@@ -109,23 +109,40 @@ export function Atendimento({
     }
   }, []);
 
-  // Chat ao vivo: Realtime (instantâneo) + poll de segurança a cada 8s.
+  // Coalesce refetches: uma resposta multi-parte do SDR dispara vários eventos
+  // realtime; o debounce evita recarregar getConversas inteiro 3-5x em segundos.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const agendarRecarga = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => recarregar(), 500);
+  }, [recarregar]);
+
+  // Chat ao vivo: Realtime (instantâneo, debounced) + poll de segurança a cada
+  // 8s que PAUSA com a aba oculta (não refaz tudo o dia todo em 2º plano).
   useEffect(() => {
     const canal = crmBrowser
       .channel("atendimento-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "app_mensagens" }, () =>
-        recarregar()
+        agendarRecarga()
       )
       .on("postgres_changes", { event: "*", schema: "public", table: "app_leads" }, () =>
-        recarregar()
+        agendarRecarga()
       )
       .subscribe();
-    const intervalo = setInterval(recarregar, 8000);
+    const intervalo = setInterval(() => {
+      if (!document.hidden) recarregar();
+    }, 8000);
+    const aoVoltar = () => {
+      if (!document.hidden) recarregar();
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
     return () => {
       clearInterval(intervalo);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      document.removeEventListener("visibilitychange", aoVoltar);
       crmBrowser.removeChannel(canal);
     };
-  }, [recarregar]);
+  }, [recarregar, agendarRecarga]);
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
