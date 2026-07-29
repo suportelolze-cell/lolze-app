@@ -5,6 +5,7 @@ import { getAnthropic, temChaveIA, SDR_MODEL } from "./anthropic";
 import { registrarUsoIA } from "./uso";
 import { dentroDoLimiteIA } from "./limite";
 import { registrarErro } from "@/lib/observability/erros";
+import { conteudoMensagem } from "./sdr/historico-core";
 
 /**
  * Sistema de follow-up automático (cadência + reativação).
@@ -127,7 +128,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   const messages: Anthropic.MessageParam[] = [
     ...historico.map((t) => ({
       role: (t.autor === "lead" ? "user" : "assistant") as "user" | "assistant",
-      content: t.texto,
+      content: conteudoMensagem(t.texto), // nunca vazio (mídia sem legenda)
     })),
     { role: "user", content: "(gerar agora a mensagem de follow-up para reengajar este lead)" },
   ];

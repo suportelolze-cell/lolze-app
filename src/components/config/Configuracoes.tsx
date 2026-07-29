@@ -23,7 +23,9 @@ import type { Config } from "@/lib/supabase/crm-data";
 import type { EquipeInfo } from "@/lib/team/data";
 import { EquipeManager } from "./EquipeManager";
 import { ConhecimentoCard } from "./ConhecimentoCard";
+import { BibliotecaMidiaCard } from "./BibliotecaMidiaCard";
 import type { KbFile } from "@/lib/kb/data";
+import type { ItemBiblioteca } from "@/lib/biblioteca/data";
 import { AtendimentoCard } from "./AtendimentoCard";
 import type { AtendimentoCfg } from "@/lib/supabase/crm-data";
 import { WhatsAppCard } from "./WhatsAppCard";
@@ -52,6 +54,7 @@ export function Configuracoes({
   iaAtiva = true,
   numerosCaptacao,
   docsKb = [],
+  biblioteca = [],
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
@@ -62,6 +65,7 @@ export function Configuracoes({
   iaAtiva?: boolean;
   numerosCaptacao?: { instancias: string[]; max: number };
   docsKb?: KbFile[];
+  biblioteca?: ItemBiblioteca[];
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -139,7 +143,12 @@ export function Configuracoes({
               <AtendimentoCard inicial={atendimento ?? { especialista: "", abre: 8, fecha: 18 }} />
             </div>
           )}
-          {aba === "conhecimento" && <ConhecimentoCard docs={docsKb} />}
+          {aba === "conhecimento" && (
+            <div className="space-y-6">
+              <ConhecimentoCard docs={docsKb} />
+              <BibliotecaMidiaCard inicial={biblioteca} />
+            </div>
+          )}
           {aba === "faturamento" && <Faturamento billing={billing} />}
         </div>
       </div>

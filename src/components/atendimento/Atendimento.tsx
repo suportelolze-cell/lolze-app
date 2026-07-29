@@ -199,7 +199,8 @@ export function Atendimento({
   async function onAnexar(file: File, caption?: string) {
     if (!selecionada) return;
     setAviso("");
-    const tipo = tipoDeMime(file.type);
+    const mime = file.type || "application/octet-stream"; // alguns SOs não preenchem o MIME
+    const tipo = tipoDeMime(mime);
     if (!tipo) {
       setAviso("Tipo de arquivo não suportado.");
       return;
@@ -233,11 +234,10 @@ export function Atendimento({
         setAviso("Falha no upload do arquivo.");
         return;
       }
-      const r = await enviarAnexo(id, up.path, file.type || "application/octet-stream", file.name, caption);
+      const r = await enviarAnexo(id, up.path, mime, file.name, caption);
       if (!r.ok) {
+        // O servidor (service_role) limpa o órfão do Storage em caso de falha.
         setAviso(r.erro ?? "Não foi possível enviar o anexo.");
-        // Sem mensagem apontando pro arquivo: remove o órfão do Storage.
-        await crmBrowser.storage.from("midias").remove([up.path]).catch(() => {});
       } else if (r.aviso) {
         setAviso(r.aviso);
       }

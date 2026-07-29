@@ -72,6 +72,7 @@ export const TABELAS_DUMP_TENANT = [
   "app_trafego",
   "app_uso_ia",
   "app_ideias",
+  "app_biblioteca_midia",
 ] as const;
 
 /**

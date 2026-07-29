@@ -437,12 +437,14 @@ export async function excluirCliente(
   // 2.5 Mídias no Storage (bucket 'midias'): o CASCADE do banco NÃO toca no
   // Storage — sem isto, fotos/áudios/documentos do consumidor sobrevivem à
   // exclusão. Best-effort: falha de Storage não impede apagar a conta.
-  const { data: comMidia } = await admin
-    .from("app_mensagens")
-    .select("midia_url")
-    .eq("tenant_id", tenantId)
-    .not("midia_url", "is", null);
-  const paths = (comMidia ?? []).map((m) => m.midia_url as string).filter(Boolean);
+  const [{ data: comMidia }, { data: bibl }] = await Promise.all([
+    admin.from("app_mensagens").select("midia_url").eq("tenant_id", tenantId).not("midia_url", "is", null),
+    admin.from("app_biblioteca_midia").select("path").eq("tenant_id", tenantId),
+  ]);
+  const paths = [
+    ...(comMidia ?? []).map((m) => m.midia_url as string),
+    ...(bibl ?? []).map((b) => b.path as string),
+  ].filter(Boolean);
   if (paths.length) await admin.storage.from("midias").remove(paths);
 
   // 2.6 Tabelas SEM FK ao tenant (o CASCADE não as limpa) — evita PII órfã

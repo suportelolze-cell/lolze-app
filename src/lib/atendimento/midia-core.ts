@@ -56,3 +56,20 @@ export function extDeNome(nome: string): string {
 export function limiteMb(tipo: MidiaTipo): number {
   return Math.round(LIMITES_MIDIA[tipo] / (1024 * 1024));
 }
+
+/**
+ * Valida um caminho do bucket 'midias' com regex ESTRITO no formato que os
+ * uploads emitem (`<tenantId>/<subpasta>/<uuid>.<ext>`). Barra path traversal
+ * (`..`, barras extras) e caminhos de fora do prefixo — defesa em profundidade
+ * antes de qualquer createSignedUrl/remove com service_role. tenantId é UUID
+ * (sem caracteres especiais de regex).
+ */
+export function caminhoMidiaValido(
+  path: string,
+  tenantId: string,
+  subpasta: "atendente" | "biblioteca"
+): boolean {
+  if (!path || !tenantId) return false;
+  const re = new RegExp(`^${tenantId}/${subpasta}/[a-z0-9-]+\\.[a-z0-9]{1,8}$`, "i");
+  return re.test(path);
+}

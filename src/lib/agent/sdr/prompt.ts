@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { LeadContexto, PersonaConfig } from "../types";
+import { formatarBibliotecaParaPrompt, type ArquivoPrompt } from "@/lib/biblioteca/biblioteca-core";
 
 /**
  * Monta o system prompt do SDR em dois blocos:
@@ -12,9 +13,11 @@ import type { LeadContexto, PersonaConfig } from "../types";
 export function montarSystemSDR(
   cfg: PersonaConfig,
   lead: LeadContexto,
-  ehBase = false
+  ehBase = false,
+  arquivos: ArquivoPrompt[] = []
 ): Anthropic.TextBlockParam[] {
   const negocio = cfg.nomeNegocio || "o negócio";
+  const secaoArquivos = formatarBibliotecaParaPrompt(arquivos);
 
   const persona = `Você é o SDR (pré-vendas) de IA da ${negocio}. Seu trabalho é atender leads que chegaram pelos canais de venda, qualificá-los, quebrar objeções e levá-los a agendar — ou entregar quente para um humano fechar. Você é a linha de frente comercial: simpático, confiante, consultivo, nunca robótico e nunca insistente a ponto de irritar.
 
@@ -67,7 +70,7 @@ ${cfg.faq ? `\n# Perguntas frequentes\n${cfg.faq}` : ""}
 - Só apresente VALORES/PLANOS quando o lead perguntar explicitamente sobre preço/pacote/como contratar, OU já tiver demonstrado intenção clara de avançar. Aí sim use buscar_conhecimento e responda com o material certo.
 - Informações de pós-venda/onboarding (como começar, primeiros passos) só DEPOIS de o lead fechar ou topar iniciar. Antes disso, foco em qualificar e agendar.
 
-${cfg.regras ? `# Regras adicionais do cliente\n${cfg.regras}\n` : ""}
+${cfg.regras ? `# Regras adicionais do cliente\n${cfg.regras}\n` : ""}${secaoArquivos ? `\n${secaoArquivos}\n` : ""}
 Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
 
   const agora = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
