@@ -7,7 +7,20 @@ import {
   extDeNome,
   LIMITES_MIDIA,
   limiteMb,
+  caminhoMidiaValido,
 } from "../src/lib/atendimento/midia-core.ts";
+
+test("caminhoMidiaValido aceita só o formato tenant/subpasta/uuid.ext e barra traversal", () => {
+  const t = "6196a5bb-40ea-4166-ac8e-76855c51696e";
+  assert.equal(caminhoMidiaValido(`${t}/biblioteca/abc-123.pdf`, t, "biblioteca"), true);
+  assert.equal(caminhoMidiaValido(`${t}/atendente/xyz.jpg`, t, "atendente"), true);
+  // traversal / prefixo errado / subpasta trocada
+  assert.equal(caminhoMidiaValido(`${t}/biblioteca/../../outro/x.jpg`, t, "biblioteca"), false);
+  assert.equal(caminhoMidiaValido(`${t}/atendente/x.jpg`, t, "biblioteca"), false);
+  assert.equal(caminhoMidiaValido(`OUTRO/biblioteca/x.jpg`, t, "biblioteca"), false);
+  assert.equal(caminhoMidiaValido(`${t}/biblioteca/sub/x.jpg`, t, "biblioteca"), false);
+  assert.equal(caminhoMidiaValido("", t, "biblioteca"), false);
+});
 
 test("tipoDeMime classifica imagem/video/audio/documento", () => {
   assert.equal(tipoDeMime("image/jpeg"), "imagem");

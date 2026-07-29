@@ -167,6 +167,30 @@ export const SDR_TOOLS: Anthropic.Tool[] = [
   },
 ];
 
+/**
+ * Ferramenta OPCIONAL de envio de arquivo — só entra na lista quando o tenant
+ * tem itens ativos na biblioteca (o run monta a lista dinamicamente). Tratada
+ * inline no run (efeito colateral: envia mídia), não pelo aplicarToolSDR.
+ */
+export const ENVIAR_ARQUIVO_TOOL: Anthropic.Tool = {
+  name: "enviar_arquivo",
+  description:
+    "Envia ao lead um arquivo PRONTO da biblioteca (tabela de preços, foto, vídeo, catálogo, áudio) " +
+    "quando isso ajudar o próximo passo — ex.: o lead pediu a tabela, quer ver fotos ou perguntou onde fica. " +
+    "Use o 'id' EXATO listado em 'Arquivos que você pode enviar'. No máximo 1 por mensagem; nunca envie o mesmo arquivo duas vezes.",
+  input_schema: {
+    type: "object",
+    properties: {
+      id: {
+        type: "string",
+        description: "id exato do arquivo, como aparece na lista 'Arquivos que você pode enviar'.",
+      },
+      motivo: { type: "string", description: "Por que enviar agora (1 frase)." },
+    },
+    required: ["id"],
+  },
+};
+
 /** Patch acumulado para o app_leads + lista de ações para log/retorno. */
 export type SdrPatch = {
   patch: Record<string, unknown>;

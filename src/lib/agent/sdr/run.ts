@@ -5,7 +5,10 @@ import { getAnthropic, temChaveIA, SDR_MODEL } from "../anthropic";
 import { registrarRun } from "../runs";
 import type { LeadContexto, PersonaConfig, ResultadoAgente, Turno } from "../types";
 import { montarSystemSDR } from "./prompt";
-import { SDR_TOOLS, aplicarToolSDR, type SdrPatch } from "./tools";
+import { SDR_TOOLS, ENVIAR_ARQUIVO_TOOL, aplicarToolSDR, type SdrPatch } from "./tools";
+import { listarBibliotecaAtiva } from "@/lib/biblioteca/agente";
+import { enviarArquivoBiblioteca } from "./enviar-arquivo";
+import { conteudoMensagem } from "./historico-core";
 import { buscarConhecimento } from "@/lib/kb/search";
 import { agendarReuniao } from "./agendar";
 import { consultarDisponibilidade } from "./disponibilidade";
@@ -168,7 +171,7 @@ async function carregarHistorico(admin: Admin, tenantId: string, leadId: number)
 function montarMensagens(historico: Turno[]): Anthropic.MessageParam[] {
   const msgs: Anthropic.MessageParam[] = historico.map((t) => ({
     role: t.autor === "lead" ? "user" : "assistant",
-    content: t.texto,
+    content: conteudoMensagem(t.texto), // nunca vazio (mídia sem legenda)
   }));
   // A primeira mensagem precisa ser do usuário (lead).
   if (msgs.length === 0 || msgs[0].role !== "user") {
@@ -227,7 +230,18 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
     .in("status", ["confirmado", "concluido"]);
   const ehBase = (nServicos ?? 0) > 0;
 
-  const system = montarSystemSDR(cfg, ctx, ehBase);
+  // Biblioteca de mídia do tenant: a IA pode enviar esses arquivos prontos.
+  const arquivos = await listarBibliotecaAtiva(tenantId);
+  const system = montarSystemSDR(
+    cfg,
+    ctx,
+    ehBase,
+    arquivos.map((a) => ({ id: a.id, nome: a.nome, quandoUsar: a.quandoUsar }))
+  );
+  const tools = arquivos.length ? [...SDR_TOOLS, ENVIAR_ARQUIVO_TOOL] : SDR_TOOLS;
+  const enviadosArquivo = new Set<string>();
+  const MAX_ARQUIVOS = 2; // teto de arquivos que a IA envia por turno
+
   const messages = montarMensagens(await carregarHistorico(admin, tenantId, leadId));
 
   const client = getAnthropic();
@@ -243,7 +257,7 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
         max_tokens: 1024,
         system,
         output_config: { effort: "low" },
-        tools: SDR_TOOLS,
+        tools,
         messages,
       } as Anthropic.MessageCreateParamsNonStreaming);
 
@@ -291,6 +305,11 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
             } catch (e) {
               confirm = "Não consegui agendar agora: " + (e as Error).message;
             }
+          } else if (block.name === "enviar_arquivo") {
+            confirm =
+              enviadosArquivo.size >= MAX_ARQUIVOS
+                ? "Limite de arquivos por conversa atingido; não envie mais agora."
+                : await enviarArquivoBiblioteca(admin, tenantId, leadId, String(args.id ?? ""), enviadosArquivo);
           } else {
             confirm = aplicarToolSDR(block.name, args, acc);
           }

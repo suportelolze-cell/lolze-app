@@ -5,7 +5,7 @@ import { getCrmServer } from "@/lib/supabase/server";
 import { getSessao } from "@/lib/supabase/tenant";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { registrarEvento } from "@/lib/eventos";
-import { tipoCanal, tipoDeMime } from "./midia-core";
+import { tipoCanal, tipoDeMime, caminhoMidiaValido } from "./midia-core";
 
 /**
  * Anexos no atendimento: o atendente humano envia imagem/vídeo/áudio/documento
@@ -58,12 +58,19 @@ export async function enviarAnexo(
 ): Promise<{ ok: boolean; erro?: string; aviso?: string }> {
   const s = await getSessao();
   if (!s.userId || !s.tenantId) return { ok: false, erro: "Sessão inválida." };
-  // Segurança: só anexos do próprio tenant (prefixo exato, não só o tenant).
-  if (!path.startsWith(`${s.tenantId}/atendente/`)) return { ok: false, erro: "Caminho inválido." };
+  // Segurança: path estrito do próprio tenant (barra traversal/prefixo errado).
+  if (!caminhoMidiaValido(path, s.tenantId, "atendente")) return { ok: false, erro: "Caminho inválido." };
 
-  // Tipo definido pelo servidor a partir do MIME (não confia no cliente).
+  const admin = getCrmAdmin();
+  // Limpa o objeto já subido se o envio não completar (rollback server-side).
+  const limparOrfao = () => admin.storage.from("midias").remove([path]).catch(() => {});
+
+  // Tipo definido pelo servidor a partir do MIME (não confia num tipo do cliente).
   const tipo = tipoDeMime(mime);
-  if (!tipo) return { ok: false, erro: "Tipo de arquivo não suportado." };
+  if (!tipo) {
+    await limparOrfao();
+    return { ok: false, erro: "Tipo de arquivo não suportado." };
+  }
 
   const sb = await getCrmServer();
 
@@ -75,8 +82,12 @@ export async function enviarAnexo(
     .eq("tenant_id", s.tenantId)
     .eq("atendente_id", s.userId)
     .select("id");
-  if (errLock) return { ok: false, erro: errLock.message };
+  if (errLock) {
+    await limparOrfao();
+    return { ok: false, erro: errLock.message };
+  }
   if (!dono || dono.length === 0) {
+    await limparOrfao();
     return { ok: false, erro: "Você não está com esta conversa. Assuma antes de enviar." };
   }
 
@@ -93,10 +104,12 @@ export async function enviarAnexo(
     })
     .select("id")
     .single();
-  if (error) return { ok: false, erro: error.message };
+  if (error) {
+    await limparOrfao();
+    return { ok: false, erro: error.message };
+  }
 
   // URL de leitura assinada (10 min) para o canal buscar o arquivo.
-  const admin = getCrmAdmin();
   const { data: signed } = await admin.storage.from("midias").createSignedUrl(path, 600);
   if (!signed?.signedUrl) {
     return { ok: true, aviso: "Anexo salvo, mas não consegui gerar o link para o envio." };
