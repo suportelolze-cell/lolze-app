@@ -138,7 +138,7 @@ export function Atendimento({
   }, [recarregar]);
 
   // Chat ao vivo: Realtime (instantâneo, debounced) + poll de segurança a cada
-  // 8s que PAUSA com a aba oculta (não refaz tudo o dia todo em 2º plano).
+  // 15s que PAUSA com a aba oculta (não refaz tudo o dia todo em 2º plano).
   useEffect(() => {
     const canal = crmBrowser
       .channel("atendimento-rt")
@@ -151,7 +151,7 @@ export function Atendimento({
       .subscribe();
     const intervalo = setInterval(() => {
       if (!document.hidden) recarregar();
-    }, 8000);
+    }, 15000);
     const aoVoltar = () => {
       if (!document.hidden) recarregar();
     };
