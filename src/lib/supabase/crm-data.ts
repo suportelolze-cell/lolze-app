@@ -417,7 +417,11 @@ export async function getConfig(): Promise<Config> {
   const tid = await getTenantId();
   if (!tid) return { ...CONFIG_VAZIO };
   const sb = await getCrmServer();
-  const { data } = await sb.from("app_config").select("*").eq("tenant_id", tid).maybeSingle();
+  const { data } = await sb
+    .from("app_config")
+    .select("nome_negocio,endereco,email,horario,oferta,publico,tom,objecoes,faq,regras,agente_ativo")
+    .eq("tenant_id", tid)
+    .maybeSingle();
   const c = (data ?? {}) as Record<string, unknown>;
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
   return {

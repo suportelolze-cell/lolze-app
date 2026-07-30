@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 /**
  * Logo da Lolze. Respeita a regra de contraste da marca:
  * - símbolo/lockup ESCURO sobre fundos claros (creme, verde suave)
@@ -34,15 +32,18 @@ export function Logo({
 }) {
   const src = arquivos[variante][tom];
   const width = Math.round(height * proporcao[variante]);
+  // SVG não passa pelo pipeline do next/image — <img> nativo evita o wrapper e o
+  // preload por instância. width/height mantidos (sem layout shift).
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={src}
       alt="Lolze"
       width={width}
       height={height}
       className={className}
-      priority
-      unoptimized
+      loading="eager"
+      decoding="async"
     />
   );
 }

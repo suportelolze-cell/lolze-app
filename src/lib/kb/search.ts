@@ -1,6 +1,26 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { embedTextos } from "./embed";
 
+// Cache em memória do embedding da CONSULTA (determinístico por texto): evita
+// refazer o fetch à OpenAI para consultas repetidas/parecidas dentro do loop de
+// tool-use e entre turnos. Sem TTL (o vetor não muda para o mesmo texto+modelo);
+// LRU simples por ordem de inserção.
+const _cacheEmbed = new Map<string, number[]>();
+const CACHE_MAX = 500;
+
+async function embedConsulta(q: string): Promise<number[]> {
+  const chave = q.trim().toLowerCase();
+  const cache = _cacheEmbed.get(chave);
+  if (cache) return cache;
+  const [vec] = await embedTextos([q]);
+  if (_cacheEmbed.size >= CACHE_MAX) {
+    const maisAntigo = _cacheEmbed.keys().next().value;
+    if (maisAntigo !== undefined) _cacheEmbed.delete(maisAntigo);
+  }
+  _cacheEmbed.set(chave, vec);
+  return vec;
+}
+
 /**
  * Busca na base de conhecimento do cliente (RAG). Embedda a consulta, faz a
  * busca por similaridade filtrada pelo tenant e devolve os trechos mais
@@ -14,7 +34,7 @@ export async function buscarConhecimento(
   const q = (consulta || "").trim();
   if (!q) return "Consulta vazia.";
 
-  const [vec] = await embedTextos([q]);
+  const vec = await embedConsulta(q);
   const admin = getCrmAdmin();
   const { data, error } = await admin.rpc("match_app_kb", {
     query_embedding: "[" + vec.join(",") + "]",
