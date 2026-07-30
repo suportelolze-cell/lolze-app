@@ -100,7 +100,7 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
   );
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col">
+    <div className="flex h-[calc(100dvh-7rem)] flex-col lg:h-[calc(100vh-7rem)]">
       {/* Cabeçalho */}
       <header className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <div>
