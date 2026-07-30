@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { getSessao } from "@/lib/supabase/tenant";
 import { getCrmServer } from "@/lib/supabase/server";
-import { getCrmAdmin } from "@/lib/supabase/admin";
+import { statusCobrancaCacheado } from "@/lib/billing/paywall";
 
 export const dynamic = "force-dynamic";
 
@@ -12,16 +12,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Gate de pagamento FAIL-CLOSED: só o status "ativo" libera o app. Status
   // desconhecido, tenant sem registro ou erro de consulta → /assinatura
   // (Paywall), nunca acesso liberado por engano. O superadmin NUNCA é
-  // bloqueado (nem impersonando um cliente não-pago).
+  // bloqueado (nem impersonando um cliente não-pago). O status é cacheado ~60s
+  // (invalidado na hora pelo webhook do Stripe) — tira 1 query de cada navegação.
   if (s.papel !== "superadmin" && s.tenantId) {
-    let status: string | null = null;
-    try {
-      const admin = getCrmAdmin();
-      const { data } = await admin.from("app_tenants").select("status").eq("id", s.tenantId).maybeSingle();
-      status = ((data?.status as string | null) ?? "").toLowerCase();
-    } catch {
-      status = null; // não deu pra confirmar → trata como não-ativo
-    }
+    const status = await statusCobrancaCacheado(s.tenantId);
     if (status !== "ativo") redirect("/assinatura");
   }
 
