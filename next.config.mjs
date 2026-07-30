@@ -7,8 +7,10 @@ const nextConfig = {
   experimental: {
     // Tree-shake pacotes grandes → bundles menores, carga mais rápida
     optimizePackageImports: ["lucide-react", "@xyflow/react", "@dnd-kit/core", "@dnd-kit/utilities"],
-    // Cache de navegação no cliente: voltar a uma rota já visitada é instantâneo
-    staleTimes: { dynamic: 30, static: 180 },
+    // Cache de navegação no cliente: voltar a uma rota já visitada é instantâneo.
+    // dynamic 60s = revisitar uma tela recém-vista não espera o servidor de novo
+    // (as telas ao vivo, ex. Atendimento, têm realtime/poll próprios que atualizam).
+    staleTimes: { dynamic: 60, static: 300 },
   },
 };
 
