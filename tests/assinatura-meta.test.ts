@@ -30,10 +30,18 @@ test("rejeita header vazio ou malformado", () => {
   assert.equal(assinaturaMetaValida(corpo, "lixo", SECRET), false);
 });
 
-test("sem App Secret configurado → validação desligada (aceita)", () => {
-  // Comportamento atual mantido: sem segredo, não bloqueia (compat).
-  assert.equal(assinaturaMetaValida(corpo, "", ""), true);
-  assert.equal(assinaturaMetaValida(corpo, "qualquer", "  "), true);
+test("sem App Secret: libera fora de produção, REJEITA em produção (fail-closed)", () => {
+  const orig = process.env.NODE_ENV;
+  try {
+    process.env.NODE_ENV = "test"; // dev/test: validação desligada por conveniência
+    assert.equal(assinaturaMetaValida(corpo, "", ""), true);
+    assert.equal(assinaturaMetaValida(corpo, "qualquer", "  "), true);
+    process.env.NODE_ENV = "production"; // prod: sem segredo não aceita POST não assinado
+    assert.equal(assinaturaMetaValida(corpo, "", ""), false);
+    assert.equal(assinaturaMetaValida(corpo, "qualquer", ""), false);
+  } finally {
+    process.env.NODE_ENV = orig;
+  }
 });
 
 test("comparação é resiliente a tamanhos diferentes (não lança)", () => {
