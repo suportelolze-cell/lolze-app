@@ -327,6 +327,11 @@ export async function getConversas(): Promise<Conversa[]> {
         "id,nome,telefone,canal,origem,temperatura,comando,precisa_humano,diagnostico,atendente_id,app_mensagens(id,autor,texto,created_at,midia_url,midia_tipo,status)"
       )
       .eq("tenant_id", tid)
+      // Só as ÚLTIMAS 40 mensagens por lead (evita puxar todo o histórico de
+      // todos os leads a cada poll/realtime). O histórico completo é carregado
+      // sob demanda ao abrir a conversa (carregarHistoricoConversa).
+      .order("id", { foreignTable: "app_mensagens", ascending: false })
+      .limit(40, { foreignTable: "app_mensagens" })
       .order("id"),
     sb.from("app_profiles").select("id,nome").eq("tenant_id", tid),
   ]);

@@ -8,12 +8,58 @@ import { getConversas } from "./crm-data";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { registrarEvento } from "@/lib/eventos";
 import { mesclarLeads } from "@/lib/identidade";
+import { urlsAssinadasMidia } from "@/lib/evolution/client";
 import type { ColunaId } from "@/lib/leads";
-import type { Conversa } from "@/lib/conversas";
+import type { Conversa, Mensagem } from "@/lib/conversas";
 
 /** Recarrega as conversas do tenant (usado pelo chat ao vivo). */
 export async function recarregarConversas(): Promise<Conversa[]> {
   return getConversas();
+}
+
+const hhmm = (iso: string) =>
+  new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+/**
+ * Histórico COMPLETO de uma conversa (todas as mensagens do lead), carregado sob
+ * demanda ao abrir a conversa — o getConversas só embute as últimas 40 por lead.
+ * Escopado ao tenant da sessão (RLS + filtro explícito).
+ */
+export async function carregarHistoricoConversa(leadId: number): Promise<Mensagem[]> {
+  const s = await getSessao();
+  if (!s.tenantId) return [];
+  const sb = await getCrmServer();
+  const { data, error } = await sb
+    .from("app_mensagens")
+    .select("id,autor,texto,created_at,midia_url,midia_tipo,status")
+    .eq("tenant_id", s.tenantId)
+    .eq("lead_id", leadId)
+    .order("id", { ascending: true });
+  // Distingue falha de leitura de "sem mensagens" (o cliente sinaliza o erro).
+  if (error) throw new Error(error.message);
+
+  const linhas = (data ?? []) as {
+    id: number;
+    autor: "ia" | "lead" | "atendente";
+    texto: string;
+    created_at: string;
+    midia_url: string | null;
+    midia_tipo: string | null;
+    status: string | null;
+  }[];
+
+  const caminhos = linhas.map((m) => m.midia_url).filter((p): p is string => Boolean(p));
+  const urlPorCaminho = await urlsAssinadasMidia(caminhos);
+
+  return linhas.map((m) => ({
+    id: m.id,
+    autor: m.autor,
+    texto: m.texto,
+    hora: hhmm(m.created_at),
+    midiaUrl: m.midia_url ? urlPorCaminho.get(m.midia_url) ?? null : null,
+    midiaTipo: (m.midia_tipo as Mensagem["midiaTipo"]) ?? null,
+    status: (m.status as Mensagem["status"]) ?? null,
+  }));
 }
 
 /** Gera um CSV (separador ";", amigável ao Excel BR) com os leads do tenant. */
