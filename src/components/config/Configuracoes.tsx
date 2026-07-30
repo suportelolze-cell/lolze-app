@@ -329,14 +329,10 @@ function Integracoes({
 
         <CardIntegracao icon={Target} titulo="Tráfego e Rastreamento">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <StatusBadge on texto="Pixel Ativo" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-texto-suave">ID do Pixel da Meta:</span>
-              <input
-                defaultValue="612873490012345"
-                className="w-full rounded-md border border-borda bg-superficie px-2 py-1.5 text-xs text-texto outline-none focus:border-marca sm:w-44"
-              />
-            </div>
+            <StatusBadge on={false} texto="Pixel não configurado" />
+            <span className="text-xs text-texto-suave">
+              Rastreamento por Pixel da Meta ainda não disponível nesta conta.
+            </span>
           </div>
         </CardIntegracao>
       </div>

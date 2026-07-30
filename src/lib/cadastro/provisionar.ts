@@ -77,21 +77,57 @@ export async function provisionarTenant(
     };
   }
 
-  // 3. Perfil + 4. Config + 5. Secrets (token de integração via default da tabela)
-  await admin.from("app_profiles").insert({
+  // Desfaz tudo se um passo seguinte falhar (senão sobra conta paga inacessível:
+  // sem perfil, getSessao devolve papel="" e tenantId=null).
+  const rollback = async () => {
+    try {
+      await admin.from("app_profiles").delete().eq("id", u.user.id);
+    } catch {
+      /* best-effort */
+    }
+    try {
+      await admin.auth.admin.deleteUser(u.user.id);
+    } catch {
+      /* best-effort */
+    }
+    try {
+      await admin.from("app_tenants").delete().eq("id", tenant.id);
+    } catch {
+      /* best-effort */
+    }
+  };
+
+  // 3. Perfil (CRÍTICO: sem ele o dono autentica mas fica sem empresa/permissão).
+  const { error: errP } = await admin.from("app_profiles").insert({
     id: u.user.id,
     nome: input.nomeDono.trim() || nomeNegocio,
     email: emailDono,
     papel: "owner",
     tenant_id: tenant.id,
   });
-  await admin.from("app_config").insert({
+  if (errP) {
+    await rollback();
+    return { ok: false, erro: errP.message };
+  }
+
+  // 4. Config
+  const { error: errC } = await admin.from("app_config").insert({
     id: tenant.id,
     tenant_id: tenant.id,
     nome_negocio: nomeNegocio,
     email: emailDono,
   });
-  await admin.from("app_tenant_secrets").insert({ tenant_id: tenant.id });
+  if (errC) {
+    await rollback();
+    return { ok: false, erro: errC.message };
+  }
+
+  // 5. Secrets (token de integração via default da tabela)
+  const { error: errS } = await admin.from("app_tenant_secrets").insert({ tenant_id: tenant.id });
+  if (errS) {
+    await rollback();
+    return { ok: false, erro: errS.message };
+  }
 
   return { ok: true, tenantId: tenant.id };
 }

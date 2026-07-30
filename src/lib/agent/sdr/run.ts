@@ -311,6 +311,10 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
             try {
               confirm = await agendarReuniao(tenantId, leadId, args);
               acc.acoes.push({ tipo: "mover_etapa", etapa: "agendado", motivo: "agendamento criado" });
+              // Reflete o estado real no patch: lead virou "agendado" → o cálculo
+              // de follow-up abaixo NÃO deve agendar toque (evita follow-up órfão).
+              acc.patch.coluna = "agendado";
+              acc.followupDefinido = true;
             } catch (e) {
               confirm = "Não consegui agendar agora: " + (e as Error).message;
             }
@@ -388,8 +392,24 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
         parte,
         (msgRow?.id as number | undefined) ?? undefined
       );
-      // Canal fora do ar: não adianta insistir nas próximas partes agora.
-      if (!entrega.ok) break;
+      // Canal fora do ar: não adianta insistir nas próximas partes agora — mas
+      // PERSISTE as restantes como 'falhou' pro outbox reenviar (senão somem).
+      if (!entrega.ok) {
+        for (let j = i + 1; j < partes.length; j++) {
+          await admin
+            .from("app_mensagens")
+            .insert({
+              tenant_id: tenantId,
+              lead_id: leadId,
+              autor: "ia",
+              texto: partes[j],
+              status: "falhou",
+              ultimo_erro: "canal indisponível na entrega inicial",
+            })
+            .then(() => {}, () => {});
+        }
+        break;
+      }
       // Ledger: primeira resposta do sistema a este lead (one-shot deduplica).
       if (i === 0) {
         await registrarEvento({
