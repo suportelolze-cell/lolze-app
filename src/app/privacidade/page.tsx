@@ -72,8 +72,7 @@ export default function PrivacidadePage() {
         Alguns provedores podem armazenar e processar dados fora do Brasil (por
         exemplo, em servidores nos Estados Unidos). Nesses casos, adotamos
         salvaguardas compatíveis com a LGPD (art. 33), exigindo dos provedores
-        padrão de proteção adequado. <strong>[Confirmar a localização atual dos
-        servidores e as cláusulas de transferência com o jurídico.]</strong>
+        padrão de proteção adequado.
       </P>
 
       <H2>7. Por quanto tempo guardamos</H2>

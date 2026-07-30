@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, X, Play, Check, GraduationCap, FileText, MessageCircle } from "lucide-react";
+import { Search, X, Play, Check, GraduationCap, FileText } from "lucide-react";
 import { VIDEOS, FAQS, type Video } from "@/lib/cursos";
 import { VideoCard } from "./VideoCard";
 
@@ -146,13 +146,6 @@ export function Universidade() {
         </div>
       )}
 
-      {/* Botão de pânico flutuante (suporte) */}
-      <a
-        href="mailto:suporte.lolze@gmail.com?subject=Ajuda%20-%20Universidade%20Lolze"
-        className="fixed bottom-24 right-6 z-30 flex items-center gap-2 rounded-full bg-marca px-5 py-3 text-sm font-semibold text-bege-principal shadow-lg transition-transform hover:scale-105"
-      >
-        <MessageCircle size={18} /> Falar com Suporte
-      </a>
     </div>
   );
 }

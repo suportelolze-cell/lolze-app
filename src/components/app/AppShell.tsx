@@ -38,34 +38,37 @@ export function AppShell({
       )}
 
       <div className="lg:pl-64 print-reset-pad">
-        {/* Faixa de impersonation (superadmin vendo como cliente) */}
-        {impersonating && (
-          <div className="no-print sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 bg-marca px-4 py-2 text-sm text-bege-principal">
-            <span className="flex items-center gap-2">
-              <Eye size={16} /> Você está vendo como{" "}
-              <strong>{clienteNome || "cliente"}</strong>.
-            </span>
-            <form action={sairImpersonacao}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 rounded-full bg-bege-principal/15 px-3 py-1 font-semibold transition-colors hover:bg-bege-principal/25"
-              >
-                <LogOut size={14} /> Sair do modo cliente
-              </button>
-            </form>
-          </div>
-        )}
+        {/* Banner de impersonação + topbar mobile empilhados num único sticky
+            (senão ambos grudam em top-0 e o banner cobre o hambúrguer). */}
+        <div className="no-print sticky top-0 z-20">
+          {impersonating && (
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-marca px-4 py-2 text-sm text-bege-principal">
+              <span className="flex items-center gap-2">
+                <Eye size={16} /> Você está vendo como{" "}
+                <strong>{clienteNome || "cliente"}</strong>.
+              </span>
+              <form action={sairImpersonacao}>
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 rounded-full bg-bege-principal/15 px-3 py-1 font-semibold transition-colors hover:bg-bege-principal/25"
+                >
+                  <LogOut size={14} /> Sair do modo cliente
+                </button>
+              </form>
+            </div>
+          )}
 
-        {/* Topbar mobile com hambúrguer */}
-        <div className="no-print sticky top-0 z-10 flex items-center gap-3 border-b border-borda bg-superficie px-4 py-3 lg:hidden">
-          <button
-            onClick={() => setAberto(true)}
-            aria-label="Abrir menu"
-            className="rounded-md p-1.5 text-texto hover:bg-fundo"
-          >
-            <Menu size={22} />
-          </button>
-          <Logo variante="lockup" tom="escuro" height={24} />
+          {/* Topbar mobile com hambúrguer */}
+          <div className="flex items-center gap-3 border-b border-borda bg-superficie px-4 py-3 lg:hidden">
+            <button
+              onClick={() => setAberto(true)}
+              aria-label="Abrir menu"
+              className="rounded-md p-1.5 text-texto hover:bg-fundo"
+            >
+              <Menu size={22} />
+            </button>
+            <Logo variante="lockup" tom="escuro" height={24} />
+          </div>
         </div>
 
         <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8 sm:py-8">{children}</div>
