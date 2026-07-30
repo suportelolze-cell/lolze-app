@@ -268,6 +268,10 @@ export async function moverLead(id: number, coluna: ColunaId) {
       await executarSDR(tid, id).catch(() => {});
     }
   }
+
+  // Mantém painel/pipeline em dia (contagens por etapa) — como confirmarReceita.
+  revalidatePath("/pipeline");
+  revalidatePath("/painel");
 }
 
 export type ResAssumir = { ok: boolean; erro?: string; atendenteId?: string };
@@ -365,15 +369,17 @@ export async function enviarMensagem(leadId: number, texto: string): Promise<Res
     texto,
     (msgRow?.id as number | undefined) ?? undefined
   );
-  // Ledger: primeira resposta do sistema (se a IA já respondeu antes, o
-  // one-shot ignora esta gravação).
-  await registrarEvento({
-    tenantId: s.tenantId,
-    leadId,
-    tipo: "first_response_sent",
-    canal: entrega.canal ?? null,
-    dados: { autor: "atendente" },
-  });
+  // Ledger: primeira resposta do sistema — só conta se REALMENTE entregou (não
+  // marcar first_response quando o canal falhou e o lead não recebeu nada).
+  if (entrega.ok) {
+    await registrarEvento({
+      tenantId: s.tenantId,
+      leadId,
+      tipo: "first_response_sent",
+      canal: entrega.canal ?? null,
+      dados: { autor: "atendente" },
+    });
+  }
   if (!entrega.ok && entrega.canal !== "painel") {
     return {
       ok: true,

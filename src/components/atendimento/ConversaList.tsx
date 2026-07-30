@@ -118,7 +118,7 @@ export function ConversaList({
                     </span>
                   </div>
                   <p className="truncate text-xs text-texto-suave">
-                    {ultima?.autor === "lead" ? "" : "Você: "}
+                    {ultima?.autor === "lead" ? "" : ultima?.autor === "ia" ? "IA: " : "Você: "}
                     {ultima?.texto}
                   </p>
                   <div className="mt-1 flex items-center gap-2">
