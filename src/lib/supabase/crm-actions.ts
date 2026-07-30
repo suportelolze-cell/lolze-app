@@ -444,23 +444,29 @@ export async function buscarDuplicados(leadId: number): Promise<Duplicado[]> {
     .maybeSingle();
   if (!eu) return [];
 
-  let q = admin
-    .from("app_leads")
-    .select("id,nome,canal,telefone")
-    .eq("tenant_id", s.tenantId)
-    .neq("id", leadId)
-    .limit(5);
   const tel = (eu.telefone ?? "").trim();
   const nome = (eu.nome ?? "").trim();
-  if (tel && nome) q = q.or(`telefone.eq.${tel},nome.ilike.${nome}`);
-  else if (tel) q = q.eq("telefone", tel);
-  else if (nome) q = q.ilike("nome", nome);
-  else return [];
+  if (!tel && !nome) return [];
 
-  const { data } = await q;
-  return ((data ?? []) as { id: number; nome: string; canal: string | null; telefone: string | null }[]).map(
-    (d) => ({ id: d.id, nome: d.nome, canal: d.canal ?? "—", telefone: d.telefone ?? "" })
-  );
+  // Duas queries PARAMETRIZADAS (nunca interpolar no .or(): vírgula/parênteses no
+  // nome quebram o filtro e permitem injeção). % e _ escapados para não virarem
+  // curinga do ILIKE.
+  const base = () =>
+    admin.from("app_leads").select("id,nome,canal,telefone").eq("tenant_id", s.tenantId).neq("id", leadId).limit(5);
+  const buscas: PromiseLike<{ data: unknown }>[] = [];
+  if (tel) buscas.push(base().eq("telefone", tel));
+  if (nome) buscas.push(base().ilike("nome", nome.replace(/[%_\\]/g, "\\$&")));
+
+  const partes = await Promise.all(buscas);
+  const mapa = new Map<number, { id: number; nome: string; canal: string | null; telefone: string | null }>();
+  for (const r of partes) {
+    for (const d of (r.data ?? []) as { id: number; nome: string; canal: string | null; telefone: string | null }[]) {
+      mapa.set(d.id, d);
+    }
+  }
+  return Array.from(mapa.values())
+    .slice(0, 5)
+    .map((d) => ({ id: d.id, nome: d.nome, canal: d.canal ?? "—", telefone: d.telefone ?? "" }));
 }
 
 /**

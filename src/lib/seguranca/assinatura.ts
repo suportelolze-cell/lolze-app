@@ -8,16 +8,17 @@ import crypto from "crypto";
  * constante (timingSafeEqual) para não vazar informação por timing.
  *
  * Regra de segurança (dossiê): validar autenticação/assinatura em TODA entrada
- * externa. Quando o App Secret não está configurado, a validação fica desligada
- * (retorna true) — é o comportamento atual, mantido para não quebrar ambientes
- * ainda sem o segredo; em produção o segredo deve estar sempre presente.
+ * externa. Sem o App Secret configurado, FALHA FECHADO em produção (rejeita) —
+ * aceitar POST sem assinatura permitiria forjar leads e gastar a IA paga. Só em
+ * dev/test (NODE_ENV != production) a validação fica desligada por conveniência.
  *
  * Extraído dos handlers para ter teste de regressão e uma única fonte da verdade
  * (os dois webhooks usam exatamente este esquema).
  */
 export function assinaturaMetaValida(raw: string, header: string, appSecret: string): boolean {
   const secret = (appSecret || "").trim();
-  if (!secret) return true; // validação desligada quando não há segredo
+  // Sem segredo: libera só fora de produção; em produção rejeita (fail-closed).
+  if (!secret) return process.env.NODE_ENV !== "production";
 
   const recebida = header || "";
   const esperada = "sha256=" + crypto.createHmac("sha256", secret).update(raw).digest("hex");

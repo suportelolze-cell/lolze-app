@@ -68,12 +68,38 @@ export async function conectarNumeroCaptacao(): Promise<{
   return { ok: true, qr: r.qr ?? null, conectado: r.conectado, instancia: nome };
 }
 
+/**
+ * Confirma que a instância pertence AO TENANT (evita agir sobre o número de
+ * prospecção de outro tenant só sabendo o nome). Devolve o config lido.
+ */
+async function instanciaDoTenant(
+  admin: ReturnType<typeof getCrmAdmin>,
+  tenantId: string,
+  instancia: string
+): Promise<{ pertence: boolean; pool: string[]; ehPrincipal: boolean }> {
+  const { data } = await admin
+    .from("app_config")
+    .select("prospect_instancias,prospect_instancia")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  const pool = Array.isArray(data?.prospect_instancias)
+    ? (data!.prospect_instancias as string[]).map(String)
+    : [];
+  const ehPrincipal = (data?.prospect_instancia ?? "") === instancia;
+  return { pertence: pool.includes(instancia) || ehPrincipal, pool, ehPrincipal };
+}
+
 /** Estado de conexão de um número de captação (polling). */
 export async function statusNumeroCaptacao(
   instancia: string
 ): Promise<{ ok: boolean; conectado: boolean; numero?: string | null }> {
   const s = await getSessao();
   if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, conectado: false };
+  const admin = getCrmAdmin();
+  // Só consulta instância DESTE tenant (não vaza estado de números alheios).
+  if (!(await instanciaDoTenant(admin, s.tenantId, instancia)).pertence) {
+    return { ok: false, conectado: false };
+  }
   return statusDisparo(instancia);
 }
 
@@ -82,18 +108,19 @@ export async function removerNumeroCaptacao(instancia: string): Promise<{ ok: bo
   const s = await getSessao();
   if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, erro: "Sem permissão." };
   const admin = getCrmAdmin();
+
+  // Confirma posse ANTES de desconectar/apagar (senão um gestor derruba o número
+  // de prospecção de outro tenant passando o nome da instância dele).
+  const { pertence, pool, ehPrincipal } = await instanciaDoTenant(admin, s.tenantId, instancia);
+  if (!pertence) return { ok: false, erro: "Número não pertence a esta conta." };
+
   await desconectarDisparo(instancia).catch(() => null);
 
-  const { data } = await admin
-    .from("app_config")
-    .select("prospect_instancias,prospect_instancia")
-    .eq("tenant_id", s.tenantId)
-    .maybeSingle();
-  const pool = (Array.isArray(data?.prospect_instancias) ? (data!.prospect_instancias as string[]).map(String) : []).filter(
-    (n) => n !== instancia
-  );
-  const patch: Record<string, unknown> = { prospect_instancias: pool, updated_at: new Date().toISOString() };
-  if ((data?.prospect_instancia ?? "") === instancia) patch.prospect_instancia = null;
+  const patch: Record<string, unknown> = {
+    prospect_instancias: pool.filter((n) => n !== instancia),
+    updated_at: new Date().toISOString(),
+  };
+  if (ehPrincipal) patch.prospect_instancia = null;
   await admin.from("app_config").update(patch).eq("tenant_id", s.tenantId);
   revalidatePath("/configuracoes");
   revalidatePath("/captacao");
