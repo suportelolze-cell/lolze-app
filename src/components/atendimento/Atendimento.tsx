@@ -8,10 +8,13 @@ import {
   devolverConversa,
   enviarMensagem,
   recarregarConversas,
+  carregarHistoricoConversa,
 } from "@/lib/supabase/crm-actions";
 import { criarUploadAnexo, enviarAnexo } from "@/lib/atendimento/anexos";
 import { tipoDeMime, dentroDoLimite, extDeNome, limiteMb } from "@/lib/atendimento/midia-core";
+import { mesclarPorId } from "@/lib/atendimento/mensagens-core";
 import { crmBrowser } from "@/lib/supabase/browser";
+import type { Mensagem } from "@/lib/conversas";
 import { ConversaList, type Filtro } from "./ConversaList";
 import { ChatWindow } from "./ChatWindow";
 import { LeadPanel } from "./LeadPanel";
@@ -76,6 +79,14 @@ export function Atendimento({
   const [painelAberto, setPainelAberto] = useState(false); // Raio-X no mobile
   const [aviso, setAviso] = useState("");
   const [anexando, setAnexando] = useState(false);
+  // Histórico COMPLETO da conversa aberta (getConversas só embute as últimas 40).
+  // Re-buscado a cada poll enquanto aberta → sempre completo, sem lacuna e com
+  // URLs de mídia renovadas. Guarda só UMA conversa (memória limitada).
+  const [historicoAberto, setHistoricoAberto] = useState<{ id: number; mensagens: Mensagem[] } | null>(null);
+  const selIdRef = useRef<number | null>(selecionadaId);
+  useEffect(() => {
+    selIdRef.current = selecionadaId;
+  }, [selecionadaId]);
   const enviando = useRef(false); // evita sobrescrever envio otimista em andamento
   const snapshotRef = useRef<{ msgs: number; aguardando: number } | null>(null);
 
@@ -101,9 +112,18 @@ export function Atendimento({
   // Atualiza a lista preservando seleção (chamado pelo realtime e pelo poll).
   const recarregar = useCallback(async () => {
     if (enviando.current) return;
+    const selId = selIdRef.current;
     try {
-      const frescas = await recarregarConversas();
+      // Recarrega a lista (40/lead) e, em paralelo, o histórico completo da
+      // conversa aberta — assim ela nunca fica truncada nem com URL expirada.
+      const [frescas, hist] = await Promise.all([
+        recarregarConversas(),
+        selId != null ? carregarHistoricoConversa(selId).catch(() => null) : Promise.resolve(null),
+      ]);
       setConversas(frescas);
+      if (hist && selId != null && selIdRef.current === selId) {
+        setHistoricoAberto({ id: selId, mensagens: hist });
+      }
     } catch {
       /* silencioso: o poll tenta de novo */
     }
@@ -159,6 +179,38 @@ export function Atendimento({
   }, [conversas, filtro, busca, currentUserId]);
 
   const selecionada = conversas.find((c) => c.id === selecionadaId) ?? null;
+
+  // Ao ABRIR uma conversa, carrega o histórico completo na hora (o poll o mantém
+  // fresco depois). Sinaliza ao operador se a leitura falhar (não trunca calado).
+  useEffect(() => {
+    if (selecionadaId == null) {
+      setHistoricoAberto(null);
+      return;
+    }
+    let vivo = true;
+    carregarHistoricoConversa(selecionadaId)
+      .then((full) => {
+        if (vivo) setHistoricoAberto({ id: selecionadaId, mensagens: full });
+      })
+      .catch(() => {
+        if (vivo)
+          setAviso(
+            "Não consegui carregar o histórico completo desta conversa. Mostrando as mensagens recentes."
+          );
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [selecionadaId]);
+
+  // Conversa a exibir: mescla o histórico completo (quando já carregado para ESTA
+  // conversa) com as mensagens ao vivo/otimistas (recentes vencem: status/URL atuais).
+  const selecionadaExibida = useMemo(() => {
+    if (!selecionada) return null;
+    const base = historicoAberto?.id === selecionada.id ? historicoAberto.mensagens : [];
+    if (base.length === 0) return selecionada;
+    return { ...selecionada, mensagens: mesclarPorId(base, selecionada.mensagens) };
+  }, [selecionada, historicoAberto]);
 
   function patch(id: number, fn: (c: Conversa) => Conversa) {
     setConversas((prev) => prev.map((c) => (c.id === id ? fn(c) : c)));
@@ -331,7 +383,7 @@ export function Atendimento({
         {/* Chat */}
         <div className={`${selecionada ? "block" : "hidden lg:block"} min-w-0 flex-1`}>
           <ChatWindow
-            conversa={selecionada}
+            conversa={selecionadaExibida}
             souAtendente={souAtendente}
             bloqueada={bloqueada}
             podeOverride={podeOverride}
