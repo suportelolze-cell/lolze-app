@@ -401,7 +401,8 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
           dados: { autor: "ia" },
         });
       }
-      if (i < partes.length - 1) await sleep(Math.min(2600, 700 + parte.length * 18));
+      // Pausa "digitando" curta entre partes (humano, mas sem atrasar demais).
+      if (i < partes.length - 1) await sleep(Math.min(1500, 400 + parte.length * 10));
     }
   }
 
