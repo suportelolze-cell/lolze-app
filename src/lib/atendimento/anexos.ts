@@ -123,13 +123,17 @@ export async function enviarAnexo(
     { url: signed.signedUrl, tipo: tipoCanal(tipo), mime, filename }
   );
 
-  await registrarEvento({
-    tenantId: s.tenantId,
-    leadId,
-    tipo: "first_response_sent",
-    canal: entrega.canal ?? null,
-    dados: { autor: "atendente", midia: tipo },
-  });
+  // Só conta como 1ª resposta se REALMENTE entregou (não marcar quando o canal
+  // falhou e o lead não recebeu o anexo) — espelha o enviarMensagem.
+  if (entrega.ok) {
+    await registrarEvento({
+      tenantId: s.tenantId,
+      leadId,
+      tipo: "first_response_sent",
+      canal: entrega.canal ?? null,
+      dados: { autor: "atendente", midia: tipo },
+    });
+  }
 
   if (!entrega.ok && entrega.canal !== "painel") {
     return {

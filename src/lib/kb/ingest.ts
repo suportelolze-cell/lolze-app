@@ -27,6 +27,17 @@ export async function ingerir(tenantId: string, fileNome: string, texto: string)
 
   const admin = getCrmAdmin();
 
+  // Reingestão IDEMPOTENTE: apaga os trechos antigos do MESMO arquivo (tenant +
+  // file_nome) antes de gravar os novos, senão reenviar o doc duplica no RAG.
+  {
+    const { error } = await admin
+      .from("app_kb_documents")
+      .delete()
+      .eq("tenant_id", tenantId)
+      .eq("file_nome", fileNome);
+    if (error) throw error;
+  }
+
   // Embeddings em lotes (limite e custo).
   const lote = 96;
   const vetores: number[][] = [];

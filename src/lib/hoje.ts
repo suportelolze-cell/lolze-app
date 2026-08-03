@@ -157,14 +157,18 @@ export async function getHoje(): Promise<DadosHoje> {
   const abertos = (leadsAbertos ?? []) as L[];
   const idsAbertos = abertos.map((l) => l.id);
 
-  // Última mensagem por lead (para saber quem está esperando resposta).
+  // Última mensagem por lead (para saber quem está esperando resposta). Janela de
+  // 30 dias: evita puxar todo o histórico de cada lead só pra pegar a última msg
+  // (a tela é "ações de HOJE"; lead sem atividade em 30d não é ação de hoje).
   const ultimaPorLead = new Map<number, { autor: string; created_at: string }>();
   if (idsAbertos.length > 0) {
+    const janela = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
     const { data: msgs } = await admin
       .from("app_mensagens")
       .select("lead_id,autor,created_at,id")
       .eq("tenant_id", tid)
       .in("lead_id", idsAbertos)
+      .gte("created_at", janela)
       .order("id", { ascending: false });
     for (const m of (msgs ?? []) as { lead_id: number; autor: string; created_at: string }[]) {
       if (!ultimaPorLead.has(m.lead_id)) ultimaPorLead.set(m.lead_id, m);

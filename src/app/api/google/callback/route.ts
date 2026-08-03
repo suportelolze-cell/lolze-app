@@ -18,20 +18,27 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/configuracoes?google=erro", req.url));
 
   const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state"); // tenantId definido no /start
+  const state = url.searchParams.get("state"); // "<tenantId>:<nonce>" do /start
   if (!code || !state)
     return NextResponse.redirect(new URL("/configuracoes?google=erro", req.url));
 
+  // CSRF: o nonce do state tem que bater com o cookie httpOnly gravado no /start.
+  const [stateTenant, stateNonce] = state.split(":");
+  const nonceCookie = req.cookies.get("google_oauth_nonce")?.value ?? "";
+  if (!stateTenant || !stateNonce || !nonceCookie || stateNonce !== nonceCookie) {
+    return NextResponse.redirect(new URL("/configuracoes?google=erro", req.url));
+  }
+
   // Só o dono daquele tenant (ou superadmin) finaliza a conexão.
   const s = await getSessao();
-  const pode = s.papel === "superadmin" || (s.papel === "owner" && s.tenantId === state);
+  const pode = s.papel === "superadmin" || (s.papel === "owner" && s.tenantId === stateTenant);
   if (!pode) return NextResponse.redirect(new URL("/configuracoes?google=erro", req.url));
 
   try {
     const { refreshToken, email } = await exchangeCode(code, redirectUri(req));
     const admin = getCrmAdmin();
     const patch: Record<string, unknown> = {
-      tenant_id: state,
+      tenant_id: stateTenant,
       updated_at: new Date().toISOString(),
     };
     // refresh_token só vem no 1º consentimento; prompt=consent garante que venha.
@@ -39,7 +46,9 @@ export async function GET(req: NextRequest) {
     // O calendário primário tem como id o próprio e-mail da conta conectada.
     if (email) patch.google_calendar_id = email;
     await admin.from("app_tenant_secrets").upsert(patch, { onConflict: "tenant_id" });
-    return NextResponse.redirect(new URL("/configuracoes?google=ok", req.url));
+    const res = NextResponse.redirect(new URL("/configuracoes?google=ok", req.url));
+    res.cookies.delete("google_oauth_nonce"); // nonce é de uso único
+    return res;
   } catch {
     return NextResponse.redirect(new URL("/configuracoes?google=erro", req.url));
   }
