@@ -1,7 +1,18 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Radar, Upload, Loader2, Save, Check, Sparkles, Trash2, AlertTriangle } from "lucide-react";
+import {
+  Radar,
+  Upload,
+  Loader2,
+  Save,
+  Check,
+  Sparkles,
+  Trash2,
+  AlertTriangle,
+  Bot,
+  PencilLine,
+} from "lucide-react";
 import {
   importarProspectsCsv,
   setCaptacaoCfg,
@@ -18,6 +29,18 @@ const STATUS_ROTULO: Record<string, { txt: string; cor: string }> = {
   erro: { txt: "Erro", cor: "bg-red-100 text-red-600" },
 };
 
+/**
+ * Célula de planilha (xlsx) → texto seguro para o CSV de ';' do parser do servidor.
+ * Remove `;` (o delimitador), `,` (senão o detector de delimitador do servidor
+ * pode escolher ',' se o cabeçalho tiver vírgulas e desmontar as linhas) e
+ * quebras de linha. Date vira "" (uma data numa célula de nome/telefone é erro
+ * do usuário e não deve virar um "telefone" de dígitos-lixo).
+ */
+function celulaSegura(v: unknown): string {
+  if (v === null || v === undefined || v instanceof Date) return "";
+  return String(v).replace(/[\r\n;,]+/g, " ").trim();
+}
+
 export function Captacao({
   cfgInicial,
   resumo,
@@ -30,19 +53,31 @@ export function Captacao({
   const [cfg, setCfg] = useState(cfgInicial);
   const [salvo, setSalvo] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [erroSalvar, setErroSalvar] = useState("");
   const [importando, setImportando] = useState(false);
   const [resultImport, setResultImport] = useState("");
   const [previa, setPrevia] = useState("");
   const [gerando, setGerando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const modoTexto = cfg.modo === "texto";
+
   async function salvar() {
     setSalvando(true);
-    const r = await setCaptacaoCfg({ instancia: cfg.instancia, porDia: cfg.porDia, ativo: cfg.ativo });
+    setErroSalvar("");
+    const r = await setCaptacaoCfg({
+      instancia: cfg.instancia,
+      porDia: cfg.porDia,
+      ativo: cfg.ativo,
+      modo: cfg.modo,
+      mensagem: cfg.mensagem,
+    });
     setSalvando(false);
     if (r.ok) {
       setSalvo(true);
       setTimeout(() => setSalvo(false), 2000);
+    } else {
+      setErroSalvar(r.erro ?? "Não foi possível salvar.");
     }
   }
 
@@ -52,13 +87,27 @@ export function Captacao({
     setImportando(true);
     setResultImport("");
     try {
-      const texto = await f.text();
+      const nome = f.name.toLowerCase();
+      let texto: string;
+      if (nome.endsWith(".xlsx") || nome.endsWith(".xls")) {
+        // Lê o Excel no navegador (lib carregada sob demanda) e converte para
+        // um CSV de ; que o parser do servidor já entende — reaproveita tudo.
+        // v9: readSheet devolve as linhas da 1ª aba (Row[]); o default devolve
+        // um array de abas. Carrega sob demanda (fica fora do bundle inicial).
+        const { readSheet } = await import("read-excel-file/browser");
+        const linhas = await readSheet(f);
+        texto = linhas.map((linha) => linha.map(celulaSegura).join(";")).join("\n");
+      } else {
+        texto = await f.text();
+      }
       const r = await importarProspectsCsv(texto);
       setResultImport(
         r.ok
-          ? `✅ ${r.inseridos} novo(s) prospect(s) importado(s) (de ${r.lidos} linhas). Atualize a página para ver a lista.`
+          ? `✅ ${r.inseridos} novo(s) contato(s) importado(s) (de ${r.lidos} linhas). Atualize a página para ver a lista.`
           : r.erro ?? "Não foi possível importar."
       );
+    } catch (err) {
+      setResultImport("Não consegui ler o arquivo: " + (err as Error).message);
     } finally {
       setImportando(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -68,7 +117,7 @@ export function Captacao({
   async function previewMsg() {
     setGerando(true);
     setPrevia("");
-    const r = await gerarPrevia();
+    const r = await gerarPrevia({ modo: cfg.modo, mensagem: cfg.mensagem });
     setGerando(false);
     setPrevia(r.ok ? (r.mensagem ?? "") : r.erro ?? "Falha ao gerar.");
   }
@@ -84,11 +133,12 @@ export function Captacao({
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="flex items-center gap-2 font-display text-2xl font-medium italic tracking-tight text-texto">
-          <Radar size={22} className="text-marca" /> Captação
+          <Radar size={22} className="text-marca" /> Captação & Disparos
         </h1>
         <p className="mt-1 text-texto-suave">
-          Prospecção assistida: sobe a lista, a IA escreve a abordagem e envia em baixo volume pelo
-          número dedicado. Quem responde vira lead e cai no atendimento automático.
+          Suba a lista e escolha: a <b>IA escreve</b> uma abordagem fria e personalizada, ou{" "}
+          <b>você escreve</b> o texto de um disparo (uma oferta). Nos dois casos o envio sai em baixo
+          volume pelo número dedicado, e quem responde vira lead no atendimento automático.
         </p>
       </header>
 
@@ -97,8 +147,9 @@ export function Captacao({
         <AlertTriangle size={18} className="mt-0.5 shrink-0" />
         <p>
           Use um <b>número dedicado e aquecido</b> (não o WhatsApp que atende seus clientes) e
-          mantenha o volume baixo. Prospecção fria tem risco de bloqueio e envolve LGPD — prefira
-          telefones de <b>empresa</b> e respeite quem pedir para não receber.
+          mantenha o volume baixo. Envio em massa tem risco de bloqueio e envolve LGPD — prefira
+          telefones de <b>empresa</b>, personalize com <code>{"{nome}"}</code> e respeite quem pedir
+          para não receber.
         </p>
       </div>
 
@@ -121,7 +172,62 @@ export function Captacao({
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Config */}
         <div className="rounded-lg border border-borda bg-superficie p-6">
-          <h2 className="font-corpo text-lg font-bold text-texto">Configuração do disparo</h2>
+          <h2 className="font-corpo text-lg font-bold text-texto">Configuração do envio</h2>
+
+          {/* Seletor de modo */}
+          <div className="mt-4">
+            <label className="mb-1.5 block text-sm font-semibold text-texto">Modo da mensagem</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCfg({ ...cfg, modo: "ia" })}
+                className={`flex items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                  !modoTexto
+                    ? "border-marca/50 bg-marca-suave text-marca"
+                    : "border-borda bg-fundo text-texto-suave hover:bg-fundo/60"
+                }`}
+              >
+                <Bot size={16} /> IA escreve
+              </button>
+              <button
+                type="button"
+                onClick={() => setCfg({ ...cfg, modo: "texto" })}
+                className={`flex items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                  modoTexto
+                    ? "border-marca/50 bg-marca-suave text-marca"
+                    : "border-borda bg-fundo text-texto-suave hover:bg-fundo/60"
+                }`}
+              >
+                <PencilLine size={16} /> Eu escrevo
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-texto-suave">
+              {modoTexto
+                ? "Disparo com o SEU texto (ex.: uma oferta). O mesmo texto vai para cada contato da lista."
+                : "A IA redige uma abordagem fria, curta e personalizada para cada contato."}
+            </p>
+          </div>
+
+          {/* Texto do disparo (só no modo texto) */}
+          {modoTexto && (
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-semibold text-texto">Texto do disparo</label>
+              <textarea
+                value={cfg.mensagem}
+                maxLength={1000}
+                rows={5}
+                onChange={(e) => setCfg({ ...cfg, mensagem: e.target.value })}
+                placeholder={"Ex.: Olá {nome}! Estamos com uma oferta especial em {cidade} esta semana. Posso te contar?"}
+                className="w-full resize-y rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none focus:border-marca"
+              />
+              <p className="mt-1 text-xs text-texto-suave">
+                Use <code>{"{nome}"}</code>, <code>{"{empresa}"}</code>, <code>{"{cidade}"}</code>,{" "}
+                <code>{"{nicho}"}</code> — a Lolze troca por cada contato.{" "}
+                <span className="tabular-nums">{cfg.mensagem.length}/1000</span>
+              </p>
+            </div>
+          )}
+
           <div className="mt-4 space-y-4">
             <div>
               <label className="mb-1 block text-sm font-semibold text-texto">Número de disparo</label>
@@ -169,7 +275,7 @@ export function Captacao({
                 }`}
               >
                 <span className={`h-2 w-2 rounded-full ${cfg.ativo ? "bg-marca" : "bg-texto-suave/40"}`} />
-                {cfg.ativo ? "Captação ligada" : "Captação desligada"}
+                {cfg.ativo ? "Envios ligados" : "Envios desligados"}
               </button>
             </div>
             <button
@@ -180,6 +286,7 @@ export function Captacao({
               {salvo ? <Check size={16} /> : <Save size={16} />}
               {salvo ? "Salvo!" : salvando ? "Salvando…" : "Salvar configuração"}
             </button>
+            {erroSalvar && <p className="text-sm font-medium text-red-600">{erroSalvar}</p>}
           </div>
         </div>
 
@@ -187,18 +294,24 @@ export function Captacao({
         <div className="rounded-lg border border-borda bg-superficie p-6">
           <h2 className="font-corpo text-lg font-bold text-texto">Importar lista (planilha)</h2>
           <p className="mt-1 text-xs text-texto-suave">
-            Envie um CSV com colunas: <b>nome/empresa</b>, <b>telefone</b>, e opcionalmente site,
-            nicho e cidade.
+            Aceita <b>Excel (.xlsx)</b> ou <b>CSV</b>, com colunas: <b>nome/empresa</b>,{" "}
+            <b>telefone</b>, e opcionalmente site, nicho e cidade (a 1ª linha é o cabeçalho).
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onArquivo} className="hidden" />
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              onChange={onArquivo}
+              className="hidden"
+            />
             <button
               onClick={() => fileRef.current?.click()}
               disabled={importando}
               className="flex items-center gap-2 rounded-md border border-marca px-4 py-2 text-sm font-semibold text-marca hover:bg-marca-suave/40 disabled:opacity-50"
             >
               {importando ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-              {importando ? "Importando…" : "Enviar CSV"}
+              {importando ? "Importando…" : "Enviar planilha"}
             </button>
             <button
               onClick={previewMsg}
@@ -206,16 +319,19 @@ export function Captacao({
               className="flex items-center gap-2 rounded-md border border-borda px-4 py-2 text-sm font-semibold text-texto hover:bg-fundo disabled:opacity-50"
             >
               {gerando ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              Ver prévia da abordagem
+              {modoTexto ? "Ver prévia do disparo" : "Ver prévia da abordagem"}
             </button>
           </div>
           {resultImport && <p className="mt-3 text-sm font-medium text-texto">{resultImport}</p>}
           {previa && (
             <div className="mt-3 rounded-lg border border-borda bg-fundo p-3 text-sm text-texto">
               <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-marca">
-                <Sparkles size={12} /> Exemplo de mensagem que a IA enviaria
+                <Sparkles size={12} />{" "}
+                {modoTexto
+                  ? "Como o disparo vai chegar (1º contato da fila)"
+                  : "Exemplo de mensagem que a IA enviaria"}
               </div>
-              {previa}
+              <p className="whitespace-pre-wrap">{previa}</p>
             </div>
           )}
         </div>
@@ -224,11 +340,11 @@ export function Captacao({
       {/* Lista */}
       <div className="rounded-lg border border-borda bg-superficie">
         <div className="border-b border-borda px-5 py-3 text-sm font-bold text-texto">
-          Prospects ({prospects.length})
+          Contatos ({prospects.length})
         </div>
         {prospects.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-texto-suave">
-            Nenhum prospect ainda. Importe uma planilha para começar.
+            Nenhum contato ainda. Importe uma planilha para começar.
           </div>
         ) : (
           <div className="divide-y divide-borda">

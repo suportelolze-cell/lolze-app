@@ -20,7 +20,8 @@
     "next": "^16.2.10",
     "pdf-parse": "^1.1.1",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "read-excel-file": "^9.3.5"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
