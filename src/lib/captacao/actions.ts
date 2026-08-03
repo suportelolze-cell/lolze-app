@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { getSessao } from "@/lib/supabase/tenant";
 import { gerarAbordagem } from "./enviar";
+import { getCaptacaoCfg } from "./data";
+import { renderTemplate, validarMensagemDisparo, erroDeColunaAusente } from "./captacao-core";
 import { conectarDisparo, statusDisparo, desconectarDisparo, nomeDisparo } from "@/lib/evolution/client";
 
 const ehGestor = (p: string) => p === "owner" || p === "superadmin";
@@ -131,7 +133,11 @@ export async function removerNumeroCaptacao(instancia: string): Promise<{ ok: bo
 function normalizarTel(s: string): string {
   const d = (s || "").replace(/\D/g, "");
   if (d.length < 10) return "";
-  return d.length <= 11 ? "55" + d : d;
+  const comDDI = d.length <= 11 ? "55" + d : d;
+  // BR válido = 55 + DDD(2) + 8 (fixo) ou 9 (móvel) = 12 ou 13 dígitos. Rejeita
+  // blobs longos (data lida do Excel, concatenação) que virariam número inexistente.
+  if (comDDI.length > 13) return "";
+  return comDDI;
 }
 
 type LinhaCsv = { nome: string | null; telefone: string; site: string | null; nicho: string | null; cidade: string | null };
@@ -201,26 +207,69 @@ export async function importarProspectsCsv(
   return { ok: true, inseridos, lidos: linhas.length };
 }
 
-/** Salva a config de captação (número dedicado, volume/dia, liga/desliga). */
+/**
+ * Salva a config de captação (número dedicado, volume/dia, liga/desliga) e o
+ * MODO de mensagem: 'ia' (a IA redige a abordagem fria) ou 'texto' (disparo com
+ * o texto do gestor). Escrita defensiva: se as colunas do modo ainda não
+ * existem (migração pendente), o modo 'ia' cai para o update legado sem quebrar.
+ */
 export async function setCaptacaoCfg(input: {
   instancia: string;
   porDia: number;
   ativo: boolean;
+  modo?: "ia" | "texto";
+  mensagem?: string;
 }): Promise<{ ok: boolean; erro?: string }> {
   const s = await getSessao();
   if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, erro: "Sem permissão." };
   const porDia = Math.min(Math.max(Math.round(Number(input.porDia) || 10), 1), 40);
+  const modo = input.modo === "texto" ? "texto" : "ia";
+  const mensagem = (input.mensagem ?? "").trim();
+  if (modo === "texto") {
+    const err = validarMensagemDisparo(mensagem);
+    if (err) return { ok: false, erro: err };
+  }
+
   const admin = getCrmAdmin();
+
+  // Isolamento: a instância precisa PERTENCER a este tenant. Sem isso, um gestor
+  // poderia apontar o disparo para o número dedicado de OUTRO tenant (queimando
+  // a reputação alheia) ou para o número principal que atende clientes reais.
+  // O <select> só limita no cliente; a server action não pode confiar no input.
+  const instancia = input.instancia.trim();
+  if (instancia) {
+    const { pertence } = await instanciaDoTenant(admin, s.tenantId, instancia);
+    if (!pertence) return { ok: false, erro: "Número não pertence a esta conta." };
+  }
+
+  const base = {
+    prospect_instancia: instancia || null,
+    prospect_dia: porDia,
+    prospect_ativo: Boolean(input.ativo),
+    updated_at: new Date().toISOString(),
+  };
+
   const { error } = await admin
     .from("app_config")
-    .update({
-      prospect_instancia: input.instancia.trim() || null,
-      prospect_dia: porDia,
-      prospect_ativo: Boolean(input.ativo),
-      updated_at: new Date().toISOString(),
-    })
+    .update({ ...base, prospect_modo: modo, prospect_mensagem: modo === "texto" ? mensagem : null })
     .eq("tenant_id", s.tenantId);
-  if (error) return { ok: false, erro: error.message };
+
+  if (error) {
+    if (erroDeColunaAusente(error)) {
+      // Migração ainda não aplicada. Modo IA continua salvando (legado); o modo
+      // texto exige a migração — reporta em vez de "salvar" e não disparar nada.
+      if (modo === "texto") {
+        return {
+          ok: false,
+          erro: "Disparo por texto ainda não ativado (migração pendente). Use o modo IA por enquanto.",
+        };
+      }
+      const retry = await admin.from("app_config").update(base).eq("tenant_id", s.tenantId);
+      if (retry.error) return { ok: false, erro: retry.error.message };
+    } else {
+      return { ok: false, erro: error.message };
+    }
+  }
   revalidatePath("/captacao");
   return { ok: true };
 }
@@ -240,36 +289,68 @@ export async function descartarProspect(id: number): Promise<{ ok: boolean; erro
   return { ok: true };
 }
 
-/** Gera uma PRÉVIA de abordagem (sem enviar) — pra ver o estilo antes de ligar. */
-export async function gerarPrevia(): Promise<{ ok: boolean; mensagem?: string; erro?: string }> {
+/**
+ * Gera uma PRÉVIA (sem enviar) contra o primeiro prospect da fila. Ciente do
+ * modo: 'texto' renderiza o template do gestor (aceita o texto ao vivo, antes
+ * de salvar); 'ia' gera a abordagem fria. `input` permite prever o que está
+ * sendo digitado sem precisar salvar antes.
+ */
+export async function gerarPrevia(input?: {
+  modo?: "ia" | "texto";
+  mensagem?: string;
+}): Promise<{ ok: boolean; mensagem?: string; erro?: string }> {
   const s = await getSessao();
   if (!ehGestor(s.papel) || !s.tenantId) return { ok: false, erro: "Sem permissão." };
   const admin = getCrmAdmin();
-  const [{ data: cfg }, { data: p }] = await Promise.all([
-    admin.from("app_config").select("tenant_id,nome_negocio,oferta,tom").eq("tenant_id", s.tenantId).maybeSingle(),
-    admin
-      .from("app_prospects")
-      .select("id,nome_empresa,telefone,site,nicho,cidade")
-      .eq("tenant_id", s.tenantId)
-      .eq("status", "novo")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+
+  const { data: p } = await admin
+    .from("app_prospects")
+    .select("id,nome_empresa,telefone,site,nicho,cidade")
+    .eq("tenant_id", s.tenantId)
+    .eq("status", "novo")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
   if (!p) return { ok: false, erro: "Importe uma lista primeiro (nenhum prospect novo)." };
+  const prospect = p as {
+    id: number;
+    nome_empresa: string | null;
+    telefone: string;
+    site: string | null;
+    nicho: string | null;
+    cidade: string | null;
+  };
+
+  const cfg = await getCaptacaoCfg();
+  const modo = input?.modo ?? cfg.modo;
+  const mensagem = input?.mensagem !== undefined ? input.mensagem : cfg.mensagem;
+
+  // Modo texto: a prévia é o próprio disparo renderizado (sem IA/custo).
+  if (modo === "texto") {
+    const err = validarMensagemDisparo(mensagem);
+    if (err) return { ok: false, erro: err };
+    return { ok: true, mensagem: renderTemplate(mensagem, prospect) };
+  }
+
+  // Modo IA: gera a abordagem fria com o contexto do negócio.
+  const { data: aiCfg } = await admin
+    .from("app_config")
+    .select("nome_negocio,oferta,tom")
+    .eq("tenant_id", s.tenantId)
+    .maybeSingle();
   try {
-    const mensagem = await gerarAbordagem(
+    const gerada = await gerarAbordagem(
       {
         tenant_id: s.tenantId,
         prospect_instancia: null,
         prospect_dia: null,
-        nome_negocio: (cfg?.nome_negocio as string | null) ?? null,
-        oferta: (cfg?.oferta as string | null) ?? null,
-        tom: (cfg?.tom as string | null) ?? null,
+        nome_negocio: (aiCfg?.nome_negocio as string | null) ?? null,
+        oferta: (aiCfg?.oferta as string | null) ?? null,
+        tom: (aiCfg?.tom as string | null) ?? null,
       },
-      p as { id: number; nome_empresa: string | null; telefone: string; site: string | null; nicho: string | null; cidade: string | null }
+      prospect
     );
-    return { ok: true, mensagem };
+    return { ok: true, mensagem: gerada };
   } catch (e) {
     return { ok: false, erro: (e as Error).message };
   }

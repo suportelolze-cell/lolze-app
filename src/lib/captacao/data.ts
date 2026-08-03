@@ -1,5 +1,6 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { getTenantId } from "@/lib/supabase/tenant";
+import { erroDeColunaAusente } from "./captacao-core";
 
 export type ProspectRow = {
   id: number;
@@ -18,6 +19,10 @@ export type CaptacaoCfg = {
   instancia: string;
   porDia: number;
   ativo: boolean;
+  /** 'ia' = a IA redige a abordagem fria; 'texto' = disparo com texto do gestor. */
+  modo: "ia" | "texto";
+  /** Texto do disparo (usado quando modo='texto'). */
+  mensagem: string;
   /** Pool de números liberados pelo admin (o cliente escolhe um). */
   instancias: string[];
 };
@@ -32,13 +37,31 @@ export type CaptacaoResumo = {
 
 export async function getCaptacaoCfg(): Promise<CaptacaoCfg> {
   const tid = await getTenantId();
-  if (!tid) return { instancia: "", porDia: 10, ativo: false, instancias: [] };
+  if (!tid) return { instancia: "", porDia: 10, ativo: false, modo: "ia", mensagem: "", instancias: [] };
   const sb = getCrmAdmin();
-  const { data } = await sb
-    .from("app_config")
-    .select("prospect_instancia,prospect_dia,prospect_ativo,prospect_instancias")
-    .eq("tenant_id", tid)
-    .maybeSingle();
+
+  // Tenta com as colunas do modo de disparo. Só cai para o legado quando a
+  // COLUNA está ausente (migração pendente). Num erro transitório, tenta 1x de
+  // novo antes — senão a UI mostraria modo 'ia'/texto vazio e um Save seguinte
+  // apagaria o disparo salvo do tenant.
+  const selecMod =
+    "prospect_instancia,prospect_dia,prospect_ativo,prospect_instancias,prospect_modo,prospect_mensagem";
+  let comModo = await sb.from("app_config").select(selecMod).eq("tenant_id", tid).maybeSingle();
+  if (comModo.error && !erroDeColunaAusente(comModo.error)) {
+    comModo = await sb.from("app_config").select(selecMod).eq("tenant_id", tid).maybeSingle();
+  }
+  let data: Record<string, unknown> | null;
+  if (comModo.error) {
+    const legado = await sb
+      .from("app_config")
+      .select("prospect_instancia,prospect_dia,prospect_ativo,prospect_instancias")
+      .eq("tenant_id", tid)
+      .maybeSingle();
+    data = legado.data as Record<string, unknown> | null;
+  } else {
+    data = comModo.data as Record<string, unknown> | null;
+  }
+
   const pool = Array.isArray(data?.prospect_instancias)
     ? (data!.prospect_instancias as string[]).map(String)
     : [];
@@ -46,6 +69,8 @@ export async function getCaptacaoCfg(): Promise<CaptacaoCfg> {
     instancia: (data?.prospect_instancia as string | null) ?? "",
     porDia: Number(data?.prospect_dia ?? 10),
     ativo: Boolean(data?.prospect_ativo ?? false),
+    modo: (data?.prospect_modo as string | null) === "texto" ? "texto" : "ia",
+    mensagem: (data?.prospect_mensagem as string | null) ?? "",
     instancias: pool,
   };
 }

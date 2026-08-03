@@ -46,7 +46,7 @@ const grupos: Grupo[] = [
       { href: "/resultados", label: "Resultados", icon: TrendingUp },
       { href: "/funil", label: "Raio-X do Funil", icon: Workflow },
       { href: "/recorrencia", label: "Recorrência", icon: Repeat },
-      { href: "/captacao", label: "Captação", icon: Radar, gestorOnly: true },
+      { href: "/captacao", label: "Captação & Disparos", icon: Radar, gestorOnly: true },
     ],
   },
   {

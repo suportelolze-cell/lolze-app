@@ -4,6 +4,7 @@ import { getAnthropic, temChaveIA, ROUTER_MODEL } from "@/lib/agent/anthropic";
 import { enviarTexto } from "@/lib/evolution/client";
 import { registrarUsoIA } from "@/lib/agent/uso";
 import { registrarErro } from "@/lib/observability/erros";
+import { renderTemplate, erroDeColunaAusente } from "./captacao-core";
 
 /**
  * Prospecção Assistida (Parte A) — envio automático em BAIXO volume.
@@ -24,6 +25,8 @@ type CfgProsp = {
   nome_negocio: string | null;
   oferta: string | null;
   tom: string | null;
+  prospect_modo?: string | null; // 'ia' (IA redige) | 'texto' (disparo do gestor)
+  prospect_mensagem?: string | null; // texto do disparo quando modo='texto'
 };
 
 type ProspAlvo = {
@@ -77,10 +80,27 @@ export async function processarCaptacao(): Promise<{ enviados: number }> {
   if (!temChaveIA()) return { enviados: 0 };
   const admin = getCrmAdmin();
 
-  const { data: cfgs } = await admin
+  // Select defensivo: tenta com as colunas do modo de disparo. Só cai para o
+  // legado (tudo 'ia') quando a coluna está AUSENTE (migração pendente). Num erro
+  // transitório NÃO rebaixamos 'texto'→'ia' (enviaria a mensagem errada, e o
+  // envio é irreversível) — pulamos a rodada e tentamos de novo no próximo cron.
+  const comModo = await admin
     .from("app_config")
-    .select("tenant_id,prospect_instancia,prospect_dia,nome_negocio,oferta,tom")
+    .select("tenant_id,prospect_instancia,prospect_dia,nome_negocio,oferta,tom,prospect_modo,prospect_mensagem")
     .eq("prospect_ativo", true);
+  let cfgs: Record<string, unknown>[] | null = comModo.data;
+  if (comModo.error) {
+    if (erroDeColunaAusente(comModo.error)) {
+      cfgs = (
+        await admin
+          .from("app_config")
+          .select("tenant_id,prospect_instancia,prospect_dia,nome_negocio,oferta,tom")
+          .eq("prospect_ativo", true)
+      ).data;
+    } else {
+      cfgs = null; // erro transitório: pula a rodada sem downgrade
+    }
+  }
 
   let enviados = 0;
   const hoje0 = new Date();
@@ -90,6 +110,11 @@ export async function processarCaptacao(): Promise<{ enviados: number }> {
     if (enviados >= MAX_GLOBAL) break;
     const inst = (c.prospect_instancia || "").trim();
     if (!inst) continue;
+
+    const modo = c.prospect_modo === "texto" ? "texto" : "ia";
+    const template = (c.prospect_mensagem || "").trim();
+    // Disparo por texto sem texto salvo: não manda nada em branco — pula o tenant.
+    if (modo === "texto" && !template) continue;
 
     const porDia = Math.min(Math.max(Number(c.prospect_dia) || 10, 1), 40);
     const { count: jaHoje } = await admin
@@ -112,7 +137,11 @@ export async function processarCaptacao(): Promise<{ enviados: number }> {
 
     for (const p of (fila ?? []) as ProspAlvo[]) {
       try {
-        const msg = await gerarAbordagem(c, p);
+        // Modo 'texto': o gestor redige (sem IA/custo). Modo 'ia': a IA redige.
+        const msg = modo === "texto" ? renderTemplate(template, p) : await gerarAbordagem(c, p);
+        // Render vazio (ex.: template com só {nome} e prospect sem nome): não é
+        // falha de ENVIO — não tenta e não marca 'erro'. Deixa 'novo' e segue.
+        if (modo === "texto" && !msg) continue;
         const ok = msg ? await enviarTexto(inst, p.telefone, msg) : false;
         if (ok) {
           await admin
