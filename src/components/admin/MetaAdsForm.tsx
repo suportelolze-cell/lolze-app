@@ -41,8 +41,10 @@ export function MetaAdsForm({ tenantId, cfg }: { tenantId: string; cfg: MetaAdsC
         <h2 className="font-corpo text-lg font-bold text-texto">Conexão Meta Ads</h2>
       </div>
       <p className="mt-1 text-sm text-texto-suave">
-        Conecte a conta de anúncios do cliente para, em breve, sincronizar o gasto e o custo por
-        lead por anúncio. A classificação pago × orgânico já funciona sem isso.
+        Conecte a conta de anúncios do cliente. Com um token de leitura de anúncios (ads_read), o
+        Lolze passa a sincronizar diariamente o gasto e os cliques — que aparecem no painel
+        (Investimento e Custo por Agendamento) e no topo do Raio-X do Funil. A classificação pago ×
+        orgânico já funciona sem isso.
       </p>
 
       <div className="mt-4 space-y-4">

@@ -4,6 +4,7 @@ import { enviarFollowup } from "@/lib/agent/followup";
 import { processarLembretes } from "@/lib/agent/lembretes";
 import { processarCaptacao } from "@/lib/captacao/enviar";
 import { reenviarFalhados } from "@/lib/integracoes/reenvio-cron";
+import { sincronizarMetaTodos } from "@/lib/trafego/meta-sync";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -67,5 +68,14 @@ export async function GET(req: NextRequest) {
     // best-effort
   }
 
-  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes, captacao, reenvio });
+  // Ingestão de tráfego (Meta Ads → app_trafego). Idempotente por (tenant,dia,
+  // fonte); alimenta o investimento/CPA do painel e o topo do Raio-X do Funil.
+  let trafego = { tenants: 0, ok: 0, linhas: 0 };
+  try {
+    trafego = await sincronizarMetaTodos();
+  } catch {
+    // best-effort
+  }
+
+  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes, captacao, reenvio, trafego });
 }
