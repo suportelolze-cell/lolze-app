@@ -31,16 +31,17 @@ test("rejeita header vazio ou malformado", () => {
 });
 
 test("sem App Secret: libera fora de produção, REJEITA em produção (fail-closed)", () => {
-  const orig = process.env.NODE_ENV;
+  const env = process.env as Record<string, string | undefined>;
+  const orig = env.NODE_ENV;
   try {
-    process.env.NODE_ENV = "test"; // dev/test: validação desligada por conveniência
+    env.NODE_ENV = "test"; // dev/test: validação desligada por conveniência
     assert.equal(assinaturaMetaValida(corpo, "", ""), true);
     assert.equal(assinaturaMetaValida(corpo, "qualquer", "  "), true);
-    process.env.NODE_ENV = "production"; // prod: sem segredo não aceita POST não assinado
+    env.NODE_ENV = "production"; // prod: sem segredo não aceita POST não assinado
     assert.equal(assinaturaMetaValida(corpo, "", ""), false);
     assert.equal(assinaturaMetaValida(corpo, "qualquer", ""), false);
   } finally {
-    process.env.NODE_ENV = orig;
+    env.NODE_ENV = orig;
   }
 });
 

@@ -50,8 +50,8 @@ const grupos: Grupo[] = [
     ],
   },
   {
-    // Universidade (conteúdo demonstrativo) e Ideias saíram do menu principal
-    // até estarem prontos ponta a ponta (dossiê, seção 9).
+    // Ideias fica fora do menu principal até estar pronta ponta a ponta
+    // (dossiê, seção 9). A Universidade (mock) foi removida.
     itens: [{ href: "/configuracoes", label: "Configurações", icon: Settings }],
   },
 ];

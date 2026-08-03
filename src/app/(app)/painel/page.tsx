@@ -1,13 +1,5 @@
-import {
-  DollarSign,
-  Users,
-  Sparkles,
-  CalendarCheck,
-  Target,
-  GraduationCap,
-} from "lucide-react";
+import { DollarSign, Users, Sparkles, CalendarCheck, Target } from "lucide-react";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TracaoChart } from "@/components/dashboard/TracaoChart";
 import { PulsoFeed } from "@/components/dashboard/PulsoFeed";
@@ -110,24 +102,6 @@ export default async function PainelPage() {
           )}
           <PulsoFeed eventos={pulso} />
         </div>
-      </section>
-
-      {/* Banner de Onboarding */}
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-borda bg-superficie px-6 py-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-md bg-marca-suave text-marca">
-            <GraduationCap size={20} />
-          </span>
-          <p className="text-sm text-texto">
-            Quer extrair o máximo do seu Centro de Comando?
-          </p>
-        </div>
-        <Link
-          href="/universidade"
-          className="rounded-sm border border-marca px-4 py-2 text-sm font-semibold text-marca transition-colors hover:bg-marca-suave"
-        >
-          Assista ao Treinamento Expresso de 3 Minutos
-        </Link>
       </section>
     </>
   );
