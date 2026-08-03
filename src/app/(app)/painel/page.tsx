@@ -35,6 +35,10 @@ export default async function PainelPage() {
   ]);
   const cliente = perfil.nome || "bem-vindo";
   const mostrarAnuncios = planoTemFeature(plano, "anuncios");
+  // Investimento e CPA vêm de app_trafego (integração de Ads). Sem dado real,
+  // ambos seriam R$0 fixo — esconder é mais honesto do que mostrar zero como se
+  // fosse resultado. Voltam sozinhos quando houver investimento sincronizado.
+  const temTrafego = m.investimento > 0;
   return (
     <>
       {/* Cabeçalho */}
@@ -55,14 +59,22 @@ export default async function PainelPage() {
         </div>
       </header>
 
-      {/* Bloco 1: Métricas de Ouro */}
-      <section className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <MetricCard
-          titulo="Investimento em Tráfego"
-          valor={brl(m.investimento)}
-          microcopy="O combustível da sua máquina nos últimos 30 dias."
-          icon={DollarSign}
-        />
+      {/* Bloco 1: Métricas de Ouro. Investimento/CPA só aparecem quando há dado
+          real de tráfego (app_trafego) — senão mostrariam R$0 fixo (métrica
+          vazia apresentada como real). Reaparecem sozinhos com a sync de Ads. */}
+      <section
+        className={`mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 ${
+          temTrafego ? "lg:grid-cols-5" : "lg:grid-cols-3"
+        }`}
+      >
+        {temTrafego && (
+          <MetricCard
+            titulo="Investimento em Tráfego"
+            valor={brl(m.investimento)}
+            microcopy="O combustível da sua máquina nos últimos 30 dias."
+            icon={DollarSign}
+          />
+        )}
         <MetricCard
           titulo="Novos Leads Capturados"
           valor={String(m.totalLeads)}
@@ -83,12 +95,14 @@ export default async function PainelPage() {
           microcopy="Clientes com horário marcado. Dinheiro na mesa."
           icon={CalendarCheck}
         />
-        <MetricCard
-          titulo="Custo por Agendamento"
-          valor={brl(m.cpa)}
-          microcopy="Quanto você pagou para cada cliente sentar na sua cadeira."
-          icon={Target}
-        />
+        {temTrafego && (
+          <MetricCard
+            titulo="Custo por Agendamento"
+            valor={brl(m.cpa)}
+            microcopy="Quanto você pagou para cada cliente sentar na sua cadeira."
+            icon={Target}
+          />
+        )}
       </section>
 
       {/* Bloco 2 + 3: Gráfico e Pulso */}

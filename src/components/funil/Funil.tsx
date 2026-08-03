@@ -40,6 +40,11 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
     base === 0 ? 0 : Math.round((n / base) * 100);
 
   const cliquesTotais = d.metaCliques + d.googleCliques;
+  // Topo do funil (Meta/Google/Portal) vem de app_trafego. Sem integração de
+  // Ads, tudo é zero — e as métricas derivadas ("Quebra 100%", "Retenção 0%",
+  // "Conversão Global") viram diagnóstico falso. Quando não há tráfego, marcamos
+  // como "não conectado" em vez de apresentar zero como resultado real (§4).
+  const semTrafego = cliquesTotais + d.visitantes === 0;
   const quebraTrafego = 100 - pct(d.visitantes, cliquesTotais);
   const retencaoLP = pct(d.conversas, d.visitantes);
   const descartePct = pct(d.descartados, d.conversas);
@@ -51,15 +56,15 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
     () => [
       {
         id: "meta", type: "funil", position: { x: 0, y: 40 },
-        data: { variante: "origem", icone: "📣", titulo: "Meta Ads (IG/FB)", metrica: num(d.metaCliques), metricaLabel: "Cliques gerados", micro: `Investimento: ${real(d.metaInvest)}` },
+        data: { variante: "origem", icone: "📣", titulo: "Meta Ads (IG/FB)", metrica: semTrafego ? "—" : num(d.metaCliques), metricaLabel: "Cliques gerados", micro: semTrafego ? "Fonte não conectada" : `Investimento: ${real(d.metaInvest)}` },
       },
       {
         id: "google", type: "funil", position: { x: 0, y: 220 },
-        data: { variante: "origem", icone: "🔍", titulo: "Google Ads", metrica: num(d.googleCliques), metricaLabel: "Cliques gerados", micro: `Investimento: ${real(d.googleInvest)}` },
+        data: { variante: "origem", icone: "🔍", titulo: "Google Ads", metrica: semTrafego ? "—" : num(d.googleCliques), metricaLabel: "Cliques gerados", micro: semTrafego ? "Fonte não conectada" : `Investimento: ${real(d.googleInvest)}` },
       },
       {
         id: "lp", type: "funil", position: { x: 260, y: 130 },
-        data: { variante: "captura", icone: "🌐", titulo: "Portal de Captura", metrica: num(d.visitantes), metricaLabel: "Visitantes únicos", micro: `Conversão da página: ${d.lpConv}%` },
+        data: { variante: "captura", icone: "🌐", titulo: "Portal de Captura", metrica: semTrafego ? "—" : num(d.visitantes), metricaLabel: "Visitantes únicos", micro: semTrafego ? "Fonte não conectada" : `Conversão da página: ${d.lpConv}%` },
       },
       {
         id: "ia", type: "funil", position: { x: 520, y: 130 },
@@ -82,21 +87,21 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
         data: { variante: "cofre", icone: "💰", titulo: "Caixa Gerado / Vendas", metrica: num(d.vendas), metricaLabel: "Clientes pagantes", micro: `Faturamento: ${real(d.faturamento)}` },
       },
     ],
-    [d]
+    [d, semTrafego]
   );
 
   const edges: Edge[] = useMemo(
     () => [
-      { id: "e-meta-lp", source: "meta", target: "lp", label: `⚠️ Quebra ${quebraTrafego}%`, ...chip(VERMELHO) },
+      { id: "e-meta-lp", source: "meta", target: "lp", label: semTrafego ? undefined : `⚠️ Quebra ${quebraTrafego}%`, ...chip(semTrafego ? NEUTRO : VERMELHO) },
       { id: "e-google-lp", source: "google", target: "lp", ...chip(NEUTRO) },
-      { id: "e-lp-ia", source: "lp", target: "ia", label: `🔥 Retenção ${retencaoLP}%`, ...chip(VERDE) },
+      { id: "e-lp-ia", source: "lp", target: "ia", label: semTrafego ? undefined : `🔥 Retenção ${retencaoLP}%`, ...chip(semTrafego ? NEUTRO : VERDE) },
       { id: "e-ia-descarte", source: "ia", target: "descarte", label: `${descartePct}%`, ...chip(VERMELHO) },
       { id: "e-ia-auto", source: "ia", target: "auto", label: `✅ ${autoPct}%`, ...chip(VERDE) },
       { id: "e-ia-handoff", source: "ia", target: "handoff", label: `🎯 ${handoffPct}%`, ...chip(AMBAR) },
       { id: "e-auto-cofre", source: "auto", target: "cofre", ...chip(VERDE) },
       { id: "e-handoff-cofre", source: "handoff", target: "cofre", label: `Fechamento ${fechamento}%`, ...chip(AMBAR) },
     ],
-    [quebraTrafego, retencaoLP, descartePct, autoPct, handoffPct, fechamento]
+    [semTrafego, quebraTrafego, retencaoLP, descartePct, autoPct, handoffPct, fechamento]
   );
 
   return (
@@ -130,11 +135,21 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
               Conversão Global (Clique → Venda)
             </div>
             <div className="text-xl font-bold text-marca">
-              {d.conversaoGlobal}%
+              {semTrafego ? "—" : `${d.conversaoGlobal}%`}
             </div>
           </div>
         </div>
       </header>
+
+      {/* Aviso honesto: topo do funil depende da integração de Ads (§4). */}
+      {semTrafego && (
+        <div className="mb-3 rounded-lg border border-marca/30 bg-marca/5 px-4 py-2.5 text-sm text-texto-suave">
+          <span className="font-semibold text-texto">Topo do funil aguardando conexão.</span>{" "}
+          Meta Ads, Google Ads e Portal de Captura aparecem aqui quando você
+          integrar suas campanhas. Do <em>Filtro de IA</em> em diante, os números
+          já são reais — vindos das suas conversas.
+        </div>
+      )}
 
       {/* Canvas */}
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-borda bg-fundo">
