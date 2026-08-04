@@ -49,9 +49,15 @@ export function LeadDetail({
               {/* Nome */}
               <div>
                 <h3 className="text-xl font-bold text-texto">{lead.nome}</h3>
-                <span className="text-xs text-texto-suave">
-                  Vindo do {lead.origem}
-                </span>
+                <span className="text-xs text-texto-suave">Vindo de {lead.origem}</span>
+                {lead.anuncio && (
+                  <span
+                    className="mt-1 flex items-center gap-1 text-xs font-medium text-marca"
+                    title={lead.anuncio}
+                  >
+                    📣 <span className="truncate">{lead.anuncio}</span>
+                  </span>
+                )}
               </div>
 
               {/* Dados pessoais */}

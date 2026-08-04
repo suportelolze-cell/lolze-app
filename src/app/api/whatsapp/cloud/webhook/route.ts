@@ -14,6 +14,7 @@ import { registrarEvento } from "@/lib/eventos";
 import { assinaturaMetaValida } from "@/lib/seguranca/assinatura";
 import { resolverLead, vincularIdentidade } from "@/lib/identidade";
 import { MAPA_RECIBO_WA, STATUS_ANTERIORES } from "@/lib/whatsapp/status-recibo";
+import { anuncioDoReferral } from "@/lib/whatsapp/referral-core";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -236,6 +237,10 @@ async function processarMensagemWaCloud(
 
   if (!texto) return;
 
+  // Atribuição: lead vindo de anúncio Click-to-WhatsApp traz `referral` na 1ª
+  // mensagem (paridade com o externalAdReply da Evolution).
+  const anuncioRef = anuncioDoReferral(msg?.referral);
+
   // Resolve o lead pela IDENTIDADE de canal (unifica com lead de mesmo telefone).
   const nome = nomePorWaId.get(de) || de;
   let lead = await resolverLead(admin, tenantId, "whatsapp", de);
@@ -267,7 +272,9 @@ async function processarMensagemWaCloud(
         tenant_id: tenantId,
         nome,
         telefone: de,
-        origem: "whatsapp",
+        origem: anuncioRef ? "trafego_pago" : "whatsapp",
+        aquisicao: anuncioRef ? "pago" : "organico",
+        anuncio: anuncioRef,
         canal: "whatsapp",
         canal_user_id: de,
         temperatura: "frio",
@@ -284,7 +291,8 @@ async function processarMensagemWaCloud(
       leadId: lead.id,
       tipo: "lead_received",
       canal: "whatsapp",
-      origem: "whatsapp",
+      origem: anuncioRef ? "trafego_pago" : "whatsapp",
+      dados: anuncioRef ? { anuncio: anuncioRef } : {},
     });
   }
 

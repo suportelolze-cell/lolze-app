@@ -9,7 +9,13 @@ export type ColunaId =
   | "perdido";
 
 export type Temperatura = "quente" | "morno" | "frio";
-export type Origem = "Meta Ads" | "Site" | "Instagram" | "Google Ads";
+export type Origem =
+  | "Meta Ads"
+  | "Site"
+  | "Instagram"
+  | "Google Ads"
+  | "Tráfego pago"
+  | "WhatsApp";
 
 export type Lead = {
   id: number;
@@ -17,6 +23,8 @@ export type Lead = {
   coluna: ColunaId;
   temperatura: Temperatura;
   origem: Origem;
+  /** Nome/título do anúncio de origem (Click-to-WhatsApp), quando pago. */
+  anuncio?: string;
   valor?: number;
   ultimaMsg: string;
   telefone: string;
@@ -84,4 +92,6 @@ export const ORIGEM_LABEL: Record<string, Origem> = {
   google_ads: "Google Ads",
   site: "Site",
   instagram: "Instagram",
+  trafego_pago: "Tráfego pago",
+  whatsapp: "WhatsApp",
 };
