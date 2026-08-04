@@ -74,6 +74,36 @@ export async function exchangeCode(
   return { refreshToken: j.refresh_token, accessToken: j.access_token, email };
 }
 
+/**
+ * Troca um refresh token (com o client_id/secret do app) por um access token
+ * fresco. Reutilizado pela ingestão do Google Ads (refresh token com escopo
+ * `adwords`, separado do Calendar). null em falha.
+ */
+export async function exchangeRefreshToken(refreshToken: string): Promise<string | null> {
+  if (!refreshToken || !temGoogleConfig()) return null;
+  // Timeout: um endpoint de token pendurado não pode segurar o loop do cron.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15_000);
+  try {
+    const r = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+      signal: ctrl.signal,
+    });
+    if (!r.ok) return null;
+    const j = (await r.json()) as { access_token?: string };
+    return j.access_token ?? null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Access token fresco a partir do refresh token do cliente. null se não conectado. */
 export async function getAccessToken(tenantId: string): Promise<string | null> {
   const admin = getCrmAdmin();

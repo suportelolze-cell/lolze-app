@@ -88,6 +88,25 @@ export async function salvarMetaAdsCfg(
   revalidatePath(`/admin/clientes/${tenantId}`);
 }
 
+/** Salva a conexão Google Ads do cliente. Refresh token só é atualizado se enviado. */
+export async function salvarGoogleAdsCfg(
+  tenantId: string,
+  cfg: { customerId: string; refreshToken: string }
+) {
+  await exigirSuper();
+  const sb = await getCrmServer();
+  const patch: Record<string, unknown> = {
+    tenant_id: tenantId,
+    google_ads_customer_id: cfg.customerId.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  // Só sobrescreve o refresh token se um novo foi digitado (vazio = manter atual).
+  if (cfg.refreshToken.trim()) patch.google_ads_refresh_token = cfg.refreshToken.trim();
+  const { error } = await sb.from("app_tenant_secrets").upsert(patch, { onConflict: "tenant_id" });
+  if (error) throw error;
+  revalidatePath(`/admin/clientes/${tenantId}`);
+}
+
 /** Salva o nome da instância Evolution do cliente. Somente superadmin. */
 export async function salvarEvolutionCfg(tenantId: string, cfg: { instance: string }) {
   await exigirSuper();

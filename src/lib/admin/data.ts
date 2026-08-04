@@ -179,6 +179,25 @@ export async function getMetaAdsCfg(tenantId: string): Promise<MetaAdsCfg> {
   };
 }
 
+export type GoogleAdsCfg = { customerId: string; refreshTokenSet: boolean };
+
+/** Conexão Google Ads do cliente. Não devolve o refresh token (só se está setado). */
+export async function getGoogleAdsCfg(tenantId: string): Promise<GoogleAdsCfg> {
+  await exigirSuperadmin();
+  const sb = await getCrmServer();
+  // Colunas podem não existir antes da migração 20260803140000 — nesse caso o
+  // select devolve data=null (não lança) e a UI mostra o form vazio.
+  const { data } = await sb
+    .from("app_tenant_secrets")
+    .select("google_ads_customer_id,google_ads_refresh_token")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return {
+    customerId: (data?.google_ads_customer_id as string | null) ?? "",
+    refreshTokenSet: Boolean(data?.google_ads_refresh_token),
+  };
+}
+
 export type EvolutionCfg = { instance: string };
 
 /** Nome da instância Evolution do cliente (normalmente criado pelo app). */

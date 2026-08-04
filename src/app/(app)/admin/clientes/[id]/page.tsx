@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, KanbanSquare, Users } from "lucide-react";
-import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getInstagramCfg, getWaCloudCfg, getAcessoCliente } from "@/lib/admin/data";
+import { getCliente, getPlanos, getPersona, getEvolutionCfg, getMetaAdsCfg, getGoogleAdsCfg, getInstagramCfg, getWaCloudCfg, getAcessoCliente } from "@/lib/admin/data";
 import { entrarComo, listarVersoesPersona } from "@/lib/admin/actions";
 import { GerenciarClienteForm } from "@/components/admin/GerenciarClienteForm";
 import { AlterarEmailAcesso } from "@/components/admin/AlterarEmailAcesso";
@@ -16,6 +16,7 @@ import { ProntidaoGoLive } from "@/components/admin/ProntidaoGoLive";
 import { TesteAgenteCard } from "@/components/admin/TesteAgenteCard";
 import { getProntidao } from "@/lib/admin/prontidao";
 import { MetaAdsForm } from "@/components/admin/MetaAdsForm";
+import { GoogleAdsForm } from "@/components/admin/GoogleAdsForm";
 import { KbForm } from "@/components/admin/KbForm";
 import { listarDocs } from "@/lib/kb/data";
 import { temOpenAIKey } from "@/lib/kb/embed";
@@ -24,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ClientePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [cliente, planos, docs, persona, versoesPersona, evolutionCfg, metaAdsCfg, instagramCfg, waCloudCfg, acesso, prontidao] = await Promise.all([
+  const [cliente, planos, docs, persona, versoesPersona, evolutionCfg, metaAdsCfg, googleAdsCfg, instagramCfg, waCloudCfg, acesso, prontidao] = await Promise.all([
     getCliente(id),
     getPlanos(),
     listarDocs(id),
@@ -32,6 +33,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
     listarVersoesPersona(id),
     getEvolutionCfg(id),
     getMetaAdsCfg(id),
+    getGoogleAdsCfg(id),
     getInstagramCfg(id),
     getWaCloudCfg(id),
     getAcessoCliente(id),
@@ -118,6 +120,10 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
 
       <div className="mt-6">
         <MetaAdsForm tenantId={cliente.id} cfg={metaAdsCfg} />
+      </div>
+
+      <div className="mt-6">
+        <GoogleAdsForm tenantId={cliente.id} cfg={googleAdsCfg} />
       </div>
 
       <div className="mt-6">

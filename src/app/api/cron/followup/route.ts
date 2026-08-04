@@ -5,6 +5,7 @@ import { processarLembretes } from "@/lib/agent/lembretes";
 import { processarCaptacao } from "@/lib/captacao/enviar";
 import { reenviarFalhados } from "@/lib/integracoes/reenvio-cron";
 import { sincronizarMetaTodos } from "@/lib/trafego/meta-sync";
+import { sincronizarGoogleTodos } from "@/lib/trafego/google-sync";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -77,5 +78,22 @@ export async function GET(req: NextRequest) {
     // best-effort
   }
 
-  return NextResponse.json({ ok: true, processados: leads.length, enviados, lembretes, captacao, reenvio, trafego });
+  // Ingestão de tráfego (Google Ads → app_trafego, fonte 'google_ads').
+  let trafegoGoogle = { tenants: 0, ok: 0, linhas: 0 };
+  try {
+    trafegoGoogle = await sincronizarGoogleTodos();
+  } catch {
+    // best-effort
+  }
+
+  return NextResponse.json({
+    ok: true,
+    processados: leads.length,
+    enviados,
+    lembretes,
+    captacao,
+    reenvio,
+    trafego,
+    trafegoGoogle,
+  });
 }
