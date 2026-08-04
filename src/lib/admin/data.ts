@@ -1,5 +1,6 @@
 import { getCrmServer } from "@/lib/supabase/server";
 import { getSessao } from "@/lib/supabase/tenant";
+import { colunaAusente } from "@/lib/supabase/pg-erros";
 
 export type Plano = {
   id: string;
@@ -219,6 +220,7 @@ export type Persona = {
   objecoes: string;
   faq: string;
   regras: string;
+  reguaQualificacao: string;
   agenteAtivo: boolean;
 };
 
@@ -226,18 +228,26 @@ export type Persona = {
 export async function getPersona(tenantId: string): Promise<Persona> {
   await exigirSuperadmin();
   const sb = await getCrmServer();
-  const { data } = await sb
+  const COLS = "oferta,publico,tom,objecoes,faq,regras,agente_ativo";
+  // Defensivo: sem a coluna regua_qualificacao (migração pendente), cai para o
+  // legado sem quebrar a página do cliente no admin.
+  let res = await sb
     .from("app_config")
-    .select("oferta,publico,tom,objecoes,faq,regras,agente_ativo")
+    .select(COLS + ",regua_qualificacao")
     .eq("tenant_id", tenantId)
     .maybeSingle();
+  if (res.error && colunaAusente(res.error)) {
+    res = await sb.from("app_config").select(COLS).eq("tenant_id", tenantId).maybeSingle();
+  }
+  const data = res.data as Record<string, string | boolean | null> | null;
   return {
-    oferta: data?.oferta ?? "",
-    publico: data?.publico ?? "",
-    tom: data?.tom ?? "",
-    objecoes: data?.objecoes ?? "",
-    faq: data?.faq ?? "",
-    regras: data?.regras ?? "",
-    agenteAtivo: data?.agente_ativo ?? true,
+    oferta: (data?.oferta as string) ?? "",
+    publico: (data?.publico as string) ?? "",
+    tom: (data?.tom as string) ?? "",
+    objecoes: (data?.objecoes as string) ?? "",
+    faq: (data?.faq as string) ?? "",
+    regras: (data?.regras as string) ?? "",
+    reguaQualificacao: (data?.regua_qualificacao as string) ?? "",
+    agenteAtivo: (data?.agente_ativo as boolean) ?? true,
   };
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCrmServer } from "@/lib/supabase/server";
 import { getCrmAdmin } from "@/lib/supabase/admin";
+import { colunaAusente } from "@/lib/supabase/pg-erros";
 import { getSessao, IMPERSONATE_COOKIE } from "@/lib/supabase/tenant";
 import { provisionarTenant } from "@/lib/cadastro/provisionar";
 import { registrarAuditoria } from "./auditoria";
@@ -187,34 +188,54 @@ export async function salvarPersona(
     objecoes: string;
     faq: string;
     regras: string;
+    reguaQualificacao?: string;
     agenteAtivo: boolean;
   },
   origem: "edicao" | "rollback" = "edicao"
-) {
+): Promise<{ reguaIgnorada: boolean }> {
   const s = await exigirSuper();
   const sb = await getCrmServer();
-  // Versiona o estado anterior (permite reverter) antes de sobrescrever.
+  // Versiona o estado anterior (permite reverter) antes de sobrescrever. A régua
+  // fica FORA do versionamento (é critério de qualificação, não roteiro).
   await snapshotPersona(sb, tenantId, origem, s.userId ?? null);
-  const { error } = await sb
-    .from("app_config")
-    .update({
-      oferta: p.oferta,
-      publico: p.publico,
-      tom: p.tom,
-      objecoes: p.objecoes,
-      faq: p.faq,
-      regras: p.regras,
-      agente_ativo: p.agenteAtivo,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("tenant_id", tenantId);
-  if (error) throw error;
+  const base = {
+    oferta: p.oferta,
+    publico: p.publico,
+    tom: p.tom,
+    objecoes: p.objecoes,
+    faq: p.faq,
+    regras: p.regras,
+    agente_ativo: p.agenteAtivo,
+    updated_at: new Date().toISOString(),
+  };
+  // Só toca a régua quando ela foi INFORMADA. reverterPersona chama sem a régua
+  // (undefined) — nesse caso NÃO mexemos nela (senão o revert do roteiro apagaria
+  // a régua, que fica fora do versionamento e é irrecuperável).
+  const incluiRegua = p.reguaQualificacao !== undefined;
+  const patch: Record<string, unknown> = incluiRegua
+    ? { ...base, regua_qualificacao: (p.reguaQualificacao ?? "").trim() || null }
+    : base;
+
+  let reguaIgnorada = false;
+  const { error } = await sb.from("app_config").update(patch).eq("tenant_id", tenantId);
+  if (error) {
+    // Sem a coluna (migração pendente): salva o resto sem quebrar a edição de
+    // persona atual, e SINALIZA que a régua não persistiu (visibilidade).
+    if (incluiRegua && colunaAusente(error)) {
+      const retry = await sb.from("app_config").update(base).eq("tenant_id", tenantId);
+      if (retry.error) throw retry.error;
+      reguaIgnorada = true;
+    } else {
+      throw error;
+    }
+  }
   await registrarAuditoria({
     acao: origem === "rollback" ? "persona.revertida" : "persona.editada",
     tenantId,
     detalhe: { agenteAtivo: p.agenteAtivo },
   });
   revalidatePath(`/admin/clientes/${tenantId}`);
+  return { reguaIgnorada };
 }
 
 export type VersaoPersona = {

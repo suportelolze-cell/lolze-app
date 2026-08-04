@@ -29,6 +29,11 @@ export function montarSystemSDR(
 ${cfg.tom ? `\n# Tom de voz\n${cfg.tom}` : ""}
 ${cfg.objecoes ? `\n# Objeções comuns e como responder\n${cfg.objecoes}` : ""}
 ${cfg.faq ? `\n# Perguntas frequentes\n${cfg.faq}` : ""}
+${
+  cfg.reguaQualificacao
+    ? `\n# Régua de qualificação (o que é quente/morno/frio AQUI)\n${cfg.reguaQualificacao}\nUse esta régua ao chamar definir_temperatura — combine o critério do negócio com o contexto da conversa. Na dúvida, pergunte (uma coisa por vez) o que falta para enquadrar o lead antes de classificar.`
+    : ""
+}
 
 # Como conduzir a conversa
 1. Acolha e crie conexão rápida usando o nome do lead.

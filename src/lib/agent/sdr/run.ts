@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { getCrmAdmin } from "@/lib/supabase/admin";
+import { colunaAusente } from "@/lib/supabase/pg-erros";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { getAnthropic, temChaveIA, SDR_MODEL } from "../anthropic";
 import { registrarRun } from "../runs";
@@ -114,12 +115,26 @@ const MAX_ITER = 5;
 
 /** Lê a persona/identidade do tenant. Colunas de persona são opcionais. */
 export async function carregarConfig(admin: Admin, tenantId: string): Promise<PersonaConfig> {
-  const { data } = await admin
+  const COLS =
+    "nome_negocio,endereco,email,horario,oferta,publico,tom,objecoes,faq,regras,agente_ativo";
+  // Caminho CRÍTICO (roda a cada mensagem): se a coluna regua_qualificacao ainda
+  // não existe (migração pendente), o select falharia e a persona viria VAZIA —
+  // agente sem cérebro. Tenta com a coluna; se ela faltar, cai para o legado.
+  let res = await admin
     .from("app_config")
-    .select("nome_negocio,endereco,email,horario,oferta,publico,tom,objecoes,faq,regras,agente_ativo")
+    .select(COLS + ",regua_qualificacao")
     .eq("tenant_id", tenantId)
     .maybeSingle();
-  const c = (data ?? {}) as Record<string, unknown>;
+  if (res.error && colunaAusente(res.error)) {
+    res = await admin.from("app_config").select(COLS).eq("tenant_id", tenantId).maybeSingle();
+  }
+  // Erro REAL de carga (timeout/RLS/5xx, não coluna-ausente): NÃO seguir com
+  // persona vazia — isso responderia o lead com prompt genérico e agente_ativo
+  // caindo no default 'true'. Aborta o turno; o try/catch de executarSDR registra
+  // em app_erros e um reenvio/próxima mensagem reprocessa. (Sem linha = tenant
+  // sem config ainda: maybeSingle devolve data null SEM erro → default vazio, ok.)
+  if (res.error) throw new Error("carregarConfig: " + res.error.message);
+  const c = (res.data ?? {}) as Record<string, unknown>;
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
   return {
     nomeNegocio: str("nome_negocio"),
@@ -132,6 +147,7 @@ export async function carregarConfig(admin: Admin, tenantId: string): Promise<Pe
     regras: str("regras"),
     objecoes: str("objecoes"),
     faq: str("faq"),
+    reguaQualificacao: str("regua_qualificacao"),
     agenteAtivo: c.agente_ativo === undefined ? true : Boolean(c.agente_ativo),
   };
 }

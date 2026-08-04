@@ -13,6 +13,8 @@ export type PersonaConfig = {
   regras: string;
   objecoes: string;
   faq: string;
+  /** Régua de qualificação por nicho: o que é quente/morno/frio neste negócio. */
+  reguaQualificacao: string;
   agenteAtivo: boolean;
 };
 

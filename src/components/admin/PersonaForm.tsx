@@ -16,6 +16,7 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
 
   const set = (k: keyof Persona) => (v: string) => setP((s) => ({ ...s, [k]: v }));
 
@@ -38,11 +39,15 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
+    setAviso("");
     setSalvando(true);
     setSalvo(false);
     try {
-      await salvarPersona(tenantId, p);
+      const r = await salvarPersona(tenantId, p);
       setSalvo(true);
+      if (r?.reguaIgnorada) {
+        setAviso("Persona salva, mas a Régua de qualificação ainda não foi ativada (migração pendente) — ela não terá efeito até isso ser aplicado.");
+      }
       router.refresh();
     } catch (err) {
       setErro((err as Error).message);
@@ -153,9 +158,20 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
           onChange={set("regras")}
           placeholder="Ex.: nunca prometer resultado garantido; nunca passar preço do procedimento X."
         />
+        <Campo
+          label="Régua de qualificação (quente / morno / frio)"
+          micro="O que torna um lead quente, morno ou frio NESTE negócio. A IA usa isto ao classificar a temperatura, junto com o contexto da conversa."
+          valor={p.reguaQualificacao}
+          onChange={set("reguaQualificacao")}
+          rows={4}
+          placeholder={
+            "Ex.: Quente = fatura acima de R$50k/mês e já tem equipe.\nMorno = R$10–50k, ainda avaliando.\nFrio = abaixo disso ou só curioso."
+          }
+        />
       </div>
 
       {erro && <p className="mt-3 text-sm font-medium text-red-600">{erro}</p>}
+      {aviso && <p className="mt-3 text-sm font-medium text-amber-700">{aviso}</p>}
 
       <div className="mt-5 flex items-center gap-3">
         <button
