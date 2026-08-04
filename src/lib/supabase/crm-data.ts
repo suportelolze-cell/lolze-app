@@ -139,6 +139,7 @@ type LeadRow = {
   email: string | null;
   origem: string;
   anuncio: string | null;
+  followup_modo: string | null;
   temperatura: "quente" | "morno" | "frio";
   coluna: ColunaId;
   valor: number | null;
@@ -154,6 +155,7 @@ function toLead(r: LeadRow): Lead {
     email: r.email ?? "",
     origem: ORIGEM_LABEL[r.origem] ?? "Site",
     anuncio: r.anuncio ?? undefined,
+    posVenda: r.followup_modo === "posvenda" && r.coluna === "ganho",
     temperatura: r.temperatura,
     coluna: r.coluna,
     valor: r.valor ?? undefined,
@@ -188,7 +190,9 @@ export async function getLeads(): Promise<Lead[]> {
   const sb = await getCrmServer();
   const { data, error } = await sb
     .from("app_leads")
-    .select("id,nome,telefone,email,origem,anuncio,temperatura,coluna,valor,ultima_msg,diagnostico")
+    .select(
+      "id,nome,telefone,email,origem,anuncio,followup_modo,temperatura,coluna,valor,ultima_msg,diagnostico"
+    )
     .eq("tenant_id", tid)
     .order("id");
   if (error) throw error;

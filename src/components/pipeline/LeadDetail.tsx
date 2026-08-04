@@ -58,6 +58,11 @@ export function LeadDetail({
                     📣 <span className="truncate">{lead.anuncio}</span>
                   </span>
                 )}
+                {lead.posVenda && (
+                  <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-marca-suave px-2 py-0.5 text-[11px] font-semibold text-marca">
+                    💛 Pós-venda
+                  </span>
+                )}
               </div>
 
               {/* Dados pessoais */}

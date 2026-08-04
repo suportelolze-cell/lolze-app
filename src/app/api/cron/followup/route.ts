@@ -24,17 +24,33 @@ export async function GET(req: NextRequest) {
   }
 
   const admin = getCrmAdmin();
+  const agoraISO = new Date().toISOString();
   const { data } = await admin
     .from("app_leads")
     .select("id,tenant_id")
     .not("proximo_followup", "is", null)
-    .lte("proximo_followup", new Date().toISOString())
+    .lte("proximo_followup", agoraISO)
     .is("atendente_id", null)
     .not("coluna", "in", "(ganho,perdido,atencao,agendado)")
     .order("proximo_followup", { ascending: true })
-    .limit(25);
+    .limit(20);
 
-  const leads = (data ?? []) as { id: number; tenant_id: string }[];
+  // Pós-venda: clientes 'ganho' na trilha de acompanhamento recorrente (o SELECT
+  // acima os exclui de propósito; aqui buscamos só quem está em modo 'posvenda').
+  // Limite menor + total ≤25 mantém o teto pré-existente de gerações de IA por
+  // ciclo (cada toque é 1 chamada de LLM; maxDuration=60 no handler).
+  const { data: pv } = await admin
+    .from("app_leads")
+    .select("id,tenant_id")
+    .eq("coluna", "ganho")
+    .eq("followup_modo", "posvenda")
+    .not("proximo_followup", "is", null)
+    .lte("proximo_followup", agoraISO)
+    .is("atendente_id", null)
+    .order("proximo_followup", { ascending: true })
+    .limit(5);
+
+  const leads = ([...(data ?? []), ...(pv ?? [])] as { id: number; tenant_id: string }[]);
   let enviados = 0;
   for (const l of leads) {
     try {
