@@ -4,8 +4,10 @@ import {
   avancar,
   primeiroFollowup,
   agendarReativacao,
+  enfileirarPosVenda,
   CADENCIA_MIN,
   REATIVACAO_MIN,
+  POSVENDA_MIN,
 } from "../src/lib/agent/followup-cadencia.ts";
 
 test("primeiroFollowup começa a cadência no 1º gap", () => {
@@ -46,6 +48,27 @@ test("reativação avança e depois ENCERRA a régua (não fica em loop)", () =>
   assert.equal(avancar("reativacao", 1).modo, "reativacao");
   // último passo da reativação → fim: proximo null, modo null
   const fim = avancar("reativacao", REATIVACAO_MIN.length - 1);
+  assert.equal(fim.proximo, null);
+  assert.equal(fim.modo, null);
+});
+
+test("enfileirarPosVenda começa a trilha de pós-venda no 1º acompanhamento", () => {
+  const p = enfileirarPosVenda();
+  assert.equal(p.modo, "posvenda");
+  assert.equal(p.count, 0);
+  assert.ok(p.proximo);
+});
+
+test("pós-venda avança pelos acompanhamentos e depois ENCERRA (não vira reativação nem loop)", () => {
+  // count 0→1, 1→2 seguem na pós-venda
+  for (let c = 0; c < POSVENDA_MIN.length - 1; c++) {
+    const p = avancar("posvenda", c);
+    assert.equal(p.modo, "posvenda");
+    assert.equal(p.count, c + 1);
+    assert.ok(p.proximo);
+  }
+  // último acompanhamento → fim: proximo null, modo null (não cai em reativação)
+  const fim = avancar("posvenda", POSVENDA_MIN.length - 1);
   assert.equal(fim.proximo, null);
   assert.equal(fim.modo, null);
 });

@@ -9,7 +9,30 @@ import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { registrarEvento } from "@/lib/eventos";
 import { mesclarLeads } from "@/lib/identidade";
 import { urlsAssinadasMidia } from "@/lib/evolution/client";
+import { enfileirarPosVenda } from "@/lib/agent/followup-cadencia";
 import type { ColunaId } from "@/lib/leads";
+
+type CrmServer = Awaited<ReturnType<typeof getCrmServer>>;
+
+/**
+ * Matricula um cliente que acabou de virar 'ganho' na trilha de PÓS-VENDA
+ * (acompanhamento recorrente automático). Não reinicia se já está na trilha
+ * (evita duplicar o 1º toque quando 'ganho' é setado de novo).
+ */
+async function matricularPosVenda(
+  sb: CrmServer,
+  tenantId: string,
+  leadId: number,
+  modoAtual: string | null
+): Promise<void> {
+  if (modoAtual === "posvenda") return;
+  const pv = enfileirarPosVenda();
+  await sb
+    .from("app_leads")
+    .update({ proximo_followup: pv.proximo, followup_modo: pv.modo, followup_count: pv.count })
+    .eq("id", leadId)
+    .eq("tenant_id", tenantId);
+}
 import type { Conversa, Mensagem } from "@/lib/conversas";
 
 /** Recarrega as conversas do tenant (usado pelo chat ao vivo). */
@@ -225,6 +248,17 @@ export async function moverLead(id: number, coluna: ColunaId) {
   const tid = await getTenantId();
   const sb = await getCrmServer();
 
+  // Estado ANTES do move — o gatilho de pós-venda só dispara na TRANSIÇÃO para
+  // 'ganho' (não re-enfileira quem já era ganho nem reinicia uma trilha encerrada).
+  let prevColuna: string | null = null;
+  let prevModo: string | null = null;
+  if (coluna === "ganho") {
+    const fPrev = sb.from("app_leads").select("coluna,followup_modo").eq("id", id);
+    const { data: prev } = await (tid ? fPrev.eq("tenant_id", tid) : fPrev).maybeSingle();
+    prevColuna = (prev?.coluna as string | null) ?? null;
+    prevModo = (prev?.followup_modo as string | null) ?? null;
+  }
+
   // Voltar para uma etapa da IA reativa o agente (tira do modo humano).
   const reativaIA = coluna === "qualificacao" || coluna === "entrada";
   const patch: Record<string, unknown> = { coluna };
@@ -243,7 +277,11 @@ export async function moverLead(id: number, coluna: ColunaId) {
     await registrarEvento({ tenantId: tid, leadId: id, tipo: "qualified", dados: { por: "humano" } });
   }
   if (tid && coluna === "ganho") {
-    const { data: l } = await sb.from("app_leads").select("valor,canal,origem").eq("id", id).maybeSingle();
+    const { data: l } = await sb
+      .from("app_leads")
+      .select("valor,canal,origem")
+      .eq("id", id)
+      .maybeSingle();
     await registrarEvento({
       tenantId: tid,
       leadId: id,
@@ -252,6 +290,10 @@ export async function moverLead(id: number, coluna: ColunaId) {
       origem: (l?.origem as string | null) ?? null,
       valorCents: l?.valor != null ? Math.round(Number(l.valor) * 100) : null,
     });
+    // Entra na trilha de pós-venda SÓ quando ENTRA em 'ganho' (transição).
+    if (prevColuna !== "ganho") {
+      await matricularPosVenda(sb, tid, id, prevModo);
+    }
   }
 
   // Se reativou a IA e há uma mensagem do lead sem resposta, faz a IA já responder.
@@ -402,6 +444,17 @@ export async function confirmarReceita(
   if (!s.tenantId) return { ok: false, erro: "Sem empresa ativa." };
   const valor = Math.max(0, Math.round(Number(valorReais) * 100) / 100);
   const sb = await getCrmServer();
+  // Estado ANTES (para matricular pós-venda só na TRANSIÇÃO para 'ganho' — não
+  // re-enfileira ao reajustar o valor de um negócio que já era ganho).
+  const { data: prev } = await sb
+    .from("app_leads")
+    .select("coluna,followup_modo")
+    .eq("id", leadId)
+    .eq("tenant_id", s.tenantId)
+    .maybeSingle();
+  const prevColuna = (prev?.coluna as string | null) ?? null;
+  const prevModo = (prev?.followup_modo as string | null) ?? null;
+
   const { data: l, error } = await sb
     .from("app_leads")
     .update({ valor, coluna: "ganho", updated_at: new Date().toISOString() })
@@ -424,6 +477,10 @@ export async function confirmarReceita(
     origem,
     valorCents: cents,
   });
+  // Entra na trilha de pós-venda SÓ quando ENTRA em 'ganho' (transição).
+  if (prevColuna !== "ganho") {
+    await matricularPosVenda(sb, s.tenantId, leadId, prevModo);
+  }
 
   revalidatePath("/pipeline");
   revalidatePath("/atendimento");

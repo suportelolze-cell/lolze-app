@@ -6,10 +6,12 @@
  *
  * - CADÊNCIA (silêncio numa conversa ativa): 4 toques — +1h, +4h, +1d, +3d.
  * - REATIVAÇÃO (sumiu de vez): 3 toques longos — +15d, +30d, +45d.
+ * - PÓS-VENDA (cliente fechou/ganho): 3 acompanhamentos — +7d, +45d, +120d.
  */
 
 export const CADENCIA_MIN = [60, 240, 1440, 4320]; // +1h, +4h, +1d, +3d
 export const REATIVACAO_MIN = [21600, 43200, 64800]; // +15d, +30d, +45d
+export const POSVENDA_MIN = [10080, 64800, 172800]; // +7d, +45d, +120d
 
 export function ts(minutos: number) {
   return new Date(Date.now() + minutos * 60000).toISOString();
@@ -25,6 +27,11 @@ export function agendarReativacao(dias: number) {
   return { proximo: ts(Math.max(1, dias) * 1440), modo: "reativacao" as const, count: 0 };
 }
 
+/** Matricula um cliente 'ganho' na trilha de pós-venda (1º acompanhamento). */
+export function enfileirarPosVenda() {
+  return { proximo: ts(POSVENDA_MIN[0]), modo: "posvenda" as const, count: 0 };
+}
+
 /** Calcula o próximo passo depois de enviar um toque em (modo, count). */
 export function avancar(
   modo: string | null,
@@ -38,6 +45,10 @@ export function avancar(
   if (modo === "reativacao") {
     if (novo < REATIVACAO_MIN.length) return { proximo: ts(REATIVACAO_MIN[novo]), modo: "reativacao", count: novo };
     return { proximo: null, modo: null, count: novo }; // fim da régua
+  }
+  if (modo === "posvenda") {
+    if (novo < POSVENDA_MIN.length) return { proximo: ts(POSVENDA_MIN[novo]), modo: "posvenda", count: novo };
+    return { proximo: null, modo: null, count: novo }; // fim do pós-venda
   }
   return { proximo: null, modo: null, count: novo };
 }

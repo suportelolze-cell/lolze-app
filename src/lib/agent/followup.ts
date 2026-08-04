@@ -25,8 +25,10 @@ import { CADENCIA_MIN, avancar, ts } from "./followup-cadencia";
 export {
   CADENCIA_MIN,
   REATIVACAO_MIN,
+  POSVENDA_MIN,
   primeiroFollowup,
   agendarReativacao,
+  enfileirarPosVenda,
   avancar,
 } from "./followup-cadencia";
 
@@ -66,12 +68,20 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
       .eq("id", leadId);
   };
 
-  // Guardas: lead fechado/perdido, humano no comando, ou IA desligada → para.
+  const modo = lead.followup_modo ?? "cadencia";
+  const posvenda = modo === "posvenda";
+
+  // Guardas: perdido, humano no comando, ou IA desligada → para. 'ganho' também
+  // para — EXCETO na trilha de pós-venda, que existe justamente para o cliente
+  // que já fechou (acompanhamento recorrente). E um modo 'posvenda' RESIDUAL num
+  // lead que NÃO está mais em 'ganho' (foi movido de volta pro funil) é estado
+  // inconsistente → para e limpa (senão mandaria "você já fechou" a quem não fechou).
   if (
-    lead.coluna === "ganho" ||
     lead.coluna === "perdido" ||
     lead.atendente_id ||
-    lead.comando === "humano"
+    lead.comando === "humano" ||
+    (lead.coluna === "ganho" && !posvenda) ||
+    (posvenda && lead.coluna !== "ganho")
   ) {
     return parar();
   }
@@ -83,7 +93,12 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
     .maybeSingle();
   const c = (cfg ?? {}) as Record<string, unknown>;
   const ativo = c.agente_ativo === undefined ? true : Boolean(c.agente_ativo);
-  if (!ativo || !temChaveIA()) return parar();
+  if (!ativo || !temChaveIA()) {
+    // IA desligada: PAUSA a pós-venda (não destrói a trilha de um cliente que já
+    // pagou — retoma quando religar). Follow-up/reativação normais param mesmo.
+    if (posvenda) return;
+    return parar();
+  }
   // Trava de custo por plano: estourou o teto de IA do mês → pula o toque agora
   // (não encerra a régua; retoma quando o mês virar ou o teto aumentar).
   if (!(await dentroDoLimiteIA(tenantId))) return;
@@ -98,7 +113,6 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
     .limit(12);
   const historico = ((msgs ?? []) as { autor: string; texto: string }[]).reverse();
 
-  const modo = lead.followup_modo ?? "cadencia";
   const reativacao = modo === "reativacao";
   const count = lead.followup_count ?? 0;
   const frio = (lead.temperatura ?? "frio") === "frio";
@@ -111,11 +125,13 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
 
   const instrucao = despedidaFrio
     ? "[DESPEDIDA EDUCADA] Não houve retorno e o lead esfriou. Despeça-se com classe: diga que vai pausar os contatos pra não incomodar e deixe a porta aberta pra quando ele precisar. Sem cobrança, sem culpa."
-    : reativacao
-      ? "[REATIVAÇÃO] Faz um tempo que este lead não fala com a gente. Reabra com leveza, como quem retoma um papo: traga uma novidade/dica/valor do nicho dele. NÃO tente vender direto — o objetivo é reaquecer o relacionamento."
-      : frio
-        ? "[FOLLOW-UP] O lead sumiu. Dê um toque leve checando se ainda faz sentido continuar a conversa."
-        : "[FOLLOW-UP] O lead demonstrou interesse e sumiu. Retome lembrando do benefício que ele curtiu e convide a continuar, sem pressão.";
+    : posvenda
+      ? "[PÓS-VENDA] Este cliente JÁ fechou/foi atendido — não é mais uma venda em aberto. Faça um acompanhamento genuíno e caloroso: pergunte como foi a experiência e, se fizer sentido, convide a agendar o próximo serviço/retoque. Tom de cuidado e relacionamento, ZERO pressão de venda."
+      : reativacao
+        ? "[REATIVAÇÃO] Faz um tempo que este lead não fala com a gente. Reabra com leveza, como quem retoma um papo: traga uma novidade/dica/valor do nicho dele. NÃO tente vender direto — o objetivo é reaquecer o relacionamento."
+        : frio
+          ? "[FOLLOW-UP] O lead sumiu. Dê um toque leve checando se ainda faz sentido continuar a conversa."
+          : "[FOLLOW-UP] O lead demonstrou interesse e sumiu. Retome lembrando do benefício que ele curtiu e convide a continuar, sem pressão.";
 
   const system =
     `Você é o SDR de ${str("nome_negocio") || "nossa empresa"}. ` +
@@ -130,7 +146,12 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
       role: (t.autor === "lead" ? "user" : "assistant") as "user" | "assistant",
       content: conteudoMensagem(t.texto), // nunca vazio (mídia sem legenda)
     })),
-    { role: "user", content: "(gerar agora a mensagem de follow-up para reengajar este lead)" },
+    {
+      role: "user",
+      content: posvenda
+        ? "(gerar agora a mensagem de pós-venda / acompanhamento para este cliente)"
+        : "(gerar agora a mensagem de follow-up para reengajar este lead)",
+    },
   ];
   if (messages[0].role !== "user") messages.unshift({ role: "user", content: "(retomar contato)" });
 

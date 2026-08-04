@@ -25,6 +25,8 @@ export type Lead = {
   origem: Origem;
   /** Nome/título do anúncio de origem (Click-to-WhatsApp), quando pago. */
   anuncio?: string;
+  /** Cliente ganho na trilha de acompanhamento pós-venda (recorrente). */
+  posVenda?: boolean;
   valor?: number;
   ultimaMsg: string;
   telefone: string;
