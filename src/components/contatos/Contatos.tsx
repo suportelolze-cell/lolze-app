@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Users, Search, Download, Loader2 } from "lucide-react";
 import { exportarLeadsCsv } from "@/lib/supabase/crm-actions";
 import type { Contato } from "@/lib/contatos/data";
+import { ORIGEM_LABEL } from "@/lib/leads";
 
 const CANAL_LABEL: Record<string, string> = {
   whatsapp: "WhatsApp",
@@ -144,7 +145,9 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
                       {rotuloCanal(c.canal)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-texto-suave">{c.origem || "—"}</td>
+                  <td className="px-4 py-3 text-texto-suave">
+                    {c.origem ? (ORIGEM_LABEL[c.origem] ?? c.origem) : "—"}
+                  </td>
                   <td className="px-4 py-3 text-texto-suave">{COLUNA_LABEL[c.coluna] ?? c.coluna ?? "—"}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${TEMP_COR[c.temperatura] ?? TEMP_COR.frio}`}>
