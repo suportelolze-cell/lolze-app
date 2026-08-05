@@ -15,10 +15,11 @@ import {
   Loader2,
   FileText,
   Mic,
-  Square,
   Trash2,
+  MessagesSquare,
 } from "lucide-react";
 import type { Conversa, MidiaTipo } from "@/lib/conversas";
+import { Button, Badge, EmptyState } from "@/components/ui";
 
 /** Escolhe o formato de gravação mais compatível com o WhatsApp que o navegador suporta. */
 function escolherMimeGravacao(): string {
@@ -202,9 +203,11 @@ export function ChatWindow({
   if (!conversa) {
     return (
       <div className="hidden h-full w-full items-center justify-center bg-fundo lg:flex">
-        <p className="text-sm italic text-texto-suave">
-          Selecione uma conversa na fila para começar.
-        </p>
+        <EmptyState
+          icon={MessagesSquare}
+          titulo="Nenhuma conversa aberta"
+          descricao="Selecione uma conversa na fila ao lado para começar o atendimento."
+        />
       </div>
     );
   }
@@ -234,7 +237,7 @@ export function ChatWindow({
             <button
               onClick={onVoltar}
               aria-label="Voltar"
-              className="rounded-md p-2.5 text-texto hover:bg-fundo lg:hidden"
+              className="rounded-md p-2.5 text-texto hover:bg-fundo-2 lg:hidden"
             >
               <ChevronLeft size={20} />
             </button>
@@ -249,42 +252,33 @@ export function ChatWindow({
             <button
               onClick={onAbrirPainel}
               aria-label="Raio-X do cliente"
-              className="rounded-md border border-borda p-2.5 text-texto hover:bg-fundo xl:hidden"
+              className="rounded-md border border-borda p-2.5 text-texto hover:bg-fundo-2 xl:hidden"
             >
               <PanelRight size={16} />
             </button>
           )}
           {bloqueada ? (
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 rounded-md bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-700">
+              <Badge tom="atencao">
                 <Lock size={13} /> Em atendimento por {conversa.atendenteNome}
-              </span>
+              </Badge>
               {podeOverride && (
-                <button
-                  onClick={onAssumir}
-                  className="flex items-center gap-2 rounded-md bg-escuro-quente px-3 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
-                >
+                <Button variant="primary" size="sm" onClick={onAssumir}>
                   <Pause size={15} /> <span className="hidden sm:inline">Assumir</span>
-                </button>
+                </Button>
               )}
             </div>
           ) : souAtendente ? (
-            <button
-              onClick={onDevolver}
-              className="flex items-center gap-2 rounded-md border border-borda px-3 py-2 text-sm font-semibold text-texto hover:bg-fundo sm:px-4"
-            >
+            <Button variant="secondary" size="sm" onClick={onDevolver}>
               <Play size={15} /> <span className="hidden sm:inline">Devolver para a IA</span>
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={onAssumir}
-              className="flex items-center gap-2 rounded-md bg-marca px-3 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02] sm:px-4"
-            >
-              <Pause size={15} />{" "}
+            <Button variant="primary" size="sm" onClick={onAssumir}>
+              <Pause size={15} />
               <span>
                 <span className="hidden sm:inline">Pausar IA e </span>Assumir
               </span>
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -363,24 +357,19 @@ export function ChatWindow({
                 onClick={cancelarGravacao}
                 title="Cancelar gravação"
                 type="button"
-                className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo"
+                className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo-2"
               >
                 <Trash2 size={18} />
               </button>
-              <button
-                onClick={pararGravacao}
-                title="Enviar áudio"
-                type="button"
-                className="flex items-center gap-2 rounded-md bg-marca px-4 py-2.5 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
-              >
+              <Button variant="verde" size="sm" onClick={pararGravacao} title="Enviar áudio">
                 <Send size={16} /> Enviar
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex items-end gap-2">
               <button
                 onClick={() => setMostrarRespostas((v) => !v)}
-                className={`rounded-md p-2.5 transition-colors hover:bg-fundo ${
+                className={`rounded-md p-2.5 transition-colors hover:bg-fundo-2 ${
                   mostrarRespostas ? "text-marca" : "text-texto-suave"
                 }`}
                 title="Respostas rápidas"
@@ -402,7 +391,7 @@ export function ChatWindow({
                     disabled={anexando}
                     title="Anexar arquivo"
                     type="button"
-                    className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo disabled:opacity-50"
+                    className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo-2 disabled:opacity-50"
                   >
                     {anexando ? (
                       <Loader2 size={18} className="animate-spin" />
@@ -415,7 +404,7 @@ export function ChatWindow({
                     disabled={anexando}
                     title="Gravar áudio"
                     type="button"
-                    className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo disabled:opacity-50"
+                    className="rounded-md p-2.5 text-texto-suave transition-colors hover:bg-fundo-2 disabled:opacity-50"
                   >
                     <Mic size={18} />
                   </button>
@@ -436,7 +425,8 @@ export function ChatWindow({
               />
               <button
                 onClick={enviar}
-                className="rounded-md bg-marca p-2.5 text-bege-principal transition-transform hover:scale-105"
+                aria-label="Enviar mensagem"
+                className="rounded-full bg-marca p-2.5 text-bege-principal transition-colors hover:bg-marca-escura"
               >
                 <Send size={18} />
               </button>
@@ -512,7 +502,7 @@ function Balao({
   if (autor === "lead") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[75%] space-y-1.5 rounded-2xl rounded-tl-sm bg-superficie px-4 py-2 shadow-sm">
+        <div className="max-w-[75%] space-y-1.5 rounded-2xl rounded-tl-sm border border-borda bg-superficie px-4 py-2.5 shadow-card">
           {midiaUrl && <Anexo url={midiaUrl} tipo={midiaTipo} />}
           {texto && (
             <p className="text-sm text-texto break-words whitespace-pre-wrap">{texto}</p>
@@ -527,8 +517,8 @@ function Balao({
   return (
     <div className="flex justify-end">
       <div
-        className={`max-w-[75%] space-y-1.5 rounded-2xl rounded-tr-sm px-4 py-2 ${
-          ia ? "bg-cinza-200 text-texto" : "bg-marca text-bege-principal"
+        className={`max-w-[75%] space-y-1.5 rounded-2xl rounded-tr-sm px-4 py-2.5 ${
+          ia ? "bg-marca-suave text-texto" : "bg-marca text-bege-principal"
         }`}
       >
         <span className="flex items-center gap-1 text-[10px] font-semibold opacity-80">
