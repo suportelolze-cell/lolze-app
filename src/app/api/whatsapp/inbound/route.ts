@@ -7,6 +7,8 @@ import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
 import { registrarEvento } from "@/lib/eventos";
 import { resolverLead, vincularIdentidade } from "@/lib/identidade";
+import { ehOperador } from "@/lib/whatsapp/numero-core";
+import { numeroOperadorDoTenant } from "@/lib/whatsapp/operador";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -108,6 +110,21 @@ async function processarInboundWhatsapp(
   const canalUserId = String(key?.remoteJid || "").replace(/@.*/, "");
   const nome = String(data?.pushName || canalUserId);
   const msg = data?.message ?? {};
+
+  // Allowlist de operador: mensagem do PRÓPRIO prestador/operador para o número
+  // do negócio NÃO é lead de venda — ignora (não cria lead, não grava, não roda
+  // o SDR). Só ativa quando especialista_numero está configurado. Registra o
+  // descarte (baixa) para não sumir em silêncio.
+  const numeroOperador = await numeroOperadorDoTenant(admin, tenantId);
+  if (numeroOperador && ehOperador(canalUserId, numeroOperador)) {
+    await registrarErro({
+      tenantId,
+      contexto: "whatsapp.operador.ignorado",
+      erro: `mensagem de ${canalUserId} ignorada (número de operador/prestador)`,
+      severidade: "baixa",
+    });
+    return;
+  }
 
   // Detecta lead vindo de anúncio Click-to-WhatsApp (contextInfo.externalAdReply).
   const anuncioRef = (() => {

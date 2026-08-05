@@ -15,6 +15,8 @@ import { assinaturaMetaValida } from "@/lib/seguranca/assinatura";
 import { resolverLead, vincularIdentidade } from "@/lib/identidade";
 import { MAPA_RECIBO_WA, STATUS_ANTERIORES } from "@/lib/whatsapp/status-recibo";
 import { anuncioDoReferral } from "@/lib/whatsapp/referral-core";
+import { ehOperador } from "@/lib/whatsapp/numero-core";
+import { numeroOperadorDoTenant } from "@/lib/whatsapp/operador";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // teto do processamento em background (waitUntil)
@@ -112,9 +114,12 @@ async function processarEntradasWaCloud(admin: Admin, entries: any[]) {
         contatos.map((c: any) => [String(c?.wa_id || ""), String(c?.profile?.name || "")])
       );
       const mensagens: any[] = Array.isArray(value?.messages) ? value.messages : [];
+      // Número do operador/prestador (allowlist). Lido só quando HÁ mensagens (não
+      // desperdiça em lotes só de recibo). "" = allowlist desligado.
+      const numeroOperador = mensagens.length ? await numeroOperadorDoTenant(admin, tenantId) : "";
       for (const msg of mensagens) {
         try {
-          await processarMensagemWaCloud(admin, tenantId, msg, nomePorWaId);
+          await processarMensagemWaCloud(admin, tenantId, msg, nomePorWaId, numeroOperador);
         } catch (e) {
           await registrarErro({
             tenantId,
@@ -166,11 +171,27 @@ async function processarMensagemWaCloud(
   admin: Admin,
   tenantId: string,
   msg: any,
-  nomePorWaId: Map<string, string>
+  nomePorWaId: Map<string, string>,
+  numeroOperador: string
 ) {
   const wamid = String(msg?.id || "").trim() || null;
   const de = String(msg?.from || "").replace(/\D/g, "");
   if (!de) return;
+
+  // Allowlist de operador: mensagem do PRÓPRIO prestador/operador para o número
+  // do negócio NÃO é lead de venda — ignora (não cria lead, não grava, não roda
+  // o SDR). Só ativa quando especialista_numero está configurado. Registra o
+  // descarte (baixa) para não sumir em silêncio (auditável se o número estiver
+  // mal configurado e estiver comendo leads).
+  if (numeroOperador && ehOperador(de, numeroOperador)) {
+    await registrarErro({
+      tenantId,
+      contexto: "whatsapp.operador.ignorado",
+      erro: `mensagem de ${de} ignorada (número de operador/prestador)`,
+      severidade: "baixa",
+    });
+    return;
+  }
 
   // Dedup pelo wamid (reenvio do webhook não duplica; índice único cobre corrida).
   if (wamid) {
