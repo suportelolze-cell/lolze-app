@@ -6,21 +6,26 @@
    LOLZE · Design Tokens (cores). As fontes vêm de next/font (layout.tsx).
    ========================================================================== */
 :root {
-  /* Paleta da marca */
-  --cor-verde-floresta: #15803d;
-  --cor-bege-principal: #fafaf7;
-  --cor-cinza-200: #e2ded2;
-  --cor-cinza-600: #5a554c;
-  --cor-escuro-quente: #161412;
-  --cor-verde-suave: #dcfce7;
+  /* Paleta da LANDING (design-reference/lolze-ia-landing) */
+  --cor-verde-floresta: #16834f; /* green */
+  --cor-verde-escuro: #0e6d3f; /* green-2 (hover) */
+  --cor-bege-principal: #f8f7f2; /* paper */
+  --cor-bege-2: #f0eee5; /* paper-2 */
+  --cor-cinza-200: #dfe3dc; /* line */
+  --cor-cinza-600: #5f6c63; /* muted */
+  --cor-escuro-quente: #111713; /* black (áreas escuras) */
+  --cor-tinta: #13221a; /* ink (texto) */
+  --cor-verde-suave: #dff6e8; /* mint */
 
   /* Tokens semânticos */
   --fundo: var(--cor-bege-principal);
+  --fundo-2: var(--cor-bege-2);
   --superficie: #ffffff;
   --borda: var(--cor-cinza-200);
-  --texto: var(--cor-escuro-quente);
+  --texto: var(--cor-tinta);
   --texto-suave: var(--cor-cinza-600);
   --marca: var(--cor-verde-floresta);
+  --marca-escura: var(--cor-verde-escuro);
   --marca-suave: var(--cor-verde-suave);
   --texto-sobre-marca: var(--cor-bege-principal);
 }
@@ -61,6 +66,14 @@
   /* tira o flash azul de toque no mobile */
   * {
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Acessibilidade: foco visível e consistente pelo teclado (verde da marca).
+     Só em :focus-visible — não aparece no clique do mouse. */
+  :focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
