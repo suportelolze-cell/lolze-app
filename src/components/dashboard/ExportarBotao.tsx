@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Printer } from "lucide-react";
 import { exportarLeadsCsv } from "@/lib/supabase/crm-actions";
+import { Button } from "@/components/ui";
 
 /** Exporta os leads em CSV e oferece "Imprimir/PDF" (via diálogo do navegador). */
 export function ExportarBotao() {
@@ -27,20 +28,12 @@ export function ExportarBotao() {
 
   return (
     <div className="flex gap-2 no-print">
-      <button
-        onClick={baixarCsv}
-        disabled={carregando}
-        className="flex items-center gap-2 rounded-sm border border-borda px-4 py-2.5 text-sm font-semibold text-texto transition-colors hover:bg-superficie disabled:opacity-50"
-      >
+      <Button variant="secondary" onClick={baixarCsv} disabled={carregando}>
         <Download size={16} /> {carregando ? "Gerando…" : "Exportar CSV"}
-      </button>
-      <button
-        onClick={() => window.print()}
-        className="flex items-center gap-2 rounded-sm border border-borda px-4 py-2.5 text-sm font-semibold text-texto transition-colors hover:bg-superficie"
-        title="Imprimir ou salvar como PDF"
-      >
+      </Button>
+      <Button variant="secondary" onClick={() => window.print()} title="Imprimir ou salvar como PDF">
         <Printer size={16} /> PDF
-      </button>
+      </Button>
     </div>
   );
 }

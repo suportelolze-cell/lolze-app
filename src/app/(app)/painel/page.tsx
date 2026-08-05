@@ -1,5 +1,6 @@
 import { DollarSign, Users, Sparkles, CalendarCheck, Target } from "lucide-react";
 import { redirect } from "next/navigation";
+import { PageHeader, Acento } from "@/components/ui";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TracaoChart } from "@/components/dashboard/TracaoChart";
 import { PulsoFeed } from "@/components/dashboard/PulsoFeed";
@@ -42,22 +43,21 @@ export default async function PainelPage() {
   return (
     <>
       {/* Cabeçalho */}
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">
-            Bem-vindo ao Centro de Comando,{" "}
-            <span className="text-marca">{cliente}</span>.
-          </h1>
-          <p className="mt-1 text-texto-suave">
-            Sua máquina de vendas operando em tempo real.
-          </p>
-        </div>
+      <PageHeader
+        titulo={
+          <>
+            Bem-vindo, <Acento>{cliente}</Acento>
+          </>
+        }
+        descricao="Sua máquina de vendas operando em tempo real."
+        acao={
+          <>
+            <ExportarBotao />
+            <NovoLeadButton />
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportarBotao />
-          <NovoLeadButton />
-        </div>
-      </header>
 
       {/* Bloco 1: Métricas de Ouro. Investimento/CPA só aparecem quando há dado
           real de tráfego (app_trafego) — senão mostrariam R$0 fixo (métrica
