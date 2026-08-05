@@ -24,6 +24,42 @@ const TENTATIVAS = 3;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Envia um texto avulso para um número ARBITRÁRIO pelo canal WhatsApp do tenant
+ * (não é uma mensagem de lead — não grava em app_mensagens). Prefere a Cloud API;
+ * cai para a Evolution. Best-effort: nunca lança; devolve se entregou.
+ *
+ * Uso: avisos operacionais ao prestador (heads-up de agendamento). Ressalva: via
+ * Cloud API, uma mensagem livre fora da janela de 24h pode ser recusada (exige
+ * template) — nesse caso cai para a Evolution se o tenant tiver; senão devolve
+ * false e o chamador registra (baixa).
+ */
+export async function notificarNumero(
+  tenantId: string,
+  numero: string,
+  texto: string
+): Promise<boolean> {
+  if (!numero || !texto) return false;
+  try {
+    const waCloud = await credenciaisWaCloud(tenantId);
+    if (waCloud) {
+      const r = await enviarTextoWaCloud(waCloud, numero, texto);
+      if (r.ok) return true;
+    }
+    const admin = getCrmAdmin();
+    const { data: sec } = await admin
+      .from("app_tenant_secrets")
+      .select("evolution_instance")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    const inst = (sec?.evolution_instance as string | null) ?? "";
+    if (inst && temEvolutionConfig()) return await enviarTexto(inst, numero, texto);
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Saída: entrega a resposta ao contato no canal de origem e registra o RESULTADO
  * na própria mensagem (status pendente → enviada/falhou, tentativas, último erro).
  *

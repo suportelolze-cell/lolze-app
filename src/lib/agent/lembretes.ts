@@ -1,6 +1,7 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
-import { dispatchOutbound } from "@/lib/integracoes/outbound";
+import { dispatchOutbound, notificarNumero } from "@/lib/integracoes/outbound";
 import { registrarErro } from "@/lib/observability/erros";
+import { mensagemPrestador, normalizarNumeroBR } from "./lembrete-core";
 
 /**
  * Lembretes de reunião (anti no-show). Roda no cron.
@@ -22,19 +23,28 @@ function quando(inicioISO: string) {
 
 type Ag = { id: number; tenant_id: string; lead_id: number | null; nome: string | null; servico: string | null; inicio: string };
 
-/** Flags anti-faltas por tenant (default: ligado). */
+/** Flags anti-faltas + número do prestador por tenant (default: ligado). */
 async function flagsAntiFaltas(
   admin: ReturnType<typeof getCrmAdmin>,
   ids: string[]
-): Promise<Map<string, { c24: boolean; l2: boolean }>> {
-  const m = new Map<string, { c24: boolean; l2: boolean }>();
+): Promise<Map<string, { c24: boolean; l2: boolean; prestador: string }>> {
+  const m = new Map<string, { c24: boolean; l2: boolean; prestador: string }>();
   if (ids.length === 0) return m;
   const { data } = await admin
     .from("app_config")
-    .select("tenant_id,antifaltas_24h,antifaltas_2h")
+    .select("tenant_id,antifaltas_24h,antifaltas_2h,especialista_numero")
     .in("tenant_id", ids);
-  for (const r of (data ?? []) as { tenant_id: string; antifaltas_24h: boolean | null; antifaltas_2h: boolean | null }[]) {
-    m.set(r.tenant_id, { c24: r.antifaltas_24h ?? true, l2: r.antifaltas_2h ?? true });
+  for (const r of (data ?? []) as {
+    tenant_id: string;
+    antifaltas_24h: boolean | null;
+    antifaltas_2h: boolean | null;
+    especialista_numero: string | null;
+  }[]) {
+    m.set(r.tenant_id, {
+      c24: r.antifaltas_24h ?? true,
+      l2: r.antifaltas_2h ?? true,
+      prestador: r.especialista_numero ?? "",
+    });
   }
   return m;
 }
@@ -75,6 +85,26 @@ export async function processarLembretes(): Promise<{ enviados24h: number; envia
         .eq("id", a.id)
         .eq("tenant_id", a.tenant_id);
       enviados24h++;
+
+      // Heads-up ao PRESTADOR (T6): avisa o especialista do agendamento de
+      // amanhã. Piggyback no marco de 24h (dedup natural: só quando o lembrete
+      // do lead é marcado). Best-effort — não bloqueia nem repete.
+      const prestador = normalizarNumeroBR(flags24.get(a.tenant_id)?.prestador ?? "");
+      if (prestador) {
+        const ok = await notificarNumero(
+          a.tenant_id,
+          prestador,
+          mensagemPrestador(a.nome, a.servico, quando(a.inicio))
+        );
+        if (!ok) {
+          await registrarErro({
+            tenantId: a.tenant_id,
+            contexto: "lembrete.prestador",
+            erro: "não consegui avisar o prestador (canal indisponível ou fora da janela do WhatsApp)",
+            severidade: "baixa",
+          });
+        }
+      }
     } else {
       await registrarErro({
         tenantId: a.tenant_id,
