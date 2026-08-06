@@ -67,10 +67,10 @@ export function ConversaList({
             <button
               key={f.id}
               onClick={() => setFiltro(f.id)}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              className={`rounded-pill px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                 filtro === f.id
                   ? "bg-marca text-bege-principal"
-                  : "bg-fundo text-texto-suave hover:text-texto"
+                  : "bg-fundo-2 text-texto-suave hover:text-texto"
               }`}
             >
               {f.rotulo}
@@ -96,7 +96,7 @@ export function ConversaList({
                 key={c.id}
                 onClick={() => onSelect(c.id)}
                 className={`flex w-full gap-3 border-b border-borda px-3 py-3 text-left transition-colors ${
-                  ativa ? "bg-marca-suave/40" : "hover:bg-fundo"
+                  ativa ? "bg-marca-suave/70" : "hover:bg-fundo-2"
                 } ${c.precisaHumano ? "border-l-2 border-l-amber-500" : ""}`}
               >
                 {/* Avatar */}
@@ -110,7 +110,7 @@ export function ConversaList({
                     </span>
                     <span className="flex shrink-0 items-center gap-1">
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${canalSelo(c.canal).classe}`}
+                        className={`rounded-pill px-1.5 py-0.5 text-[9px] font-bold ${canalSelo(c.canal).classe}`}
                       >
                         {canalSelo(c.canal).rotulo}
                       </span>
@@ -123,9 +123,9 @@ export function ConversaList({
                   </p>
                   <div className="mt-1 flex items-center gap-2">
                     <span
-                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                      className={`rounded-pill px-1.5 py-0.5 text-[10px] font-semibold ${
                         c.comando === "ia"
-                          ? "bg-fundo text-texto-suave"
+                          ? "bg-fundo-2 text-texto-suave"
                           : outroAtende
                           ? "bg-amber-100 text-amber-700"
                           : "bg-marca-suave text-marca"
