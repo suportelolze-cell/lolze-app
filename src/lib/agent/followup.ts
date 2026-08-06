@@ -126,9 +126,9 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   const instrucao = despedidaFrio
     ? "[DESPEDIDA EDUCADA] Não houve retorno e o lead esfriou. Despeça-se com classe: diga que vai pausar os contatos pra não incomodar e deixe a porta aberta pra quando ele precisar. Sem cobrança, sem culpa."
     : posvenda
-      ? "[PÓS-VENDA] Este cliente JÁ fechou/foi atendido — não é mais uma venda em aberto. Faça um acompanhamento genuíno e caloroso: pergunte como foi a experiência e, se fizer sentido, convide a agendar o próximo serviço/retoque. Tom de cuidado e relacionamento, ZERO pressão de venda."
+      ? "[PÓS-VENDA] Este cliente JÁ fechou/foi atendido, não é mais uma venda em aberto. Faça um acompanhamento genuíno e caloroso: pergunte como foi a experiência e, se fizer sentido, convide a agendar o próximo serviço/retoque. Tom de cuidado e relacionamento, ZERO pressão de venda."
       : reativacao
-        ? "[REATIVAÇÃO] Faz um tempo que este lead não fala com a gente. Reabra com leveza, como quem retoma um papo: traga uma novidade/dica/valor do nicho dele. NÃO tente vender direto — o objetivo é reaquecer o relacionamento."
+        ? "[REATIVAÇÃO] Faz um tempo que este lead não fala com a gente. Reabra com leveza, como quem retoma um papo: traga uma novidade/dica/valor do nicho dele. NÃO tente vender direto; o objetivo é reaquecer o relacionamento."
         : frio
           ? "[FOLLOW-UP] O lead sumiu. Dê um toque leve checando se ainda faz sentido continuar a conversa."
           : "[FOLLOW-UP] O lead demonstrou interesse e sumiu. Retome lembrando do benefício que ele curtiu e convide a continuar, sem pressão.";
@@ -139,7 +139,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
     `Oferta: ${str("oferta") || "(não informada)"}. ` +
     `Regras: ${str("regras") || "—"}.\n\n` +
     instrucao +
-    " Envie UMA mensagem curta (1–2 linhas), natural e humana. Não seja insistente, não repita o que já disse, não invente preço nem prometa resultado.";
+    " Envie UMA mensagem curta (1-2 linhas), natural e humana. Sem travessão nem meia-risca; use vírgula, ponto ou dois-pontos. Não seja insistente, não repita o que já disse, não invente preço nem prometa resultado.";
 
   const messages: Anthropic.MessageParam[] = [
     ...historico.map((t) => ({
