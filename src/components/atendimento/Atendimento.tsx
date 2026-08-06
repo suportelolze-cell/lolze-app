@@ -341,7 +341,7 @@ export function Atendimento({
         }
         descricao="Assuma a conversa no momento certo e transforme o lead aquecido em cliente pagante."
         acao={
-          <>
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {podeOverride && <IaSwitchPill inicial={iaAtiva} />}
             <Badge tom="neutro">
               <StatusDot tom="menta" /> {ativas} ativas
@@ -349,7 +349,7 @@ export function Atendimento({
             <Badge tom={aguardando > 0 ? "atencao" : "neutro"}>
               🔥 {aguardando} aguardando humano
             </Badge>
-          </>
+          </div>
         }
       />
 
