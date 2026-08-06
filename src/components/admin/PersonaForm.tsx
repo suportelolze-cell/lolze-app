@@ -46,7 +46,7 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
       const r = await salvarPersona(tenantId, p);
       setSalvo(true);
       if (r?.reguaIgnorada) {
-        setAviso("Persona salva, mas a Régua de qualificação ainda não foi ativada (migração pendente) — ela não terá efeito até isso ser aplicado.");
+        setAviso("Persona salva, mas a Régua de qualificação ainda não foi ativada (migração pendente). Ela não terá efeito até isso ser aplicado.");
       }
       router.refresh();
     } catch (err) {
@@ -74,7 +74,7 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
           <p className="text-xs text-texto-suave">
             {p.agenteAtivo
               ? "A IA está atendendo os leads que chegam."
-              : "Desligado — a IA não responde (só manual)."}
+              : "Desligado. A IA não responde (só manual)."}
           </p>
         </div>
         <button
@@ -165,7 +165,7 @@ export function PersonaForm({ tenantId, persona }: { tenantId: string; persona: 
           onChange={set("reguaQualificacao")}
           rows={4}
           placeholder={
-            "Ex.: Quente = fatura acima de R$50k/mês e já tem equipe.\nMorno = R$10–50k, ainda avaliando.\nFrio = abaixo disso ou só curioso."
+            "Ex.: Quente = fatura acima de R$50k/mês e já tem equipe.\nMorno = R$10-50k, ainda avaliando.\nFrio = abaixo disso ou só curioso."
           }
         />
       </div>

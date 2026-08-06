@@ -147,7 +147,7 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
           <span className="font-semibold text-texto">Topo do funil aguardando conexão.</span>{" "}
           Meta Ads, Google Ads e Portal de Captura aparecem aqui quando você
           integrar suas campanhas. Do <em>Filtro de IA</em> em diante, os números
-          já são reais — vindos das suas conversas.
+          já são reais, vindos das suas conversas.
         </div>
       )}
 

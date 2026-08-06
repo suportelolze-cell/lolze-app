@@ -97,7 +97,7 @@ export default async function AdminCustosPage() {
       )}
 
       <p className="mt-4 text-[11px] leading-relaxed text-texto-suave">
-        Custo estimado à tarifa do modelo do SDR (Sonnet) — <strong>conservador</strong>: o roteador e o
+        Custo estimado à tarifa do modelo do SDR (Sonnet), <strong>conservador</strong>: o roteador e o
         demo usam Haiku (mais barato), então o custo real tende a ser menor. Não inclui suporte, infra
         nem custo de canais. Taxa USD→BRL configurável em <code>USD_BRL</code>.
       </p>

@@ -39,7 +39,7 @@ export function EvolutionForm({ tenantId, cfg }: { tenantId: string; cfg: Evolut
         <h2 className="font-corpo text-lg font-bold text-texto">WhatsApp (Evolution)</h2>
       </div>
       <p className="mt-1 text-sm text-texto-suave">
-        O cliente conecta o WhatsApp sozinho (QR) em Configurações — o app cria a instância e
+        O cliente conecta o WhatsApp sozinho (QR) em Configurações. O app cria a instância e
         configura tudo automaticamente. Normalmente você não precisa mexer aqui.
       </p>
 

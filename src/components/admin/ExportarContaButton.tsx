@@ -35,7 +35,7 @@ export function ExportarContaButton({ tenantId, nome }: { tenantId: string; nome
       <h2 className="font-corpo text-lg font-bold text-texto">Exportar dados da conta (LGPD)</h2>
       <p className="mt-1 text-sm text-texto-suave">
         Baixa um JSON com todos os dados desta conta (leads, conversas, agendamentos, eventos,
-        configuração…) — <strong>sem senhas nem tokens</strong>. Útil para portabilidade ou como
+        configuração…). <strong>Sem senhas nem tokens</strong>. Útil para portabilidade ou como
         backup antes de excluir.
       </p>
       {erro && <p className="mt-3 text-sm font-medium text-red-600">{erro}</p>}

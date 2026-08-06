@@ -130,7 +130,7 @@ export function CadastroForm({
                     className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-borda bg-fundo px-4 py-3 text-sm hover:border-marca"
                   >
                     <span className="text-texto-suave">
-                      Precisa de mais? <b className="text-texto">{enterprise.nome}</b> — planos acima, sob medida.
+                      Precisa de mais? <b className="text-texto">{enterprise.nome}</b>: planos acima, sob medida.
                     </span>
                     <span className="shrink-0 font-semibold text-marca">Entrar em contato →</span>
                   </a>

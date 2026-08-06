@@ -13,7 +13,7 @@ const WHATSAPP_SUPORTE =
 const SAUDACAO: Msg = {
   role: "assistant",
   content:
-    "Oi! Sou o assistente da Lolze 👋 Posso te ajudar a usar a plataforma — configurar o agente, conectar o WhatsApp, base de conhecimento, agenda… Manda sua dúvida! Se eu não resolver, te passo pra uma pessoa.",
+    "Oi! Sou o assistente da Lolze 👋 Posso te ajudar a usar a plataforma: configurar o agente, conectar o WhatsApp, base de conhecimento, agenda… Manda sua dúvida! Se eu não resolver, te passo pra uma pessoa.",
 };
 
 export function SuporteWidget() {

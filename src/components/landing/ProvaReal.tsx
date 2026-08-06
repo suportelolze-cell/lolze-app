@@ -54,7 +54,7 @@ export function ProvaReal() {
     } catch {
       setMsgs((m) => [
         ...m,
-        { role: "assistant", content: "Falha de conexão — pode tentar de novo? 😉" },
+        { role: "assistant", content: "Falha de conexão, pode tentar de novo? 😉" },
       ]);
     } finally {
       setEnviando(false);

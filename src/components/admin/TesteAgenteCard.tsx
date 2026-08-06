@@ -52,7 +52,7 @@ export function TesteAgenteCard({ tenantId }: { tenantId: string }) {
     try {
       for (let i = 0; i < BATERIA_PADRAO.length; i++) {
         const t = BATERIA_PADRAO[i];
-        setProgresso(`${i + 1}/${BATERIA_PADRAO.length} — ${t.rotulo}…`);
+        setProgresso(`${i + 1}/${BATERIA_PADRAO.length} · ${t.rotulo}…`);
         await rodarUma(t.rotulo, t.pergunta);
       }
     } finally {

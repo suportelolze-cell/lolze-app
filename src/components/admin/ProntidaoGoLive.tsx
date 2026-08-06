@@ -34,7 +34,7 @@ export function ProntidaoGoLive({ prontidao }: { prontidao: Prontidao }) {
       </div>
       {completo && (
         <p className="mt-2 text-sm font-semibold text-marca">
-          Implantação completa — cliente pronto para operação. 🚀
+          Implantação completa. Cliente pronto para operação. 🚀
         </p>
       )}
 

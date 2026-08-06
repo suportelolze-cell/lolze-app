@@ -178,7 +178,7 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
             <div>
               <h1 className="font-corpo text-xl font-bold text-texto">Base de conhecimento</h1>
               <p className="mt-1 text-sm text-texto-suave">
-                Suba documentos com seus serviços, preços, durações e regras. É o que deixa a IA precisa (e agenda melhor). Opcional — dá pra fazer depois.
+                Suba documentos com seus serviços, preços, durações e regras. É o que deixa a IA precisa (e agenda melhor). Opcional, dá pra fazer depois.
               </p>
             </div>
 

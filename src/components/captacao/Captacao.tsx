@@ -147,7 +147,7 @@ export function Captacao({
         <AlertTriangle size={18} className="mt-0.5 shrink-0" />
         <p>
           Use um <b>número dedicado e aquecido</b> (não o WhatsApp que atende seus clientes) e
-          mantenha o volume baixo. Envio em massa tem risco de bloqueio e envolve LGPD — prefira
+          mantenha o volume baixo. Envio em massa tem risco de bloqueio e envolve LGPD, prefira
           telefones de <b>empresa</b>, personalize com <code>{"{nome}"}</code> e respeite quem pedir
           para não receber.
         </p>
@@ -222,7 +222,7 @@ export function Captacao({
               />
               <p className="mt-1 text-xs text-texto-suave">
                 Use <code>{"{nome}"}</code>, <code>{"{empresa}"}</code>, <code>{"{cidade}"}</code>,{" "}
-                <code>{"{nicho}"}</code> — a Lolze troca por cada contato.{" "}
+                <code>{"{nicho}"}</code>: a Lolze troca por cada contato.{" "}
                 <span className="tabular-nums">{cfg.mensagem.length}/1000</span>
               </p>
             </div>

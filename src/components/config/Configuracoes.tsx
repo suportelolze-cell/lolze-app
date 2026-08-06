@@ -289,7 +289,7 @@ function Integracoes({
                 on={googleConectado}
                 texto={
                   googleConectado
-                    ? `Conectado${google?.email ? ` — ${google.email}` : ""}`
+                    ? `Conectado${google?.email ? ` · ${google.email}` : ""}`
                     : googleConfigurado
                       ? "Aguardando Conexão"
                       : "Não configurada"
@@ -433,10 +433,10 @@ function UsoIACard({ billing }: { billing: BillingInfo }) {
     pct === 0
       ? "Nenhum uso de IA ainda neste mês."
       : nivel === "cheio"
-      ? "Você atingiu a franquia de IA deste mês. O atendimento automático pode pausar até o próximo ciclo — fale com o suporte para ampliar seu plano."
+      ? "Você atingiu a franquia de IA deste mês. O atendimento automático pode pausar até o próximo ciclo. Fale com o suporte para ampliar seu plano."
       : nivel === "alto"
-      ? "Uso elevado neste mês. Se chegar a 100%, o atendimento por IA pode pausar até o próximo ciclo — fale com o suporte para ampliar."
-      : "Tudo tranquilo — você está bem dentro da sua franquia de IA.";
+      ? "Uso elevado neste mês. Se chegar a 100%, o atendimento por IA pode pausar até o próximo ciclo. Fale com o suporte para ampliar."
+      : "Tudo tranquilo, você está bem dentro da sua franquia de IA.";
 
   return (
     <div className="mt-4 rounded-lg border border-borda bg-superficie p-5">

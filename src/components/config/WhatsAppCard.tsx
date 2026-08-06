@@ -176,7 +176,7 @@ export function WhatsAppCard() {
         <div className="rounded-md border border-borda bg-fundo p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="max-w-xs text-xs text-texto-suave">
-              Puxe as conversas que este WhatsApp já tinha antes de conectar — viram contatos e a IA ganha contexto pra responder.
+              Puxe as conversas que este WhatsApp já tinha antes de conectar: viram contatos e a IA ganha contexto pra responder.
             </p>
             <button
               onClick={importarHistorico}
@@ -235,7 +235,7 @@ export function WhatsAppCard() {
       <div>
         <Badge on={false} texto="Aguardando Conexão" />
         <p className="mt-1.5 text-xs text-texto-suave">
-          Conecte o WhatsApp do seu negócio lendo um QR Code — leva 10 segundos.
+          Conecte o WhatsApp do seu negócio lendo um QR Code. Leva 10 segundos.
         </p>
         {erro && <p className="mt-1.5 text-xs font-medium text-red-600">{erro}</p>}
       </div>

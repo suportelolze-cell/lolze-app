@@ -21,7 +21,7 @@ export default async function AdminAlertasPage() {
           <ShieldAlert size={22} className="text-marca" /> Central de alertas
         </h1>
         <p className="mt-1 text-sm text-texto-suave">
-          Estado de todos os clientes agora — não espera erro aparecer. IA sem canal, mensagens não
+          Estado de todos os clientes agora, não espera erro aparecer. IA sem canal, mensagens não
           entregues, custo perto do teto, erros e IA desligada.
         </p>
       </header>
@@ -36,7 +36,7 @@ export default async function AdminAlertasPage() {
       {r.alertas.length === 0 ? (
         <div className="rounded-xl border border-dashed border-borda bg-superficie p-10 text-center">
           <CheckCircle2 size={32} className="mx-auto mb-3 text-marca" />
-          <p className="text-sm text-texto-suave">Tudo certo — nenhum cliente com alerta no momento.</p>
+          <p className="text-sm text-texto-suave">Tudo certo, nenhum cliente com alerta no momento.</p>
         </div>
       ) : (
         <ul className="space-y-2">
