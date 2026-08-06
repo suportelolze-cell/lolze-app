@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, ShieldOff, Loader2 } from "lucide-react";
 import { exportarDadosLead, excluirDadosLead } from "@/lib/lgpd/lgpd-actions";
+import { Button } from "@/components/ui";
 
 /**
  * Ações de privacidade (LGPD) de UM contato, dentro do "Raio-X do Cliente".
@@ -70,20 +71,16 @@ export function LgpdLeadActions({ leadId, nome }: { leadId: number; nome: string
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          onClick={exportar}
-          disabled={baixando}
-          className="flex items-center gap-2 rounded-md border border-borda bg-superficie px-3 py-2 text-xs font-semibold text-texto hover:bg-fundo disabled:opacity-50"
-        >
+        <Button variant="secondary" size="sm" onClick={exportar} disabled={baixando}>
           {baixando ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
           Exportar dados (JSON)
-        </button>
+        </Button>
         <button
           onClick={() => {
             setAbrir((v) => !v);
             setErro("");
           }}
-          className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50/50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+          className="flex items-center gap-2 rounded-pill border border-red-300 bg-red-50/50 px-4 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
         >
           <ShieldOff size={14} /> Excluir / anonimizar
         </button>
@@ -125,14 +122,10 @@ export function LgpdLeadActions({ leadId, nome }: { leadId: number; nome: string
             autoComplete="off"
             className="w-full rounded-md border border-red-300 bg-fundo px-3 py-2 text-xs text-texto outline-none focus:border-red-500"
           />
-          <button
-            onClick={executar}
-            disabled={processando}
-            className="flex items-center gap-2 rounded-sm bg-red-600 px-4 py-2 text-xs font-bold text-white transition-transform hover:scale-[1.01] disabled:opacity-50"
-          >
+          <Button variant="danger" size="sm" onClick={executar} disabled={processando}>
             {processando ? <Loader2 size={14} className="animate-spin" /> : <ShieldOff size={14} />}
             Confirmar {modo === "excluir" ? "exclusão" : "anonimização"}
-          </button>
+          </Button>
         </div>
       )}
 
