@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Users, Search, Download, Loader2 } from "lucide-react";
+import { Search, Download, Loader2 } from "lucide-react";
 import { exportarLeadsCsv } from "@/lib/supabase/crm-actions";
 import type { Contato } from "@/lib/contatos/data";
 import { ORIGEM_LABEL } from "@/lib/leads";
+import { PageHeader, Button, Badge } from "@/components/ui";
 
 const CANAL_LABEL: Record<string, string> = {
   whatsapp: "WhatsApp",
@@ -28,7 +29,7 @@ const COLUNA_LABEL: Record<string, string> = {
 const TEMP_COR: Record<string, string> = {
   quente: "bg-orange-100 text-orange-700",
   morno: "bg-amber-100 text-amber-700",
-  frio: "bg-superficie text-texto-suave",
+  frio: "bg-fundo-2 text-texto-suave",
 };
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -69,24 +70,19 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
   const chips = ["todos", ...canais];
 
   return (
-    <div className="flex flex-col gap-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 font-display text-2xl font-medium italic tracking-tight text-texto">
-            <Users size={22} className="text-marca" /> Contatos
-          </h1>
-          <p className="mt-1 text-texto-suave">Todos os seus contatos, de todos os canais, num lugar só.</p>
-        </div>
-        <button
-          onClick={exportar}
-          disabled={exportando || lista.length === 0}
-          className="flex items-center gap-2 rounded-md bg-marca px-4 py-2.5 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02] disabled:opacity-50"
-        >
-          {exportando ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-          Exportar planilha
-        </button>
-      </header>
+    <div className="flex flex-col">
+      <PageHeader
+        titulo="Contatos"
+        descricao="Todos os seus contatos, de todos os canais, num lugar só."
+        acao={
+          <Button variant="primary" onClick={exportar} disabled={exportando || lista.length === 0}>
+            {exportando ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            Exportar planilha
+          </Button>
+        }
+      />
 
+      <div className="flex flex-col gap-5">
       {/* Filtros por canal + busca */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-1.5">
@@ -94,8 +90,8 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
             <button
               key={c}
               onClick={() => setFiltro(c)}
-              className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
-                filtro === c ? "bg-marca text-bege-principal" : "border border-borda bg-superficie text-texto-suave hover:text-texto"
+              className={`rounded-pill px-3 py-2 text-xs font-semibold transition-colors ${
+                filtro === c ? "bg-marca text-bege-principal" : "border border-borda bg-superficie text-texto-suave hover:border-marca hover:text-marca"
               }`}
             >
               {c === "todos" ? "Todos" : rotuloCanal(c)}
@@ -114,9 +110,9 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
       </div>
 
       {/* Tabela */}
-      <div className="overflow-x-auto rounded-lg border border-borda bg-superficie">
+      <div className="overflow-x-auto rounded-lg border border-borda bg-superficie shadow-card">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-borda text-xs uppercase tracking-wide text-texto-suave">
+          <thead className="border-b border-borda bg-fundo-2 text-xs uppercase tracking-wide text-texto-suave">
             <tr>
               <th className="px-4 py-3 font-semibold">Nome</th>
               <th className="px-4 py-3 font-semibold">Telefone</th>
@@ -137,20 +133,18 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
               </tr>
             ) : (
               lista.map((c) => (
-                <tr key={c.id} className="hover:bg-fundo">
+                <tr key={c.id} className="hover:bg-fundo-2">
                   <td className="px-4 py-3 font-medium text-texto">{c.nome || "—"}</td>
                   <td className="px-4 py-3 text-texto-suave">{c.telefone || "—"}</td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-marca-suave px-2 py-0.5 text-[11px] font-semibold text-marca">
-                      {rotuloCanal(c.canal)}
-                    </span>
+                    <Badge tom="menta">{rotuloCanal(c.canal)}</Badge>
                   </td>
                   <td className="px-4 py-3 text-texto-suave">
                     {c.origem ? (ORIGEM_LABEL[c.origem] ?? c.origem) : "—"}
                   </td>
                   <td className="px-4 py-3 text-texto-suave">{COLUNA_LABEL[c.coluna] ?? c.coluna ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${TEMP_COR[c.temperatura] ?? TEMP_COR.frio}`}>
+                    <span className={`rounded-pill px-2 py-0.5 text-[11px] font-semibold capitalize ${TEMP_COR[c.temperatura] ?? TEMP_COR.frio}`}>
                       {c.temperatura || "—"}
                     </span>
                   </td>
@@ -166,6 +160,7 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
       <p className="text-xs text-texto-suave">
         Mostrando {lista.length} de {contatos.length} contatos. A exportação respeita o filtro de canal selecionado.
       </p>
+      </div>
     </div>
   );
 }
