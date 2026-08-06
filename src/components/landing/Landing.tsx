@@ -101,11 +101,15 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           }}
         />
         <div className="relative mx-auto max-w-4xl">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-borda bg-superficie px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-texto-suave">
-            <span className="h-1.5 w-1.5 rounded-full bg-marca" />
-            <span className="text-marca">Sistema</span>
-            <span className="font-display italic lowercase tracking-normal text-texto">ativo</span>
-            <span aria-hidden>·</span> Respondendo em tempo real
+          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1.5 gap-y-1 rounded-full border border-borda bg-superficie px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-texto-suave sm:text-[11px] sm:tracking-[0.15em]">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <span className="h-1.5 w-1.5 rounded-full bg-marca" />
+              <span className="text-marca">Sistema</span>
+              <span className="font-display italic lowercase tracking-normal text-texto">ativo</span>
+            </span>
+            <span className="whitespace-nowrap">
+              <span aria-hidden className="mr-1.5">·</span>Respondendo em tempo real
+            </span>
           </span>
 
           <h1 className="mt-7 font-corpo text-5xl font-semibold leading-[1.04] tracking-tight text-texto sm:text-6xl lg:text-7xl">
