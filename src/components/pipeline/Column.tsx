@@ -3,6 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { ColunaConfig, Lead } from "@/lib/leads";
 import { LeadCard } from "./LeadCard";
+import { Badge } from "@/components/ui";
 
 export function Column({
   config,
@@ -24,9 +25,7 @@ export function Column({
             <span>{config.emoji}</span>
             {config.titulo}
           </h3>
-          <span className="rounded-full bg-superficie px-2 py-0.5 text-xs font-semibold text-texto-suave">
-            {leads.length}
-          </span>
+          <Badge tom="neutro">{leads.length}</Badge>
         </div>
         <p className="mt-1 text-[11px] leading-snug text-texto-suave">
           {config.microcopy}
@@ -37,7 +36,7 @@ export function Column({
       <div
         ref={setNodeRef}
         className={`flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-dashed p-2 transition-colors ${
-          isOver ? "border-marca bg-marca-suave/40" : "border-borda bg-fundo"
+          isOver ? "border-marca bg-marca-suave/40" : "border-borda bg-fundo-2"
         }`}
       >
         {leads.length === 0 ? (

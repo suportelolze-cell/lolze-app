@@ -16,6 +16,7 @@ import { moverLead } from "@/lib/supabase/crm-actions";
 import { Column } from "./Column";
 import { LeadCard } from "./LeadCard";
 import { LeadDetail } from "./LeadDetail";
+import { PageHeader, Acento } from "@/components/ui";
 
 export function Board({
   initialLeads,
@@ -72,16 +73,14 @@ export function Board({
   return (
     <div className="flex h-[calc(100dvh-8rem)] flex-col lg:h-[calc(100vh-8rem)]">
       {/* Cabeçalho */}
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">
-            Pipeline de Vendas
-          </h1>
-          <p className="mt-1 text-texto-suave">
-            Acompanhe o fluxo e feche negócios. Arraste os cards para avançar.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        titulo={
+          <>
+            Pipeline de <Acento>Vendas</Acento>
+          </>
+        }
+        descricao="Acompanhe o fluxo e feche negócios. Arraste os cards para avançar."
+        acao={
           <div className="relative">
             <Search
               size={16}
@@ -94,8 +93,8 @@ export function Board({
               className="w-full rounded-md border border-borda bg-superficie py-2.5 pl-9 pr-3 text-sm text-texto outline-none placeholder:text-texto-suave/70 focus:border-marca sm:w-72"
             />
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Quadro */}
       <DndContext
