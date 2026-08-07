@@ -16,7 +16,7 @@ export function WeekGrid({
   onSelect: (a: Agendamento) => void;
 }) {
   return (
-    <div className="overflow-auto rounded-lg border border-borda bg-superficie">
+    <div className="overflow-auto rounded-lg border border-borda bg-superficie shadow-card">
       {/* Cabeçalho dos dias */}
       <div
         className="grid border-b border-borda"

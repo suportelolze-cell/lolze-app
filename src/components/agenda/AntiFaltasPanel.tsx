@@ -57,7 +57,7 @@ export function AntiFaltasPanel({
   }
 
   return (
-    <div className="flex w-full flex-col rounded-lg border border-borda bg-superficie lg:w-80 lg:shrink-0">
+    <div className="flex w-full flex-col rounded-lg border border-borda bg-superficie shadow-card lg:w-80 lg:shrink-0">
       <div className="border-b border-borda px-5 py-4">
         <h2 className="flex items-center gap-2 font-corpo text-base font-bold text-texto">
           <ShieldCheck size={18} className="text-marca" /> Blindagem Anti-Faltas
@@ -87,7 +87,7 @@ export function AntiFaltasPanel({
           </span>
           <span className="text-sm font-bold text-marca">{agendamentosMes}</span>
         </div>
-        <div className="flex items-center justify-between rounded-md bg-fundo px-3 py-2.5">
+        <div className="flex items-center justify-between rounded-md bg-fundo-2 px-3 py-2.5">
           <span className="flex items-center gap-1.5 text-xs font-medium text-texto">
             <Bot size={14} className="text-texto-suave" /> Agendados pela IA
           </span>

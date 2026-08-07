@@ -8,11 +8,12 @@ import {
   bloquearHorario,
   bloquearHorarioEmMassa,
 } from "@/lib/supabase/agenda-actions";
+import { Button } from "@/components/ui";
 
 export type ModoModal = "agendar" | "bloquear" | null;
 
 const inputCls =
-  "w-full rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto outline-none focus:border-marca";
+  "w-full rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto outline-none transition-colors focus:border-marca";
 
 const DIAS_LABEL = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
@@ -70,7 +71,7 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={salvar}
-        className="my-auto max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-xl border border-borda bg-superficie p-6"
+        className="my-auto max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-xl border border-borda bg-superficie p-6 shadow-pop"
       >
         <div className="flex items-center justify-between">
           <h2 className="font-corpo text-lg font-bold text-texto">
@@ -117,7 +118,7 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
                     key={i}
                     type="button"
                     onClick={() => toggleDia(i)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    className={`rounded-pill border px-2.5 py-1 text-xs font-semibold transition-colors ${
                       on ? "border-marca bg-marca text-bege-principal" : "border-borda text-texto-suave hover:border-marca"
                     }`}
                   >
@@ -158,19 +159,13 @@ export function AgendaFormModal({ modo, onClose }: { modo: ModoModal; onClose: (
         {erro && <p className="text-sm font-medium text-red-600">{erro}</p>}
 
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="rounded-sm border border-borda px-4 py-2 text-sm font-semibold text-texto hover:bg-fundo">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={salvando}
-            className={`flex items-center gap-2 rounded-sm px-5 py-2 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.01] disabled:opacity-50 ${
-              bloquear ? "bg-escuro-quente" : "bg-marca"
-            }`}
-          >
+          </Button>
+          <Button type="submit" variant={bloquear ? "primary" : "verde"} size="sm" disabled={salvando}>
             {salvando ? <Loader2 size={16} className="animate-spin" /> : null}
             {bloquear ? (emMassa ? "Bloquear em massa" : "Bloquear") : "Agendar"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
