@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Clock, Phone, Sparkles, MessageSquare, Trash2, CheckCircle2 } from "lucide-react";
 import { DIAS, type Agendamento } from "@/lib/agenda";
 import { cancelarAgendamento, marcarComparecimento } from "@/lib/supabase/agenda-actions";
+import { Button, buttonClasses } from "@/components/ui";
 
 export function CompromissoDetail({
   agendamento,
@@ -54,12 +55,12 @@ export function CompromissoDetail({
       onClick={onClose}
     >
       <div
-        className="my-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-superficie shadow-2xl"
+        className="my-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-superficie shadow-pop"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-borda px-6 py-4">
           <h2 className="font-corpo text-lg font-bold text-texto">Detalhes do Compromisso</h2>
-          <button onClick={onClose} className="rounded-md p-1.5 text-texto-suave hover:bg-fundo">
+          <button onClick={onClose} aria-label="Fechar" className="rounded-md p-1.5 text-texto-suave hover:bg-fundo-2">
             <X size={18} />
           </button>
         </div>
@@ -85,7 +86,7 @@ export function CompromissoDetail({
             )}
             <div>
               <span
-                className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                className={`inline-block rounded-pill px-2.5 py-0.5 text-xs font-semibold ${
                   compareceu
                     ? "bg-marca-suave text-marca"
                     : a.status === "confirmado"
@@ -123,20 +124,16 @@ export function CompromissoDetail({
                   <CheckCircle2 size={15} /> Cliente compareceu
                 </p>
               ) : (
-                <button
-                  onClick={comparecer}
-                  disabled={confirmando}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-md bg-marca py-2.5 text-sm font-semibold text-bege-principal disabled:opacity-50"
-                >
+                <Button variant="verde" onClick={comparecer} disabled={confirmando} className="w-full">
                   <CheckCircle2 size={16} /> {confirmando ? "Registrando…" : "Marcar comparecimento"}
-                </button>
+                </Button>
               )}
               {a.telefone && (
                 <a
                   href={waLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-md border border-borda py-2 text-sm font-semibold text-texto hover:bg-fundo"
+                  className={buttonClasses("secondary", "md", "w-full")}
                 >
                   <MessageSquare size={16} /> Abrir Chat no WhatsApp
                 </a>
@@ -144,7 +141,7 @@ export function CompromissoDetail({
               <button
                 onClick={cancelar}
                 disabled={cancelando}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-pill border border-borda py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
               >
                 <Trash2 size={14} /> {cancelando ? "Cancelando…" : "Cancelar agendamento"}
               </button>

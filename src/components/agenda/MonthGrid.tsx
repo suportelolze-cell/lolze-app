@@ -38,7 +38,7 @@ export function MonthGrid({
   while (celulas.length % 7 !== 0) celulas.push(null);
 
   return (
-    <div className="rounded-lg border border-borda bg-superficie p-4">
+    <div className="rounded-lg border border-borda bg-superficie p-4 shadow-card">
       <div className="mb-2 text-center text-sm font-bold text-texto">
         {MESES[mes]} {ano}
       </div>
