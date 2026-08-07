@@ -23,7 +23,7 @@ export function OrigemLeads({
     <div className="rounded-lg border border-borda bg-superficie p-5">
       <h2 className="font-corpo text-sm font-bold text-texto">Origem dos Leads</h2>
       <p className="mb-4 mt-0.5 text-xs text-texto-suave">
-        De onde vieram seus contatos — anúncio pago ou orgânico.
+        De onde vieram seus contatos: anúncio pago ou orgânico.
       </p>
 
       {/* Barra proporcional */}

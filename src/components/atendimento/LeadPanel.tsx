@@ -62,7 +62,7 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
   // Marca ganho pedindo o valor fechado (opcional) — registra a receita no funil.
   async function marcarGanho() {
     const entrada = window.prompt(
-      "Valor fechado com este cliente (R$) — deixe em branco se ainda não souber:"
+      "Valor fechado com este cliente (R$). Deixe em branco se ainda não souber:"
     );
     if (entrada === null) return; // cancelou
     const valor = Number(entrada.replace(/[^\d,.-]/g, "").replace(".", "").replace(",", "."));

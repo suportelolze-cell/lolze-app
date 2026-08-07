@@ -114,7 +114,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             <span className="font-semibold text-texto">
               atende, qualifica e agenda clientes em menos de 7 segundos,
             </span>{" "}
-            colocando cada lead em atendimento e no caminho do agendamento — sem fila e sem horário.
+            colocando cada lead em atendimento e no caminho do agendamento, sem fila e sem horário.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">

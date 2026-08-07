@@ -56,9 +56,9 @@ export default async function HojePage() {
           </h1>
           <p className="mt-1 text-sm text-texto-suave">
             {totalAcoes === 0
-              ? "Tudo em dia — nenhuma ação pendente. ✨"
+              ? "Tudo em dia, nenhuma ação pendente. ✨"
               : `${totalAcoes} ${totalAcoes === 1 ? "item precisa" : "itens precisam"} da sua atenção${
-                  d.valorEmAcao > 0 ? ` — ${brl(d.valorEmAcao)} em jogo` : ""
+                  d.valorEmAcao > 0 ? `, ${brl(d.valorEmAcao)} em jogo` : ""
                 }.`}
           </p>
         </div>
@@ -141,7 +141,7 @@ export default async function HojePage() {
           itens={d.agenda24h.map((a) => ({
             chave: `a${a.id}`,
             href: "/agenda",
-            titulo: `${hhmm(a.inicioISO)} — ${a.nome}`,
+            titulo: `${hhmm(a.inicioISO)} · ${a.nome}`,
             detalhe: a.servico,
             acao: a.lembreteEnviado ? "Lembrete enviado ✓" : "Lembrete ainda não enviado",
           }))}

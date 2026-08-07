@@ -47,7 +47,7 @@ export default async function ResultadosPage({
           </h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-texto-suave">
             <ShieldCheck size={14} className="text-marca" />
-            Cada número é um evento real registrado — nada estimado.
+            Cada número é um evento real registrado. Nada estimado.
           </p>
         </div>
 
@@ -74,7 +74,7 @@ export default async function ResultadosPage({
           <p className="mx-auto mt-2 max-w-md text-sm text-texto-suave">
             Esta tela se preenche sozinha conforme a operação roda: cada lead recebido,
             resposta da IA, agendamento, comparecimento e venda vira um fato datado aqui.
-            Assim que os primeiros leads chegarem, os resultados aparecem — sem você
+            Assim que os primeiros leads chegarem, os resultados aparecem, sem você
             precisar lançar nada à mão.
           </p>
           <Link
@@ -119,7 +119,7 @@ export default async function ResultadosPage({
               <Zap size={18} className="text-marca" /> Funil de conversão
             </h2>
             <p className="mb-5 text-sm text-texto-suave">
-              Quantos leads distintos chegaram a cada etapa — e quanto converteu da etapa anterior.
+              Quantos leads distintos chegaram a cada etapa, e quanto converteu da etapa anterior.
             </p>
             <div className="space-y-2.5">
               {r.etapas.map((e) => {
@@ -159,7 +159,7 @@ export default async function ResultadosPage({
               <BadgeDollarSign size={18} className="text-marca" /> Receita por canal
             </h2>
             <p className="mb-5 text-sm text-texto-suave">
-              De onde veio o dinheiro fechado — atribuído ao canal de origem do lead.
+              De onde veio o dinheiro fechado, atribuído ao canal de origem do lead.
             </p>
             {r.canais.length === 0 ? (
               <p className="text-sm text-texto-suave">

@@ -39,7 +39,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">
-          Recorrência — Carteira de Clientes
+          Recorrência · Carteira de Clientes
         </h1>
         <p className="mt-1 text-texto-suave">
           Só clientes que já fecharam serviço. Acompanhe frequência, risco de perda e seus melhores clientes.
@@ -55,7 +55,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
       {/* Alerta de Churn */}
       <section className="rounded-lg border border-borda bg-superficie p-6">
         <h2 className="flex items-center gap-2 font-corpo text-lg font-bold text-texto">
-          <AlertTriangle size={18} className="text-amber-600" /> Alerta de Churn — reative agora
+          <AlertTriangle size={18} className="text-amber-600" /> Alerta de Churn: reative agora
         </h2>
         <p className="mt-1 text-sm text-texto-suave">
           Clientes recorrentes que passaram da cadência habitual. Mande a IA reativar com um toque.

@@ -51,7 +51,7 @@ export function ExcluirClienteCard({
     <form onSubmit={excluir} className="rounded-xl border border-red-300 bg-red-50/40 p-6">
       <div className="flex items-center gap-2">
         <AlertTriangle size={18} className="text-red-600" />
-        <h2 className="font-corpo text-lg font-bold text-red-700">Zona de perigo — Excluir conta</h2>
+        <h2 className="font-corpo text-lg font-bold text-red-700">Zona de perigo: Excluir conta</h2>
       </div>
       <p className="mt-1 text-sm text-texto-suave">
         Exclui <strong>permanentemente</strong> a conta deste cliente do SaaS: usuários (login no

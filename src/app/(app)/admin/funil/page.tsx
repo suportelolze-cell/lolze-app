@@ -46,7 +46,7 @@ export default async function AdminFunilPage({
               <Workflow size={22} className="text-marca" /> Funil da Lolze
             </h1>
             <p className="mt-1 text-sm text-texto-suave">
-              A jornada de aquisição da própria Lolze — do diagnóstico à ativação. Eventos
+              A jornada de aquisição da própria Lolze, do diagnóstico à ativação. Eventos
               reais registrados; nada estimado.
             </p>
           </div>
@@ -81,7 +81,7 @@ export default async function AdminFunilPage({
           {/* Topo de funil — engajamento (não é pessoa-a-pessoa) */}
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-texto-suave">
-              <Sparkles size={15} className="text-marca" /> Topo — interesse
+              <Sparkles size={15} className="text-marca" /> Topo: interesse
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {r.topo.map((t) => (
@@ -100,7 +100,7 @@ export default async function AdminFunilPage({
               <ShoppingCart size={18} className="text-marca" /> Jornada de compra
             </h2>
             <p className="mb-5 text-sm text-texto-suave">
-              Da aplicação até a ativação — conversão sobre a base (aplicações) e sobre a etapa anterior.
+              Da aplicação até a ativação. Conversão sobre a base (aplicações) e sobre a etapa anterior.
             </p>
             <div className="space-y-2.5">
               {r.jornada.map((e) => {

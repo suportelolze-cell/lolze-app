@@ -29,7 +29,7 @@ export function CriarPrecosButton({ faltando }: { faltando: number }) {
   if (faltando <= 0) {
     return (
       <p className="flex items-center gap-1.5 text-sm font-medium text-marca">
-        <Check size={15} /> Todos os planos já têm preço no Stripe — cobrança ativa.
+        <Check size={15} /> Todos os planos já têm preço no Stripe. Cobrança ativa.
       </p>
     );
   }
@@ -37,7 +37,7 @@ export function CriarPrecosButton({ faltando }: { faltando: number }) {
   return (
     <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
       <p className="text-sm text-amber-800">
-        {faltando} plano(s) ainda sem preço no Stripe — o cadastro/pagamento não cobra até criar.
+        {faltando} plano(s) ainda sem preço no Stripe. O cadastro/pagamento não cobra até criar.
       </p>
       <button
         onClick={criar}

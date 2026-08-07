@@ -29,7 +29,7 @@ export function PersonaHistorico({
   async function reverter(id: number) {
     if (
       !window.confirm(
-        "Restaurar esta versão da persona? A versão atual é salva no histórico antes — então dá para voltar atrás depois."
+        "Restaurar esta versão da persona? A versão atual é salva no histórico antes, então dá para voltar atrás depois."
       )
     )
       return;
@@ -47,7 +47,7 @@ export function PersonaHistorico({
         <History size={18} className="text-marca" /> Histórico da persona
       </h2>
       <p className="mb-4 text-sm text-texto-suave">
-        Cada vez que a persona é salva, a versão anterior fica guardada aqui — dá para
+        Cada vez que a persona é salva, a versão anterior fica guardada aqui, dá para
         restaurar qualquer uma (a versão atual é salva antes, então nada se perde).
       </p>
 

@@ -41,7 +41,7 @@ export function GoogleAdsForm({ tenantId, cfg }: { tenantId: string; cfg: Google
         <h2 className="font-corpo text-lg font-bold text-texto">Conexão Google Ads</h2>
       </div>
       <p className="mt-1 text-sm text-texto-suave">
-        Conecte a conta de anúncios do cliente para sincronizar o gasto e os cliques diários — que
+        Conecte a conta de anúncios do cliente para sincronizar o gasto e os cliques diários, que
         aparecem no painel (Investimento e Custo por Agendamento) e no topo do Raio-X do Funil. Igual
         ao Meta, mas o Google usa um <b>refresh token</b> com escopo <code>adwords</code>.
       </p>

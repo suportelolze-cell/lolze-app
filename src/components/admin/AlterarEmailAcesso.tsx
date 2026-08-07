@@ -64,7 +64,7 @@ export function AlterarEmailAcesso({
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-texto">E-mail atual</span>
           <p className="rounded-lg border border-borda bg-fundo px-4 py-2.5 text-sm text-texto-suave">
-            {emailAtual || "— sem usuário dono cadastrado —"}
+            {emailAtual || "sem usuário dono cadastrado"}
           </p>
         </div>
 

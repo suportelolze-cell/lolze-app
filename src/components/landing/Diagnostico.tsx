@@ -146,9 +146,9 @@ export function Diagnostico() {
             existe justamente para recuperar essa janela.
           </p>
           <p className="mx-auto mt-4 max-w-md text-[11px] leading-relaxed text-bege-principal/45">
-            Premissas: dos leads fora do horário, 40–70% seriam recuperáveis com atendimento
-            imediato; desses, 10–20% viram venda ao ticket informado. É uma estimativa para
-            dimensionar a dor — não uma garantia de resultado.
+            Premissas: dos leads fora do horário, 40-70% seriam recuperáveis com atendimento
+            imediato; desses, 10-20% viram venda ao ticket informado. É uma estimativa para
+            dimensionar a dor, não uma garantia de resultado.
           </p>
           <AplicarButton className="mt-8 inline-flex items-center gap-2 rounded-full bg-bege-principal px-7 py-3.5 text-base font-bold text-escuro-quente transition-transform hover:scale-[1.03]">
             Quero parar de perder dinheiro <ArrowRight size={18} />

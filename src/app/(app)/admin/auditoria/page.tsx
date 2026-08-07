@@ -39,7 +39,7 @@ export default async function AdminAuditoriaPage() {
           <ScrollText size={22} className="text-marca" /> Auditoria
         </h1>
         <p className="mt-1 text-sm text-texto-suave">
-          Trilha de quem alterou o quê no agente e nas configurações — persona, IA ligada/desligada,
+          Trilha de quem alterou o quê no agente e nas configurações: persona, IA ligada/desligada,
           planos, acessos e impersonações. Append-only.
         </p>
       </header>

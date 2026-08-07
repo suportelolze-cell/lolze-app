@@ -56,7 +56,7 @@ export function IaSwitchCard({ inicial }: { inicial: boolean }) {
             <p className="mt-1 max-w-md text-xs text-texto-suave">
               {ativa
                 ? "A IA está atendendo e respondendo seus clientes automaticamente."
-                : "A IA está PARADA — não responde nenhum cliente. As mensagens continuam chegando para a equipe atender manualmente."}
+                : "A IA está PARADA. Não responde nenhum cliente. As mensagens continuam chegando para a equipe atender manualmente."}
             </p>
             {erro && <p className="mt-1 text-xs font-medium text-red-600">{erro}</p>}
           </div>
@@ -100,7 +100,7 @@ export function IaSwitchPill({ inicial }: { inicial: boolean }) {
     <button
       onClick={alternar}
       disabled={salvando}
-      title={ativa ? "IA ligada — clique para desligar" : "IA desligada — clique para ligar"}
+      title={ativa ? "IA ligada, clique para desligar" : "IA desligada, clique para ligar"}
       className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-60 ${
         ativa
           ? "border-marca/40 bg-marca-suave text-marca hover:bg-marca-suave/70"

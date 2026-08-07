@@ -101,7 +101,7 @@ export function LgpdLeadActions({ leadId, nome }: { leadId: number; nome: string
             />
             <span>
               <strong>Anonimizar</strong> (recomendado): remove nome, telefone, e-mail, conversas e
-              agendamentos, mas mantém o valor das vendas nos seus relatórios — sem identificar a
+              agendamentos, mas mantém o valor das vendas nos seus relatórios, sem identificar a
               pessoa.
             </span>
           </label>
