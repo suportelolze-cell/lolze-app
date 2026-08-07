@@ -101,14 +101,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           }}
         />
         <div className="relative mx-auto max-w-4xl">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-borda bg-superficie px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-texto-suave">
-            <span className="h-1.5 w-1.5 rounded-full bg-marca" />
-            <span className="text-marca">Sistema</span>
-            <span className="font-display italic lowercase tracking-normal text-texto">ativo</span>
-            <span aria-hidden>·</span> Respondendo em tempo real
-          </span>
-
-          <h1 className="mt-7 font-corpo text-5xl font-semibold leading-[1.04] tracking-tight text-texto sm:text-6xl lg:text-7xl">
+          <h1 className="font-corpo text-5xl font-semibold leading-[1.04] tracking-tight text-texto sm:text-6xl lg:text-7xl">
             Pare de <span className="font-display font-medium italic">perder vendas</span>{" "}
             no WhatsApp e{" "}
             <span className="font-display font-medium italic">sangrar o caixa</span> da sua
