@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AssinaturaPage() {
   const s = await getSessao();
-  if (!s.userId) redirect("/login");
+  if (!s.userId) redirect("/auth/login");
   if (s.papel === "superadmin") redirect("/painel"); // admin nunca é bloqueado
   const billing = await getBillingInfo();
   if (billing.status === "ativo") redirect("/painel"); // já pago → entra

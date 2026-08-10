@@ -165,7 +165,7 @@ export function CadastroForm({
               <p className="text-sm font-medium text-red-600">
                 {erro}{" "}
                 {/já existe/i.test(erro) && (
-                  <a href="/login" className="underline">
+                  <a href="/auth/login" className="underline">
                     Ir para o login
                   </a>
                 )}
@@ -184,7 +184,7 @@ export function CadastroForm({
 
           <p className="mt-5 text-center text-xs text-texto-suave">
             Já tem conta?{" "}
-            <a href="/login" className="font-semibold text-marca underline">
+            <a href="/auth/login" className="font-semibold text-marca underline">
               Entrar
             </a>
           </p>

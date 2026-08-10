@@ -1,8 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Rotas acessíveis sem login (landing pública + login/cadastro + páginas legais)
-const PUBLICAS = ["/", "/login", "/cadastro", "/privacidade", "/termos", "/cookies"];
+// Rotas acessíveis sem login (landing pública + auth + cadastro + páginas legais)
+const PUBLICAS = [
+  "/",
+  "/login",
+  "/cadastro",
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot",
+  "/auth/reset",
+  "/auth/callback",
+  "/privacidade",
+  "/termos",
+  "/cookies",
+];
 
 export async function middleware(req: NextRequest) {
   let res = NextResponse.next({ request: req });
@@ -35,10 +47,10 @@ export async function middleware(req: NextRequest) {
 
   if (!user && !publica) {
     const url = req.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
-  if (user && path === "/login") {
+  if (user && (path === "/login" || path === "/auth/login")) {
     const url = req.nextUrl.clone();
     url.pathname = "/painel";
     return NextResponse.redirect(url);
