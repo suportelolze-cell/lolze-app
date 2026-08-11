@@ -7,6 +7,7 @@ import { Logo } from "@/components/Logo";
 import { crmBrowser } from "@/lib/supabase/browser";
 import { assinarPlano, gerenciarAssinatura } from "@/lib/billing/actions";
 import type { BillingInfo } from "@/lib/billing/data";
+import { ROTAS } from "@/lib/rotas";
 
 const brl = (c: number) =>
   (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -44,7 +45,7 @@ export function Paywall({ billing, papel }: { billing: BillingInfo; papel: strin
 
   async function sair() {
     await crmBrowser.auth.signOut();
-    router.push("/auth/login");
+    router.push(ROTAS.auth.login);
     router.refresh();
   }
 

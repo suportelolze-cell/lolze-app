@@ -1,30 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-
-// Rotas acessíveis sem login (landing pública + auth + cadastro + páginas legais)
-const PUBLICAS = [
-  "/",
-  "/login",
-  "/cadastro",
-  "/auth/login",
-  "/auth/register",
-  "/auth/forgot",
-  "/auth/reset",
-  "/auth/callback",
-  "/privacidade",
-  "/termos",
-  "/cookies",
-];
+import { ROTAS, ROTAS_PUBLICAS, ROTAS_LEGAIS, ehRotaAdmin } from "@/lib/rotas";
 
 // Split por subdomínio (só vale nestes hosts de produção). Em localhost e nos
 // previews *.vercel.app o app roda "tudo junto", como antes.
 const HOST_APP = "app.lolze.com.br";
 const HOST_ADMIN = "admin.lolze.com.br";
 const HOSTS_RAIZ = ["lolze.com.br", "www.lolze.com.br"];
-
-const LEGAIS = ["/privacidade", "/termos", "/cookies"];
-
-const ehAdminPath = (p: string) => p === "/admin" || p.startsWith("/admin/");
 
 export async function middleware(req: NextRequest) {
   let res = NextResponse.next({ request: req });
@@ -79,29 +61,29 @@ export async function middleware(req: NextRequest) {
     if (ehRaiz) {
       // A raiz serve só a landing e as páginas legais. O resto vai pro subdomínio
       // certo: /admin* pro admin, qualquer outra coisa (auth, app) pro app.
-      const permitidoNaRaiz = path === "/" || LEGAIS.includes(path);
-      if (!permitidoNaRaiz) return paraHost(ehAdminPath(path) ? HOST_ADMIN : HOST_APP);
+      const permitidoNaRaiz = path === ROTAS.landing || ROTAS_LEGAIS.includes(path);
+      if (!permitidoNaRaiz) return paraHost(ehRotaAdmin(path) ? HOST_ADMIN : HOST_APP);
     } else if (ehApp) {
       // App do cliente. O /admin NÃO existe aqui (fica isolado no admin.).
-      if (ehAdminPath(path)) return paraHost(HOST_ADMIN);
+      if (ehRotaAdmin(path)) return paraHost(HOST_ADMIN);
       // A landing não aparece no app: a raiz vai pro painel (ou login).
-      if (path === "/") return paraPath(user ? "/painel" : "/auth/login");
+      if (path === ROTAS.landing) return paraPath(user ? ROTAS.app.painel : ROTAS.auth.login);
     } else if (ehAdmin) {
       // Admin (atrás do Cloudflare Access + guard de superadmin no layout).
       // A raiz vai pro painel de admin (ou login). As demais rotas (auth, /admin
       // e as de cliente, usadas na impersonação) seguem normalmente.
-      if (path === "/") return paraPath(user ? "/admin" : "/auth/login");
+      if (path === ROTAS.landing) return paraPath(user ? ROTAS.admin : ROTAS.auth.login);
     }
   }
 
   // ---------- Autenticação (o destino do "já logado" é ciente do host) ----------
-  const publica = PUBLICAS.includes(path);
+  const publica = ROTAS_PUBLICAS.includes(path);
 
   if (!user && !publica) {
-    return paraPath("/auth/login");
+    return paraPath(ROTAS.auth.login);
   }
-  if (user && (path === "/login" || path === "/auth/login")) {
-    return paraPath(ehAdmin ? "/admin" : "/painel");
+  if (user && (path === ROTAS.legado.login || path === ROTAS.auth.login)) {
+    return paraPath(ehAdmin ? ROTAS.admin : ROTAS.app.painel);
   }
 
   return res;

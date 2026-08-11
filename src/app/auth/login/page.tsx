@@ -6,6 +6,7 @@ import { LogIn } from "lucide-react";
 import { crmBrowser } from "@/lib/supabase/browser";
 import { Button, Acento } from "@/components/ui";
 import { AuthShell, authInputCls } from "@/components/auth/AuthShell";
+import { ROTAS } from "@/lib/rotas";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function LoginPage() {
       setErro("E-mail ou senha inválidos.");
       return;
     }
-    router.push("/painel");
+    router.push(ROTAS.app.painel);
     router.refresh();
   }
 
@@ -58,7 +59,7 @@ export default function LoginPage() {
             <label htmlFor="senha" className="block text-sm font-semibold text-texto">
               Senha
             </label>
-            <a href="/auth/forgot" className="text-xs font-semibold text-marca hover:text-marca-escura">
+            <a href={ROTAS.auth.forgot} className="text-xs font-semibold text-marca hover:text-marca-escura">
               Esqueci a senha
             </a>
           </div>
@@ -84,7 +85,7 @@ export default function LoginPage() {
 
       <p className="mt-5 text-center text-sm text-texto-suave">
         Não tem conta?{" "}
-        <a href="/auth/register" className="font-semibold text-marca hover:text-marca-escura">
+        <a href={ROTAS.auth.register} className="font-semibold text-marca hover:text-marca-escura">
           Criar conta
         </a>
       </p>

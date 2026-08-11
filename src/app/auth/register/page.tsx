@@ -1,13 +1,16 @@
-import { redirect } from "next/navigation";
+import { CadastroForm } from "@/components/cadastro/CadastroForm";
+import { getPlanosPublicos } from "@/lib/cadastro/data";
 
-// O cadastro fica em /cadastro (ligado à escolha de plano/Stripe). /auth/register
-// é o apelido no namespace de auth: redireciona preservando o ?plano.
-export default async function RegisterRedirect({
+// Cadastro canônico, dentro do namespace de auth protegido (/auth/*).
+export const dynamic = "force-dynamic";
+
+export default async function RegisterPage({
   searchParams,
 }: {
   searchParams: Promise<{ plano?: string }>;
 }) {
+  const planos = await getPlanosPublicos();
   const sp = await searchParams;
-  const qs = sp?.plano ? `?plano=${encodeURIComponent(sp.plano)}` : "";
-  redirect(`/cadastro${qs}`);
+  const planoInicial = sp?.plano ?? planos[0]?.id ?? "";
+  return <CadastroForm planos={planos} planoInicial={planoInicial} />;
 }

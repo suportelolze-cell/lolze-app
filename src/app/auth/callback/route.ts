@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { getCrmServer } from "@/lib/supabase/server";
+import { ROTAS } from "@/lib/rotas";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +17,8 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null;
 
   // Só aceita caminho relativo interno (evita open redirect).
-  const nextRaw = searchParams.get("next") || "/painel";
-  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/painel";
+  const nextRaw = searchParams.get("next") || ROTAS.app.painel;
+  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : ROTAS.app.painel;
 
   const supabase = await getCrmServer();
 
@@ -30,5 +31,5 @@ export async function GET(req: NextRequest) {
   }
 
   // Link ausente/inválido/expirado: manda pedir um novo.
-  return NextResponse.redirect(new URL("/auth/forgot?erro=link", origin));
+  return NextResponse.redirect(new URL(`${ROTAS.auth.forgot}?erro=link`, origin));
 }

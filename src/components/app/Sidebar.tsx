@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ROTAS } from "@/lib/rotas";
 import {
   Sunrise,
   LayoutDashboard,
@@ -73,7 +74,7 @@ export function Sidebar({
 
   async function sair() {
     await crmBrowser.auth.signOut();
-    router.push("/auth/login");
+    router.push(ROTAS.auth.login);
     router.refresh();
   }
 
