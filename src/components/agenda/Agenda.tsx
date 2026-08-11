@@ -10,6 +10,7 @@ import { MonthGrid } from "./MonthGrid";
 import { AntiFaltasPanel } from "./AntiFaltasPanel";
 import { CompromissoDetail } from "./CompromissoDetail";
 import { AgendaFormModal, type ModoModal } from "./AgendaFormModal";
+import { PageHeader, Acento, Button, Badge, buttonClasses } from "@/components/ui";
 
 type View = "dia" | "semana" | "mes";
 
@@ -35,8 +36,8 @@ function Chip({ ativo, onClick, children }: { ativo: boolean; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-        ativo ? "border-marca bg-marca-suave text-marca" : "border-borda bg-superficie text-texto-suave hover:text-texto"
+      className={`rounded-pill border px-3 py-1.5 text-xs font-semibold transition-colors ${
+        ativo ? "border-marca bg-marca-suave text-marca" : "border-borda bg-superficie text-texto-suave hover:border-marca hover:text-marca"
       }`}
     >
       {children}
@@ -107,50 +108,44 @@ export function Agenda({
         : `Semana de ${diasISO[0].slice(8)}/${diasISO[0].slice(5, 7)}`;
 
   return (
-    <div className="flex flex-col gap-5">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">Agenda Mágica</h1>
-          <p className="mt-1 text-texto-suave">
-            Sua agenda lotada e blindada contra faltas. Deixe a IA cuidar dos lembretes.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {googleConectado ? (
-            <span className="flex items-center gap-1.5 rounded-full bg-marca-suave px-3 py-1.5 text-xs font-semibold text-marca">
-              <RefreshCw size={13} /> Sincronizado com Google Calendar
-            </span>
-          ) : (
-            <a
-              href="/configuracoes"
-              className="flex items-center gap-1.5 rounded-full border border-borda px-3 py-1.5 text-xs font-semibold text-texto-suave hover:text-texto"
-            >
-              <RefreshCw size={13} /> Conectar Google Calendar
-            </a>
-          )}
-          <button
-            onClick={() => setModal("bloquear")}
-            className="flex items-center gap-1.5 rounded-sm border border-borda px-3 py-2 text-sm font-semibold text-texto hover:bg-superficie"
-          >
-            <Ban size={15} /> Bloquear Horário
-          </button>
-          <button
-            onClick={() => setModal("agendar")}
-            className="flex items-center gap-1.5 rounded-sm bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
-          >
-            <Plus size={16} /> Novo Agendamento
-          </button>
-        </div>
-      </header>
+    <div className="flex flex-col">
+      <PageHeader
+        titulo={
+          <>
+            Agenda <Acento>Mágica</Acento>
+          </>
+        }
+        descricao="Sua agenda lotada e blindada contra faltas. Deixe a IA cuidar dos lembretes."
+        acao={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {googleConectado ? (
+              <Badge tom="menta">
+                <RefreshCw size={13} /> Sincronizado com Google Calendar
+              </Badge>
+            ) : (
+              <a href="/configuracoes" className={buttonClasses("secondary", "sm")}>
+                <RefreshCw size={13} /> Conectar Google Calendar
+              </a>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => setModal("bloquear")}>
+              <Ban size={15} /> Bloquear Horário
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => setModal("agendar")}>
+              <Plus size={16} /> Novo Agendamento
+            </Button>
+          </div>
+        }
+      />
 
+      <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-1 rounded-md bg-superficie p-1">
+          <div className="flex gap-1 rounded-pill bg-fundo-2 p-1">
             {(["dia", "semana", "mes"] as View[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`rounded px-4 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                className={`rounded-pill px-4 py-1.5 text-sm font-semibold capitalize transition-colors ${
                   view === v ? "bg-marca text-bege-principal" : "text-texto-suave hover:text-texto"
                 }`}
               >
@@ -160,14 +155,14 @@ export function Agenda({
           </div>
           {/* Navegação de período */}
           <div className="flex items-center gap-1">
-            <button onClick={() => navegar(-1)} className="rounded-md border border-borda p-2.5 text-texto-suave hover:bg-superficie hover:text-texto">
+            <button onClick={() => navegar(-1)} className="rounded-md border border-borda p-2.5 text-texto-suave hover:bg-fundo-2 hover:text-texto">
               <ChevronLeft size={16} />
             </button>
             <span className="min-w-[120px] text-center text-sm font-semibold text-texto">{label}</span>
-            <button onClick={() => navegar(1)} className="rounded-md border border-borda p-2.5 text-texto-suave hover:bg-superficie hover:text-texto">
+            <button onClick={() => navegar(1)} className="rounded-md border border-borda p-2.5 text-texto-suave hover:bg-fundo-2 hover:text-texto">
               <ChevronRight size={16} />
             </button>
-            <button onClick={() => router.push("/agenda")} className="ml-1 rounded-md border border-borda px-2.5 py-1.5 text-xs font-semibold text-texto-suave hover:bg-superficie hover:text-texto">
+            <button onClick={() => router.push("/agenda")} className="ml-1 rounded-md border border-borda px-2.5 py-1.5 text-xs font-semibold text-texto-suave hover:bg-fundo-2 hover:text-texto">
               Hoje
             </button>
           </div>
@@ -192,6 +187,7 @@ export function Agenda({
 
       <CompromissoDetail agendamento={selecionado} onClose={() => setSelecionado(null)} />
       <AgendaFormModal modo={modal} onClose={() => setModal(null)} />
+      </div>
     </div>
   );
 }
