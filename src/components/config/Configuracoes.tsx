@@ -33,6 +33,7 @@ import { IaSwitchCard } from "./IaSwitchCard";
 import { CaptacaoNumerosCard } from "./CaptacaoNumerosCard";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
+import { PageHeader, Acento, Button, Badge, StatusDot, buttonClasses } from "@/components/ui";
 
 type Aba = "identidade" | "integracoes" | "conhecimento" | "equipe" | "faturamento";
 
@@ -78,30 +79,21 @@ export function Configuracoes({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Cabeçalho */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">
-            Sala de Máquinas
-          </h1>
-          <p className="mt-1 text-texto-suave">
-            Gerencie suas integrações, permissões de equipe e o coração da sua
-            operação.
-          </p>
-        </div>
-        <button
-          onClick={salvar}
-          className={`flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold transition-colors ${
-            salvo
-              ? "bg-marca-suave text-marca"
-              : "bg-marca text-bege-principal hover:scale-[1.02]"
-          }`}
-        >
-          {salvo ? <Check size={16} /> : <Save size={16} />}
-          {salvo ? "Salvo!" : "Salvar Todas as Alterações"}
-        </button>
-      </header>
+    <div className="flex flex-col">
+      <PageHeader
+        titulo={
+          <>
+            Sala de <Acento>Máquinas</Acento>
+          </>
+        }
+        descricao="Gerencie suas integrações, permissões de equipe e o coração da sua operação."
+        acao={
+          <Button variant={salvo ? "verde" : "primary"} onClick={salvar}>
+            {salvo ? <Check size={16} /> : <Save size={16} />}
+            {salvo ? "Salvo!" : "Salvar Todas as Alterações"}
+          </Button>
+        }
+      />
 
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Menu interno */}
@@ -113,7 +105,7 @@ export function Configuracoes({
               className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-md px-3 py-2.5 text-left text-sm font-medium transition-colors ${
                 aba === id
                   ? "bg-marca-suave text-marca"
-                  : "text-texto-suave hover:bg-superficie hover:text-texto"
+                  : "text-texto-suave hover:bg-fundo-2 hover:text-texto"
               }`}
             >
               <Icon size={17} /> {rotulo}
@@ -178,7 +170,7 @@ function Campo({
       <input
         value={valor}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none focus:border-marca"
+        className="w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none transition-colors focus:border-marca"
       />
       {micro && <p className="mt-1 text-xs text-texto-suave">{micro}</p>}
     </div>
@@ -217,14 +209,9 @@ function Identidade({
 /* ---------- Aba 2: Integrações ---------- */
 function StatusBadge({ on, texto }: { on: boolean; texto: string }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-        on ? "bg-marca-suave text-marca" : "bg-red-100 text-red-600"
-      }`}
-    >
-      <span className={`h-2 w-2 rounded-full ${on ? "bg-marca" : "bg-red-500"}`} />
-      {texto}
-    </span>
+    <Badge tom={on ? "menta" : "erro"}>
+      <StatusDot tom={on ? "menta" : "erro"} /> {texto}
+    </Badge>
   );
 }
 
@@ -238,7 +225,7 @@ function CardIntegracao({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-borda bg-fundo p-4">
+    <div className="rounded-lg border border-borda bg-fundo-2 p-4">
       <div className="mb-2 flex items-center gap-2">
         <span className="flex h-9 w-9 items-center justify-center rounded-md bg-superficie text-texto">
           <Icon size={18} />
@@ -304,22 +291,19 @@ function Integracoes({
 
             {googleConectado ? (
               <form action={desconectarGoogle} className="shrink-0">
-                <button
-                  type="submit"
-                  className="rounded-md border border-borda px-3 py-2 text-xs font-semibold text-texto hover:bg-superficie"
-                >
+                <Button type="submit" variant="secondary" size="sm">
                   Desconectar
-                </button>
+                </Button>
               </form>
             ) : (
               <a
                 href={googleConfigurado ? "/api/google/start" : undefined}
                 aria-disabled={!googleConfigurado}
-                className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${
+                className={
                   googleConfigurado
-                    ? "bg-marca text-bege-principal"
-                    : "pointer-events-none cursor-not-allowed bg-superficie text-texto-suave"
-                }`}
+                    ? buttonClasses("verde", "sm", "shrink-0")
+                    : "pointer-events-none shrink-0 cursor-not-allowed rounded-pill bg-fundo-2 px-4 py-2 text-xs font-semibold text-texto-suave"
+                }
               >
                 Sincronizar com Google Calendar
               </a>
@@ -374,7 +358,7 @@ function Faturamento({ billing }: { billing: BillingInfo }) {
           <span className="font-corpo text-lg font-bold text-texto">
             Plano {billing.planoNome || "—"}
           </span>
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${st.classe}`}>
+          <span className={`rounded-pill px-2.5 py-0.5 text-xs font-semibold ${st.classe}`}>
             {st.rotulo}
           </span>
         </div>
@@ -391,21 +375,13 @@ function Faturamento({ billing }: { billing: BillingInfo }) {
 
       <div className="mt-4 flex flex-wrap gap-2">
         {billing.temAssinatura ? (
-          <button
-            onClick={() => ir(gerenciarAssinatura())}
-            disabled={carregando}
-            className="flex items-center gap-2 rounded-md border border-borda px-4 py-2 text-sm font-semibold text-texto hover:bg-fundo disabled:opacity-50"
-          >
+          <Button variant="secondary" onClick={() => ir(gerenciarAssinatura())} disabled={carregando}>
             <FileDown size={15} /> {carregando ? "Abrindo…" : "Gerenciar assinatura / notas"}
-          </button>
+          </Button>
         ) : billing.temCheckout ? (
-          <button
-            onClick={() => ir(assinarPlano())}
-            disabled={carregando}
-            className="rounded-sm bg-marca px-5 py-2.5 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.02] disabled:opacity-50"
-          >
+          <Button variant="verde" onClick={() => ir(assinarPlano())} disabled={carregando}>
             {carregando ? "Redirecionando…" : "Assinar agora"}
-          </button>
+          </Button>
         ) : (
           <p className="text-sm text-texto-suave">
             Pagamento online ainda não habilitado nesta conta. Fale com o suporte.
@@ -439,7 +415,7 @@ function UsoIACard({ billing }: { billing: BillingInfo }) {
       : "Tudo tranquilo, você está bem dentro da sua franquia de IA.";
 
   return (
-    <div className="mt-4 rounded-lg border border-borda bg-superficie p-5">
+    <div className="mt-4 rounded-lg border border-borda bg-fundo-2 p-5">
       <div className="flex items-center gap-2">
         <Gauge size={16} className="text-marca" />
         <span className="text-sm font-bold capitalize text-texto">Uso de IA em {mes}</span>
@@ -451,7 +427,7 @@ function UsoIACard({ billing }: { billing: BillingInfo }) {
         </p>
       ) : (
         <>
-          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-fundo">
+          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-borda">
             <div
               className={`h-full rounded-full ${corBarra} transition-all`}
               style={{ width: `${pct}%` }}
@@ -494,16 +470,12 @@ function RespostasRapidasPanel({ inicial }: { inicial: string }) {
         onChange={(e) => setTexto(e.target.value)}
         rows={6}
         placeholder={"Olá! Tudo bem? Como posso te ajudar?\nConsigo te encaixar ainda esta semana. Prefere manhã ou tarde?"}
-        className="w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none focus:border-marca"
+        className="w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none transition-colors focus:border-marca"
       />
-      <button
-        onClick={salvar}
-        disabled={salvando}
-        className="mt-3 flex items-center gap-2 rounded-sm bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02] disabled:opacity-50"
-      >
+      <Button variant="verde" onClick={salvar} disabled={salvando} className="mt-3">
         {salvo ? <Check size={16} /> : <Save size={16} />}
         {salvo ? "Salvo!" : salvando ? "Salvando..." : "Salvar respostas"}
-      </button>
+      </Button>
     </Painel>
   );
 }
@@ -519,7 +491,7 @@ function Painel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-borda bg-superficie p-6">
+    <div className="rounded-lg border border-borda bg-superficie p-6 shadow-card">
       <h2 className="font-corpo text-lg font-bold text-texto">{titulo}</h2>
       <p className="mb-5 mt-1 text-sm text-texto-suave">{micro}</p>
       {children}
