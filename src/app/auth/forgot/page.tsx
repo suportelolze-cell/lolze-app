@@ -5,20 +5,26 @@ import { Mail, ArrowLeft, MailCheck } from "lucide-react";
 import { crmBrowser } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui";
 import { AuthShell, authInputCls } from "@/components/auth/AuthShell";
+import { Turnstile, TURNSTILE_ATIVO } from "@/components/auth/Turnstile";
 import { ROTAS } from "@/lib/rotas";
 
 export default function ForgotPage() {
   const [email, setEmail] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [carregando, setCarregando] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
+    if (TURNSTILE_ATIVO && !captchaToken) return;
     setCarregando(true);
     const redirectTo = `${window.location.origin}${ROTAS.auth.callback}?next=${ROTAS.auth.reset}`;
     // Não tratamos o erro de forma diferente: sempre mostramos "enviado" para
     // não revelar se o e-mail existe (evita enumeração de contas).
-    await crmBrowser.auth.resetPasswordForEmail(email, { redirectTo });
+    await crmBrowser.auth.resetPasswordForEmail(email, {
+      redirectTo,
+      captchaToken: captchaToken ?? undefined,
+    });
     setCarregando(false);
     setEnviado(true);
   }
@@ -61,6 +67,8 @@ export default function ForgotPage() {
               className={authInputCls}
             />
           </div>
+
+          <Turnstile onToken={setCaptchaToken} />
 
           <Button type="submit" disabled={carregando} className="w-full">
             <Mail size={16} />
