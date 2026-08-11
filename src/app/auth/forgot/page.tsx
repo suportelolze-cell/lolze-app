@@ -5,6 +5,7 @@ import { Mail, ArrowLeft, MailCheck } from "lucide-react";
 import { crmBrowser } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui";
 import { AuthShell, authInputCls } from "@/components/auth/AuthShell";
+import { ROTAS } from "@/lib/rotas";
 
 export default function ForgotPage() {
   const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ export default function ForgotPage() {
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setCarregando(true);
-    const redirectTo = `${window.location.origin}/auth/callback?next=/auth/reset`;
+    const redirectTo = `${window.location.origin}${ROTAS.auth.callback}?next=${ROTAS.auth.reset}`;
     // Não tratamos o erro de forma diferente: sempre mostramos "enviado" para
     // não revelar se o e-mail existe (evita enumeração de contas).
     await crmBrowser.auth.resetPasswordForEmail(email, { redirectTo });
@@ -37,7 +38,7 @@ export default function ForgotPage() {
             Confira a caixa de entrada (e o spam).
           </p>
           <a
-            href="/auth/login"
+            href={ROTAS.auth.login}
             className="inline-flex items-center justify-center gap-1 text-sm font-semibold text-marca hover:text-marca-escura"
           >
             <ArrowLeft size={14} /> Voltar para o login
@@ -67,7 +68,7 @@ export default function ForgotPage() {
           </Button>
 
           <a
-            href="/auth/login"
+            href={ROTAS.auth.login}
             className="flex items-center justify-center gap-1 text-sm font-semibold text-texto-suave hover:text-texto"
           >
             <ArrowLeft size={14} /> Voltar para o login

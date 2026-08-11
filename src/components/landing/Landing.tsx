@@ -30,6 +30,7 @@ import { Aplicacao } from "./Aplicacao";
 import { Diagnostico } from "./Diagnostico";
 import { ProvaReal } from "./ProvaReal";
 import type { PlanoPublico } from "@/lib/cadastro/data";
+import { ROTAS } from "@/lib/rotas";
 
 // CTA principal → WhatsApp (troque pelo número real da operação)
 const WHATSAPP =
@@ -76,13 +77,13 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           </div>
           <div className="flex items-center gap-4">
             <Link
-              href="/auth/login"
+              href={ROTAS.auth.login}
               className="text-sm font-semibold text-texto transition-colors hover:text-marca"
             >
               Entrar
             </Link>
             <Link
-              href="/cadastro"
+              href={ROTAS.auth.register}
               className="rounded-full bg-marca px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
             >
               Criar conta
@@ -385,7 +386,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             </p>
           </div>
           <FooterCol titulo="Navegação" links={[["Solução", "#solucao"], ["Resultados", "#resultados"], ["Como funciona", "#funciona"], ["Dúvidas", "#faq"]]} />
-          <FooterCol titulo="Plataforma" links={[["Entrar", "/auth/login"], ["Aplicar Agora", WHATSAPP]]} />
+          <FooterCol titulo="Plataforma" links={[["Entrar", ROTAS.auth.login], ["Aplicar Agora", WHATSAPP]]} />
           <FooterCol titulo="Jurídico" links={[["Termos de Uso", "/termos"], ["Privacidade", "/privacidade"], ["Cookies", "/cookies"]]} />
         </div>
 
@@ -617,7 +618,7 @@ function PlanoCard({ p, destaque }: { p: PlanoPublico; destaque?: boolean }) {
         </AplicarButton>
       ) : (
         <Link
-          href={`/cadastro?plano=${p.id}`}
+          href={`${ROTAS.auth.register}?plano=${p.id}`}
           className={`mt-6 flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-transform hover:scale-[1.02] ${
             destaque ? "bg-marca text-bege-principal" : "bg-escuro-quente text-bege-principal"
           }`}

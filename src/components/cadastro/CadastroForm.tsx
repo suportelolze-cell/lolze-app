@@ -7,6 +7,7 @@ import { crmBrowser } from "@/lib/supabase/browser";
 import { Logo } from "@/components/Logo";
 import { cadastroPublico } from "@/lib/cadastro/actions";
 import type { PlanoPublico } from "@/lib/cadastro/data";
+import { ROTAS } from "@/lib/rotas";
 
 const brl = (cents: number) =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -55,7 +56,7 @@ export function CadastroForm({
       if (r.checkoutUrl) {
         window.location.href = r.checkoutUrl; // vai pro pagamento
       } else {
-        router.push("/onboarding");
+        router.push(ROTAS.app.onboarding);
         router.refresh();
       }
     } catch {
@@ -165,7 +166,7 @@ export function CadastroForm({
               <p className="text-sm font-medium text-red-600">
                 {erro}{" "}
                 {/já existe/i.test(erro) && (
-                  <a href="/auth/login" className="underline">
+                  <a href={ROTAS.auth.login} className="underline">
                     Ir para o login
                   </a>
                 )}
@@ -184,7 +185,7 @@ export function CadastroForm({
 
           <p className="mt-5 text-center text-xs text-texto-suave">
             Já tem conta?{" "}
-            <a href="/auth/login" className="font-semibold text-marca underline">
+            <a href={ROTAS.auth.login} className="font-semibold text-marca underline">
               Entrar
             </a>
           </p>

@@ -6,6 +6,7 @@ import { KeyRound, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
 import { crmBrowser } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui";
 import { AuthShell, authInputCls } from "@/components/auth/AuthShell";
+import { ROTAS } from "@/lib/rotas";
 
 export default function ResetPage() {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function ResetPage() {
     }
     setOk(true);
     setTimeout(() => {
-      router.push("/painel");
+      router.push(ROTAS.app.painel);
       router.refresh();
     }, 1200);
   }
@@ -72,7 +73,7 @@ export default function ResetPage() {
             Este link é inválido ou expirou. Peça um novo para redefinir a senha.
           </p>
           <a
-            href="/auth/forgot"
+            href={ROTAS.auth.forgot}
             className="inline-flex items-center justify-center gap-1 text-sm font-semibold text-marca hover:text-marca-escura"
           >
             <ArrowLeft size={14} /> Pedir novo link
