@@ -44,7 +44,7 @@ export function Paywall({ billing, papel }: { billing: BillingInfo; papel: strin
 
   async function sair() {
     await crmBrowser.auth.signOut();
-    router.push("/login");
+    router.push("/auth/login");
     router.refresh();
   }
 

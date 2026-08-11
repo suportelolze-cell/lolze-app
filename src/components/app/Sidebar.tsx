@@ -73,7 +73,7 @@ export function Sidebar({
 
   async function sair() {
     await crmBrowser.auth.signOut();
-    router.push("/login");
+    router.push("/auth/login");
     router.refresh();
   }
 

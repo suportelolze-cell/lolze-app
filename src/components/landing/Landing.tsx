@@ -76,7 +76,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           </div>
           <div className="flex items-center gap-4">
             <Link
-              href="/login"
+              href="/auth/login"
               className="text-sm font-semibold text-texto transition-colors hover:text-marca"
             >
               Entrar
@@ -385,7 +385,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             </p>
           </div>
           <FooterCol titulo="Navegação" links={[["Solução", "#solucao"], ["Resultados", "#resultados"], ["Como funciona", "#funciona"], ["Dúvidas", "#faq"]]} />
-          <FooterCol titulo="Plataforma" links={[["Entrar", "/login"], ["Aplicar Agora", WHATSAPP]]} />
+          <FooterCol titulo="Plataforma" links={[["Entrar", "/auth/login"], ["Aplicar Agora", WHATSAPP]]} />
           <FooterCol titulo="Jurídico" links={[["Termos de Uso", "/termos"], ["Privacidade", "/privacidade"], ["Cookies", "/cookies"]]} />
         </div>
 
