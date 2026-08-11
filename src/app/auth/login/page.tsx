@@ -6,6 +6,7 @@ import { LogIn } from "lucide-react";
 import { crmBrowser } from "@/lib/supabase/browser";
 import { Button, Acento } from "@/components/ui";
 import { AuthShell, authInputCls } from "@/components/auth/AuthShell";
+import { Turnstile, TURNSTILE_ATIVO, resetTurnstile } from "@/components/auth/Turnstile";
 import { ROTAS } from "@/lib/rotas";
 
 export default function LoginPage() {
@@ -14,15 +15,26 @@ export default function LoginPage() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
+    if (TURNSTILE_ATIVO && !captchaToken) {
+      setErro("Confirme que você não é um robô.");
+      return;
+    }
     setCarregando(true);
-    const { error } = await crmBrowser.auth.signInWithPassword({ email, password: senha });
+    const { error } = await crmBrowser.auth.signInWithPassword({
+      email,
+      password: senha,
+      options: captchaToken ? { captchaToken } : undefined,
+    });
     setCarregando(false);
     if (error) {
       setErro("E-mail ou senha inválidos.");
+      resetTurnstile();
+      setCaptchaToken(null);
       return;
     }
     router.push(ROTAS.app.painel);
@@ -74,6 +86,8 @@ export default function LoginPage() {
             className={authInputCls}
           />
         </div>
+
+        <Turnstile onToken={setCaptchaToken} />
 
         {erro && <p className="text-sm font-medium text-red-600">{erro}</p>}
 
