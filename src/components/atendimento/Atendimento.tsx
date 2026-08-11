@@ -19,6 +19,7 @@ import { ConversaList, type Filtro } from "./ConversaList";
 import { ChatWindow } from "./ChatWindow";
 import { LeadPanel } from "./LeadPanel";
 import { IaSwitchPill } from "@/components/config/IaSwitchCard";
+import { PageHeader, Acento, Badge, StatusDot } from "@/components/ui";
 
 function agora() {
   return new Date().toLocaleTimeString("pt-BR", {
@@ -332,29 +333,28 @@ export function Atendimento({
   return (
     <div className="flex h-[calc(100dvh-9rem)] flex-col lg:h-[calc(100vh-7rem)]">
       {/* Cabeçalho */}
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">
-            Central de Atendimento
-          </h1>
-          <p className="mt-1 text-texto-suave">
-            Assuma a conversa no momento certo e transforme o lead aquecido em
-            cliente pagante.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          {podeOverride && <IaSwitchPill inicial={iaAtiva} />}
-          <span className="flex items-center gap-1.5 text-texto-suave">
-            <span className="h-2 w-2 rounded-full bg-marca" /> {ativas} ativas
-          </span>
-          <span className="flex items-center gap-1.5 font-semibold text-amber-600">
-            🔥 {aguardando} aguardando humano
-          </span>
-        </div>
-      </header>
+      <PageHeader
+        titulo={
+          <>
+            Central de <Acento>Atendimento</Acento>
+          </>
+        }
+        descricao="Assuma a conversa no momento certo e transforme o lead aquecido em cliente pagante."
+        acao={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {podeOverride && <IaSwitchPill inicial={iaAtiva} />}
+            <Badge tom="neutro">
+              <StatusDot tom="menta" /> {ativas} ativas
+            </Badge>
+            <Badge tom={aguardando > 0 ? "atencao" : "neutro"}>
+              🔥 {aguardando} aguardando humano
+            </Badge>
+          </div>
+        }
+      />
 
       {aviso && (
-        <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
           <span className="flex items-center gap-2">
             <AlertTriangle size={16} /> {aviso}
           </span>
@@ -365,7 +365,7 @@ export function Atendimento({
       )}
 
       {/* 3 painéis (responsivo: lista⟷chat no mobile, painel no xl / overlay no mobile) */}
-      <div className="flex flex-1 overflow-hidden rounded-lg border border-borda">
+      <div className="flex flex-1 overflow-hidden rounded-lg border border-borda bg-superficie shadow-card">
         {/* Lista */}
         <div className={`${selecionada ? "hidden lg:block" : "block"} w-full shrink-0 lg:w-80`}>
           <ConversaList

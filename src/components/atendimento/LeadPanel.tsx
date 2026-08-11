@@ -12,6 +12,7 @@ import {
 } from "@/lib/supabase/crm-actions";
 import type { Conversa } from "@/lib/conversas";
 import type { Temperatura } from "@/lib/leads";
+import { Button } from "@/components/ui";
 
 const termometro: Record<Temperatura, { rotulo: string; classe: string; micro: string }> = {
   quente: {
@@ -132,7 +133,7 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
             Nota de Qualificação
           </p>
           <span
-            className={`inline-block rounded-md px-3 py-1 text-sm font-bold ${t.classe}`}
+            className={`inline-block rounded-pill px-3 py-1 text-sm font-bold ${t.classe}`}
           >
             {t.rotulo}
           </span>
@@ -157,14 +158,16 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
             <Merge size={13} /> Unificar contato
           </p>
           {dups === null ? (
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={procurarDuplicados}
               disabled={buscando}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-borda py-2 text-xs font-semibold text-texto-suave hover:bg-fundo disabled:opacity-50"
+              className="w-full"
             >
               {buscando ? <Loader2 size={13} className="animate-spin" /> : null}
               Procurar fichas duplicadas
-            </button>
+            </Button>
           ) : dups.length === 0 ? (
             <p className="text-xs text-texto-suave">
               Nenhuma ficha com o mesmo telefone ou nome. ✓
@@ -186,7 +189,7 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
                   <button
                     onClick={() => unificar(d)}
                     disabled={mesclando !== null}
-                    className="shrink-0 rounded-sm bg-marca px-2.5 py-1.5 text-[11px] font-bold text-bege-principal disabled:opacity-50"
+                    className="shrink-0 rounded-pill bg-marca px-3 py-1.5 text-[11px] font-bold text-bege-principal transition-colors hover:bg-marca-escura disabled:opacity-50"
                   >
                     {mesclando === d.id ? "Unificando…" : "Unificar"}
                   </button>
@@ -202,25 +205,16 @@ export function LeadPanel({ conversa }: { conversa: Conversa | null }) {
 
       {/* Ações rápidas */}
       <div className="space-y-2 border-t border-borda px-5 py-4">
-        <button
-          onClick={() => router.push("/agenda")}
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-2.5 text-sm font-semibold text-bege-principal"
-        >
+        <Button variant="primary" onClick={() => router.push("/agenda")} className="w-full">
           <CalendarPlus size={16} /> Agendar Reunião
-        </button>
+        </Button>
         <div className="flex gap-2">
-          <button
-            onClick={marcarGanho}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-texto hover:bg-fundo"
-          >
+          <Button variant="secondary" size="sm" onClick={marcarGanho} className="flex-1">
             <Trophy size={14} /> Marcar Ganho
-          </button>
-          <button
-            onClick={() => marcar("perdido")}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-borda py-2 text-xs font-semibold text-texto-suave hover:bg-fundo"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => marcar("perdido")} className="flex-1 text-texto-suave">
             <Ban size={14} /> Descartar
-          </button>
+          </Button>
         </div>
       </div>
     </div>
