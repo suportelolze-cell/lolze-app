@@ -9,9 +9,10 @@ import { PERSONA_TEMPLATES } from "@/lib/admin/persona-templates";
 import { salvarIdentidade, salvarPersonaOnboarding, concluirOnboarding } from "@/lib/onboarding/actions";
 import { subirDocumentoCliente } from "@/lib/kb/actions";
 import type { OnboardingData } from "@/lib/onboarding/data";
+import { Button, buttonClasses } from "@/components/ui";
 
 const inputCls =
-  "w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none focus:border-marca";
+  "w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none transition-colors focus:border-marca";
 
 const PASSOS = ["Seu negócio", "A sua IA", "Base de conhecimento", "WhatsApp", "Pronto!"];
 
@@ -128,12 +129,12 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
           </span>
           <span>{Math.round(((step + 1) / PASSOS.length) * 100)}%</span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-superficie">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-borda">
           <div className="h-full rounded-full bg-marca transition-all" style={{ width: `${((step + 1) / PASSOS.length) * 100}%` }} />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-borda bg-superficie p-6 sm:p-8">
+      <div className="rounded-xl border border-borda bg-superficie p-6 shadow-card sm:p-8">
         {/* PASSO 1 — Identidade */}
         {step === 0 && (
           <div className="space-y-4">
@@ -158,7 +159,7 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
             </div>
             <div className="flex flex-wrap gap-2">
               {PERSONA_TEMPLATES.map((t) => (
-                <button key={t.id} onClick={() => aplicarTemplate(t.id)} className="rounded-full border border-borda bg-fundo px-3 py-1.5 text-xs font-semibold text-texto hover:border-marca hover:text-marca">
+                <button key={t.id} onClick={() => aplicarTemplate(t.id)} className="rounded-pill border border-borda bg-fundo-2 px-3 py-1.5 text-xs font-semibold text-texto transition-colors hover:border-marca hover:text-marca">
                   {t.nome}
                 </button>
               ))}
@@ -194,21 +195,17 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
               <a
                 href="/modelo-conhecimento-lolze.txt"
                 download
-                className="mt-3 inline-flex items-center gap-2 rounded-md bg-escuro-quente px-4 py-2 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.02]"
+                className={buttonClasses("primary", "md", "mt-3")}
               >
                 <Download size={16} /> Baixar modelo (.txt)
               </a>
             </div>
 
             <input ref={fileRef} type="file" accept=".pdf,.txt,.md" onChange={onArquivo} className="hidden" />
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={subindo}
-              className="flex items-center gap-2 rounded-md border border-marca px-4 py-2 text-sm font-semibold text-marca hover:bg-marca-suave/40 disabled:opacity-50"
-            >
+            <Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={subindo}>
               {subindo ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
               {subindo ? "Indexando…" : "Enviar documento (PDF/TXT)"}
-            </button>
+            </Button>
             {docs.length > 0 && (
               <ul className="space-y-1">
                 {docs.map((n, i) => (
@@ -277,14 +274,10 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
           )}
           {step === 3 && <BtnContinuar onClick={() => setStep(4)} rotulo="Continuar" />}
           {step === 4 && (
-            <button
-              onClick={concluir}
-              disabled={salvando}
-              className="flex items-center gap-2 rounded-md bg-marca px-6 py-2.5 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.02] disabled:opacity-60"
-            >
+            <Button variant="verde" size="lg" onClick={concluir} disabled={salvando}>
               {salvando ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
               Concluir e ligar a IA
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -294,13 +287,9 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
 
 function BtnContinuar({ onClick, loading, rotulo = "Salvar e continuar" }: { onClick: () => void; loading?: boolean; rotulo?: string }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      className="flex items-center gap-2 rounded-md bg-marca px-5 py-2.5 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.02] disabled:opacity-60"
-    >
+    <Button variant="primary" onClick={onClick} disabled={loading}>
       {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
       {loading ? "Salvando…" : rotulo}
-    </button>
+    </Button>
   );
 }
