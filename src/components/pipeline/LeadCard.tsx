@@ -37,9 +37,9 @@ export function LeadCard({
       style={style}
       {...listeners}
       {...attributes}
-      className={`cursor-grab touch-none rounded-md border border-borda bg-superficie p-3 active:cursor-grabbing ${
+      className={`cursor-grab touch-none rounded-lg border border-borda bg-superficie p-3 active:cursor-grabbing ${
         isDragging ? "opacity-40" : ""
-      } ${arrastando ? "rotate-2 shadow-xl" : "shadow-sm"}`}
+      } ${arrastando ? "rotate-2 shadow-pop" : "shadow-card"}`}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <span className="text-sm font-semibold leading-tight text-texto">
@@ -53,7 +53,7 @@ export function LeadCard({
       </div>
 
       <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-texto-suave">
-        <span className="rounded bg-fundo px-1.5 py-0.5">
+        <span className="rounded-pill bg-fundo-2 px-2 py-0.5">
           Vindo do {lead.origem}
         </span>
         {lead.valor != null && (
@@ -74,7 +74,7 @@ export function LeadCard({
             router.push(`/atendimento?conversa=${lead.id}`);
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex flex-1 items-center justify-center gap-1 rounded bg-marca px-2 py-2.5 text-xs font-semibold text-bege-principal"
+          className="flex flex-1 items-center justify-center gap-1 rounded-pill bg-marca px-2 py-2.5 text-xs font-semibold text-bege-principal transition-colors hover:bg-marca-escura"
         >
           <MessageSquare size={12} /> Abrir Chat
         </button>
@@ -83,7 +83,8 @@ export function LeadCard({
             e.stopPropagation();
             onPerfil?.(lead);
           }}
-          className="flex flex-1 items-center justify-center gap-1 rounded border border-borda px-2 py-2.5 text-xs font-semibold text-texto hover:bg-fundo"
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex flex-1 items-center justify-center gap-1 rounded-pill border border-borda px-2 py-2.5 text-xs font-semibold text-texto transition-colors hover:border-marca hover:text-marca"
         >
           <User size={12} /> Ver Perfil
         </button>

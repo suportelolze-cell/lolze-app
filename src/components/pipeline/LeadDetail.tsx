@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { X, Phone, Mail, Sparkles, MessageSquare } from "lucide-react";
 import type { Lead } from "@/lib/leads";
 import { LgpdLeadActions } from "./LgpdLeadActions";
+import { Button } from "@/components/ui";
 
 export function LeadDetail({
   lead,
@@ -39,7 +40,8 @@ export function LeadDetail({
               </h2>
               <button
                 onClick={onClose}
-                className="rounded-md p-2.5 text-texto-suave hover:bg-fundo"
+                aria-label="Fechar"
+                className="rounded-md p-2.5 text-texto-suave hover:bg-fundo-2"
               >
                 <X size={18} />
               </button>
@@ -108,13 +110,14 @@ export function LeadDetail({
 
             {/* Ação principal */}
             <div className="border-t border-borda px-6 py-4">
-              <button
+              <Button
+                variant="primary"
                 onClick={() => router.push(`/atendimento?conversa=${lead.id}`)}
-                className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-3 text-sm font-semibold text-bege-principal transition-transform hover:scale-[1.01]"
+                className="w-full"
               >
                 <MessageSquare size={16} />
                 Assumir Atendimento no Chat
-              </button>
+              </Button>
             </div>
           </>
         )}
