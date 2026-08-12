@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { Users, RefreshCw, AlertTriangle, Trophy, MessageSquare, Loader2, Sparkles } from "lucide-react";
 import { reativarClienteIA } from "@/lib/supabase/crm-actions";
 import type { RecorrenciaDados, ClienteRecorrente } from "@/lib/supabase/crm-data";
+import { PageHeader, Acento, Button, buttonClasses } from "@/components/ui";
 
 function Card({ icon: Icon, titulo, valor, cor }: { icon: typeof Users; titulo: string; valor: string | number; cor: string }) {
   return (
-    <div className="rounded-lg border border-borda bg-superficie px-5 py-4">
+    <div className="rounded-lg border border-borda bg-superficie px-5 py-4 shadow-card">
       <Icon size={18} className={cor} />
       <p className="mt-2 text-2xl font-semibold text-texto">{valor}</p>
       <p className="text-xs text-texto-suave">{titulo}</p>
@@ -36,16 +37,17 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">
-          Recorrência · Carteira de Clientes
-        </h1>
-        <p className="mt-1 text-texto-suave">
-          Só clientes que já fecharam serviço. Acompanhe frequência, risco de perda e seus melhores clientes.
-        </p>
-      </header>
+    <div className="flex flex-col">
+      <PageHeader
+        titulo={
+          <>
+            Recorrência · Carteira de <Acento>Clientes</Acento>
+          </>
+        }
+        descricao="Só clientes que já fecharam serviço. Acompanhe frequência, risco de perda e seus melhores clientes."
+      />
 
+      <div className="flex flex-col gap-6">
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <Card icon={Users} titulo="Clientes na base" valor={dados.totalBase} cor="text-marca" />
         <Card icon={RefreshCw} titulo="Serviços nos últimos 30 dias" valor={dados.servicosMes} cor="text-marca" />
@@ -53,7 +55,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
       </section>
 
       {/* Alerta de Churn */}
-      <section className="rounded-lg border border-borda bg-superficie p-6">
+      <section className="rounded-lg border border-borda bg-superficie p-6 shadow-card">
         <h2 className="flex items-center gap-2 font-corpo text-lg font-bold text-texto">
           <AlertTriangle size={18} className="text-amber-600" /> Alerta de Churn: reative agora
         </h2>
@@ -81,15 +83,16 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
                       href={`https://wa.me/${c.telefone.replace(/\D/g, "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-md border border-borda px-3 py-2.5 text-xs font-semibold text-texto hover:bg-fundo sm:py-1.5"
+                      className={buttonClasses("secondary", "sm")}
                     >
                       <MessageSquare size={14} /> WhatsApp
                     </a>
                   )}
-                  <button
+                  <Button
+                    variant="verde"
+                    size="sm"
                     onClick={() => reativar(c)}
                     disabled={reativando === c.leadId || feito.has(c.leadId)}
-                    className="flex items-center gap-1.5 rounded-md bg-marca px-3 py-2.5 text-xs font-bold text-bege-principal disabled:opacity-50 sm:py-1.5"
                   >
                     {reativando === c.leadId ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -97,7 +100,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
                       <Sparkles size={14} />
                     )}
                     {feito.has(c.leadId) ? "Reativado" : "Reativar com IA"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -106,7 +109,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
       </section>
 
       {/* Curva ABC / Top clientes */}
-      <section className="rounded-lg border border-borda bg-superficie p-6">
+      <section className="rounded-lg border border-borda bg-superficie p-6 shadow-card">
         <h2 className="flex items-center gap-2 font-corpo text-lg font-bold text-texto">
           <Trophy size={18} className="text-marca" /> Top Clientes (Curva ABC)
         </h2>
@@ -134,7 +137,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
                     <td className="py-2 pr-2 font-semibold text-texto-suave">{i + 1}</td>
                     <td className="py-2 pr-2 font-semibold text-texto">
                       {c.nome}
-                      {c.churn && <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">risco</span>}
+                      {c.churn && <span className="ml-2 rounded-pill bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">risco</span>}
                     </td>
                     <td className="py-2 pr-2 text-center font-bold text-marca">{c.totalServicos}</td>
                     <td className="py-2 pr-2 text-center text-texto">{c.servicos30d}</td>
@@ -147,6 +150,7 @@ export function Recorrencia({ dados }: { dados: RecorrenciaDados }) {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }
