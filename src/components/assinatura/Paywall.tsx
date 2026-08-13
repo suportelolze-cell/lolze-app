@@ -8,6 +8,7 @@ import { crmBrowser } from "@/lib/supabase/browser";
 import { assinarPlano, gerenciarAssinatura } from "@/lib/billing/actions";
 import type { BillingInfo } from "@/lib/billing/data";
 import { ROTAS } from "@/lib/rotas";
+import { Button, Card } from "@/components/ui";
 
 const brl = (c: number) =>
   (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -56,11 +57,11 @@ export function Paywall({ billing, papel }: { billing: BillingInfo; papel: strin
           <Logo variante="lockup" tom="branco" height={38} />
         </div>
 
-        <div className="rounded-2xl bg-superficie p-8 text-center shadow-2xl">
+        <Card className="p-8 text-center shadow-pop">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-marca-suave text-marca">
             <Lock size={24} />
           </div>
-          <h1 className="mt-4 font-corpo text-xl font-bold text-texto">{titulo}</h1>
+          <h1 className="mt-4 font-corpo text-2xl font-semibold -tracking-[0.02em] text-texto">{titulo}</h1>
           <p className="mt-2 text-sm text-texto-suave">{msg}</p>
           {billing.planoNome && (
             <p className="mt-3 text-sm text-texto">
@@ -74,23 +75,25 @@ export function Paywall({ billing, papel }: { billing: BillingInfo; papel: strin
           <div className="mt-6 space-y-3">
             {ehDono ? (
               inadimplente && billing.temAssinatura ? (
-                <button
+                <Button
+                  variant="verde"
+                  className="w-full"
                   onClick={() => ir(gerenciarAssinatura())}
                   disabled={carregando}
-                  className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-3 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.01] disabled:opacity-60"
                 >
                   {carregando ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                   Atualizar pagamento
-                </button>
+                </Button>
               ) : billing.temCheckout ? (
-                <button
+                <Button
+                  variant="verde"
+                  className="w-full"
                   onClick={() => ir(assinarPlano())}
                   disabled={carregando}
-                  className="flex w-full items-center justify-center gap-2 rounded-md bg-marca py-3 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.01] disabled:opacity-60"
                 >
                   {carregando ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                   Assinar agora
-                </button>
+                </Button>
               ) : (
                 <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-700">
                   Pagamento online ainda não habilitado. Fale com o suporte:{" "}
@@ -118,7 +121,7 @@ export function Paywall({ billing, papel }: { billing: BillingInfo; papel: strin
               <LogOut size={13} /> Sair
             </button>
           </div>
-        </div>
+        </Card>
       </div>
     </main>
   );
