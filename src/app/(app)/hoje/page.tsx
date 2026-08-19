@@ -154,7 +154,7 @@ export default async function HojePage() {
           vazio="Nenhum cliente da base sumido além do padrão."
           itens={d.reativar.map((r) => ({
             chave: `r${r.leadId}`,
-            href: "/recorrencia",
+            href: "/contatos",
             titulo: r.nome,
             detalhe:
               r.diasDesdeUltimo != null
