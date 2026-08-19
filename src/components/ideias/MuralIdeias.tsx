@@ -22,6 +22,7 @@ import {
   listarComentarios,
   type Comentario,
 } from "@/lib/ideias/actions";
+import { PageHeader, Acento, Button } from "@/components/ui";
 
 const STATUS_META: Record<StatusIdeia, { label: string; dot: string; chip: string }> = {
   analise: { label: "Em análise", dot: "bg-slate-400", chip: "bg-slate-100 text-slate-600" },
@@ -77,32 +78,19 @@ export function MuralIdeias({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      {/* Cabeçalho */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-2 font-display text-2xl italic text-texto sm:text-3xl">
-            <Lightbulb className="text-marca" size={26} /> Ideias &amp; Novidades
-          </h1>
-          <p className="mt-1 max-w-xl text-sm text-texto-suave">
-            Sugira o que a Lolze deve construir, curta as ideias que você quer ver primeiro e
-            acompanhe em tempo real o que já está sendo feito. Você faz parte disso. 💚
-          </p>
-        </div>
-        <button
-          onClick={() => setNovaAberta((v) => !v)}
-          className="hidden shrink-0 items-center gap-2 rounded-full bg-marca px-4 py-2.5 text-sm font-bold text-bege-principal transition-transform hover:scale-[1.02] sm:flex"
-        >
-          <Plus size={16} /> Sugerir ideia
-        </button>
-      </div>
-
-      {/* Botão mobile */}
-      <button
-        onClick={() => setNovaAberta((v) => !v)}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-marca px-4 py-3 text-sm font-bold text-bege-principal sm:hidden"
-      >
-        <Plus size={16} /> Sugerir ideia
-      </button>
+      <PageHeader
+        titulo={
+          <span className="inline-flex items-center gap-2">
+            <Lightbulb className="text-marca" size={26} /> Ideias &amp; <Acento>Novidades</Acento>
+          </span>
+        }
+        descricao="Sugira o que a Lolze deve construir, curta as ideias que você quer ver primeiro e acompanhe em tempo real o que já está sendo feito. Você faz parte disso. 💚"
+        acao={
+          <Button variant="verde" onClick={() => setNovaAberta((v) => !v)}>
+            <Plus size={16} /> Sugerir ideia
+          </Button>
+        }
+      />
 
       {/* Formulário nova ideia */}
       {novaAberta && (
@@ -135,7 +123,7 @@ export function MuralIdeias({
           <button
             key={f.valor}
             onClick={() => setFiltro(f.valor)}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+            className={`rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors ${
               filtro === f.valor
                 ? "bg-escuro-quente text-bege-principal"
                 : "border border-borda bg-superficie text-texto-suave hover:text-texto"
@@ -189,7 +177,7 @@ function FormNovaIdeia({ onFechar, onCriada }: { onFechar: () => void; onCriada:
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-borda bg-superficie p-4">
+    <div className="mt-4 rounded-xl border border-borda bg-superficie p-4 shadow-card">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-texto">Sua ideia</h3>
         <button onClick={onFechar} className="text-texto-suave hover:text-texto" aria-label="Fechar">
@@ -213,19 +201,12 @@ function FormNovaIdeia({ onFechar, onCriada }: { onFechar: () => void; onCriada:
       />
       {erro && <p className="mt-2 text-xs text-rose-500">{erro}</p>}
       <div className="mt-3 flex justify-end gap-2">
-        <button
-          onClick={onFechar}
-          className="rounded-full px-4 py-2 text-sm font-semibold text-texto-suave hover:text-texto"
-        >
+        <Button variant="ghost" size="sm" onClick={onFechar}>
           Cancelar
-        </button>
-        <button
-          onClick={enviar}
-          disabled={enviando}
-          className="flex items-center gap-2 rounded-full bg-marca px-4 py-2 text-sm font-bold text-bege-principal disabled:opacity-60"
-        >
+        </Button>
+        <Button variant="verde" size="sm" onClick={enviar} disabled={enviando}>
           {enviando ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />} Enviar ideia
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -246,7 +227,7 @@ function CardIdeia({
   const meta = STATUS_META[ideia.status];
 
   return (
-    <div className="rounded-xl border border-borda bg-superficie p-4">
+    <div className="rounded-xl border border-borda bg-superficie p-4 shadow-card">
       <div className="flex items-start gap-3">
         {/* Curtir */}
         <button
@@ -265,7 +246,7 @@ function CardIdeia({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.chip}`}
+              className={`inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[11px] font-semibold ${meta.chip}`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} /> {meta.label}
             </span>
@@ -358,7 +339,7 @@ function PainelComentarios({ ideiaId }: { ideiaId: string }) {
             <li key={c.id} className="text-sm leading-relaxed">
               <span className="font-semibold text-texto">{c.autorNome}</span>
               {c.admin && (
-                <span className="mx-1.5 inline-flex items-center gap-1 rounded-full bg-marca px-1.5 py-0.5 align-middle text-[10px] font-bold text-bege-principal">
+                <span className="mx-1.5 inline-flex items-center gap-1 rounded-pill bg-marca px-1.5 py-0.5 align-middle text-[10px] font-bold text-bege-principal">
                   <BadgeCheck size={11} /> Equipe Lolze
                 </span>
               )}{" "}
@@ -376,7 +357,7 @@ function PainelComentarios({ ideiaId }: { ideiaId: string }) {
           }}
           maxLength={1000}
           placeholder="Escreva um comentário…"
-          className="flex-1 rounded-full border border-borda bg-fundo px-3 py-2 text-sm text-texto outline-none focus:border-marca"
+          className="flex-1 rounded-pill border border-borda bg-fundo px-3 py-2 text-sm text-texto outline-none focus:border-marca"
         />
         <button
           onClick={enviar}
