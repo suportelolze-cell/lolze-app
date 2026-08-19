@@ -11,6 +11,7 @@ import {
   MessageSquare,
   CalendarSync,
   Target,
+  ShoppingCart,
   FileDown,
   Radar,
   BookOpen,
@@ -31,6 +32,7 @@ import type { AtendimentoCfg } from "@/lib/supabase/crm-data";
 import { WhatsAppCard } from "./WhatsAppCard";
 import { IaSwitchCard } from "./IaSwitchCard";
 import { CaptacaoNumerosCard } from "./CaptacaoNumerosCard";
+import { CheckoutIntegracoes } from "./CheckoutIntegracoes";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
 import { PageHeader, Acento, Button, Badge, StatusDot, buttonClasses } from "@/components/ui";
@@ -268,6 +270,12 @@ function Integracoes({
         <CardIntegracao icon={MessageSquare} titulo="WhatsApp Oficial">
           <WhatsAppCard />
         </CardIntegracao>
+
+        {podeGerenciar && (
+          <CardIntegracao icon={ShoppingCart} titulo="Vendas e Checkout">
+            <CheckoutIntegracoes />
+          </CardIntegracao>
+        )}
 
         <CardIntegracao icon={CalendarSync} titulo="Sincronização de Agenda">
           <div className="flex flex-wrap items-center justify-between gap-3">

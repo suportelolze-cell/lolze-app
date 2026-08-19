@@ -58,6 +58,17 @@ export type Adapter = {
   parse(payload: unknown): ResultadoParse;
 };
 
+/** Visão da integração de checkout para a UI de configuração (sem o segredo). */
+export type IntegracaoCheckoutView = {
+  plataforma: Plataforma;
+  ativo: boolean;
+  /** true se já há um segredo salvo (o valor em si nunca volta ao cliente). */
+  temSecret: boolean;
+  /** token que compõe a URL do webhook (?t=...); "" se ainda não configurada. */
+  ingestToken: string;
+  configurada: boolean;
+};
+
 // ---------------------------------------------------------- normalizadores
 export const soDigitos = (s: unknown): string => String(s ?? "").replace(/\D/g, "");
 
