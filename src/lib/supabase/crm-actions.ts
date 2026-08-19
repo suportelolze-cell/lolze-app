@@ -175,7 +175,7 @@ export async function reativarClienteIA(leadId: number): Promise<{ ok: boolean; 
     return { ok: false, erro: (e as Error).message };
   }
   await registrarEvento({ tenantId: tid, leadId, tipo: "lead_reactivated", dados: { modo: "manual" } });
-  revalidatePath("/recorrencia");
+  revalidatePath("/contatos");
   return { ok: true };
 }
 

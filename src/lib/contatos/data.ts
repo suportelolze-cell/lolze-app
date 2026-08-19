@@ -12,6 +12,8 @@ export type Contato = {
   coluna: string;
   valor: number | null;
   createdAt: string;
+  /** Última interação (updated_at, tocado a cada mensagem). Base do filtro "faz tempo que não fala". */
+  ultimoContato: string;
 };
 
 /** Lista de contatos (leads) do tenant, de todos os canais. */
@@ -21,9 +23,9 @@ export async function getContatos(limit = 2000): Promise<Contato[]> {
   const sb = getCrmAdmin();
   const { data } = await sb
     .from("app_leads")
-    .select("id,nome,telefone,email,canal,origem,temperatura,coluna,valor,created_at")
+    .select("id,nome,telefone,email,canal,origem,temperatura,coluna,valor,created_at,updated_at")
     .eq("tenant_id", tid)
-    .order("created_at", { ascending: false })
+    .order("updated_at", { ascending: false })
     .limit(limit);
 
   const linhas = (data ?? []) as Array<{
@@ -37,6 +39,7 @@ export async function getContatos(limit = 2000): Promise<Contato[]> {
     coluna: string | null;
     valor: number | null;
     created_at: string;
+    updated_at: string | null;
   }>;
   return linhas.map((r) => ({
     id: r.id,
@@ -49,5 +52,6 @@ export async function getContatos(limit = 2000): Promise<Contato[]> {
     coluna: r.coluna ?? "",
     valor: r.valor,
     createdAt: r.created_at,
+    ultimoContato: r.updated_at ?? r.created_at,
   }));
 }
