@@ -32,12 +32,12 @@ const TEMP_COR: Record<string, string> = {
   frio: "bg-fundo-2 text-texto-suave",
 };
 
-// Situação (derivada da etapa do funil enquanto o checkout não entra):
-// "cliente" = fechou (ganho), "perdido" = perdido, "lead" = todo o resto.
+// Situação: "cliente" = comprou de fato (app_vendas) OU fechou no funil (ganho);
+// "perdido" = perdido; "lead" = todo o resto.
 type Situacao = "cliente" | "lead" | "perdido";
-function situacaoDe(coluna: string): Situacao {
-  if (coluna === "ganho") return "cliente";
-  if (coluna === "perdido") return "perdido";
+function situacaoDe(c: { compras: number; coluna: string }): Situacao {
+  if (c.compras > 0 || c.coluna === "ganho") return "cliente";
+  if (c.coluna === "perdido") return "perdido";
   return "lead";
 }
 const SITUACAO_FILTROS: { valor: "todas" | Situacao; label: string }[] = [
@@ -86,13 +86,19 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
     const q = busca.trim().toLowerCase();
     return contatos.filter((c) => {
       const porCanal = filtro === "todos" || c.canal === filtro;
-      const porSituacao = situacao === "todas" || situacaoDe(c.coluna) === situacao;
+      const porSituacao = situacao === "todas" || situacaoDe(c) === situacao;
       const porContato = contato === "todos" || friezaDe(c.ultimoContato) === contato;
       const porBusca =
         !q || c.nome.toLowerCase().includes(q) || c.telefone.includes(q) || c.email.toLowerCase().includes(q);
       return porCanal && porSituacao && porContato && porBusca;
     });
   }, [contatos, filtro, situacao, contato, busca]);
+
+  const resumoClientes = useMemo(() => {
+    const clientes = contatos.filter((c) => c.compras > 0);
+    const totalCents = clientes.reduce((s, c) => s + c.totalCompradoCents, 0);
+    return { qtd: clientes.length, totalCents };
+  }, [contatos]);
 
   async function reativar(id: number) {
     setReativando(id);
@@ -140,6 +146,22 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
       />
 
       <div className="flex flex-col gap-5">
+        {/* Resumo de clientes (só quando já há compras registradas) */}
+        {resumoClientes.qtd > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-md border border-borda bg-superficie px-3 py-1.5">
+              <b className="text-texto">{resumoClientes.qtd}</b>{" "}
+              <span className="text-texto-suave">
+                {resumoClientes.qtd === 1 ? "cliente que comprou" : "clientes que compraram"}
+              </span>
+            </span>
+            <span className="rounded-md border border-borda bg-superficie px-3 py-1.5">
+              <b className="text-marca">{brl(resumoClientes.totalCents / 100)}</b>{" "}
+              <span className="text-texto-suave">em compras</span>
+            </span>
+          </div>
+        )}
+
         {/* Filtros */}
         <div className="flex flex-col gap-3">
           {/* Canal + busca */}
@@ -205,7 +227,7 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
                 <th className="px-4 py-3 font-semibold">Canal</th>
                 <th className="px-4 py-3 font-semibold">Etapa</th>
                 <th className="px-4 py-3 font-semibold">Temp.</th>
-                <th className="px-4 py-3 text-right font-semibold">Valor</th>
+                <th className="px-4 py-3 text-right font-semibold">Comprado</th>
                 <th className="px-4 py-3 font-semibold">Último contato</th>
                 <th className="px-4 py-3 text-right font-semibold">Ações</th>
               </tr>
@@ -222,7 +244,12 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
                   const f = friezaDe(c.ultimoContato);
                   return (
                     <tr key={c.id} className="hover:bg-fundo-2">
-                      <td className="px-4 py-3 font-medium text-texto">{c.nome || "—"}</td>
+                      <td className="px-4 py-3 font-medium text-texto">
+                        <span className="inline-flex items-center gap-2">
+                          {c.nome || "—"}
+                          {c.compras > 0 && <Badge tom="menta">Cliente</Badge>}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-texto-suave">{c.telefone || "—"}</td>
                       <td className="px-4 py-3">
                         <Badge tom="menta">{rotuloCanal(c.canal)}</Badge>
@@ -237,7 +264,20 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
                           {c.temperatura || "—"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-texto">{c.valor ? brl(c.valor) : "—"}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-texto">
+                        {c.compras > 0 ? (
+                          <span className="inline-flex items-center justify-end gap-1.5">
+                            {brl(c.totalCompradoCents / 100)}
+                            {c.compras > 1 && (
+                              <span className="text-[10px] font-medium text-texto-suave">{c.compras}×</span>
+                            )}
+                          </span>
+                        ) : c.valor ? (
+                          <span className="text-texto-suave">{brl(c.valor)}</span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-texto-suave">
                         <span className="inline-flex items-center gap-2">
                           {dataBr(c.ultimoContato)}
