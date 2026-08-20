@@ -50,7 +50,8 @@ Escreva a PRIMEIRA mensagem de WhatsApp para uma empresa que ainda NÃO te conhe
 - Desperte curiosidade e conexão; NÃO tente vender de cara.
 - NUNCA fale preço, plano ou valor.
 - Termine com UMA pergunta leve que convide a responder.
-- Nada de parecer template/spam. Português do Brasil, sem markdown.`;
+- Nada de parecer template/spam. Português do Brasil, sem markdown.
+- Sem travessão nem meia-risca (os traços "—"/"–"); use vírgula, ponto ou dois-pontos.`;
   const user = `Empresa: ${p.nome_empresa || "(sem nome)"} | Nicho: ${p.nicho || "—"} | Cidade: ${
     p.cidade || "—"
   } | Site: ${p.site || "—"}. Escreva apenas a mensagem, sem aspas.`;
