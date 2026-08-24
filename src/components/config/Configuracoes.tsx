@@ -12,6 +12,7 @@ import {
   CalendarSync,
   Target,
   ShoppingCart,
+  PackageCheck,
   FileDown,
   Radar,
   BookOpen,
@@ -33,6 +34,7 @@ import { WhatsAppCard } from "./WhatsAppCard";
 import { IaSwitchCard } from "./IaSwitchCard";
 import { CaptacaoNumerosCard } from "./CaptacaoNumerosCard";
 import { CheckoutIntegracoes } from "./CheckoutIntegracoes";
+import { EntregaCard } from "./EntregaCard";
 import { PlaybookCard } from "./PlaybookCard";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
@@ -283,6 +285,12 @@ function Integracoes({
         {podeGerenciar && (
           <CardIntegracao icon={ShoppingCart} titulo="Vendas e Checkout">
             <CheckoutIntegracoes />
+          </CardIntegracao>
+        )}
+
+        {podeGerenciar && (
+          <CardIntegracao icon={PackageCheck} titulo="Entrega automática">
+            <EntregaCard />
           </CardIntegracao>
         )}
 
