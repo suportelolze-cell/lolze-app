@@ -26,9 +26,11 @@ export {
   CADENCIA_MIN,
   REATIVACAO_MIN,
   POSVENDA_MIN,
+  RECUPERACAO_MIN,
   primeiroFollowup,
   agendarReativacao,
   enfileirarPosVenda,
+  agendarRecuperacao,
   avancar,
 } from "./followup-cadencia";
 
@@ -114,6 +116,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   const historico = ((msgs ?? []) as { autor: string; texto: string }[]).reverse();
 
   const reativacao = modo === "reativacao";
+  const recuperacao = modo === "recuperacao";
   const count = lead.followup_count ?? 0;
   const frio = (lead.temperatura ?? "frio") === "frio";
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
@@ -125,7 +128,9 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
 
   const instrucao = despedidaFrio
     ? "[DESPEDIDA EDUCADA] Não houve retorno e o lead esfriou. Despeça-se com classe: diga que vai pausar os contatos pra não incomodar e deixe a porta aberta pra quando ele precisar. Sem cobrança, sem culpa."
-    : posvenda
+    : recuperacao
+      ? "[RECUPERAÇÃO DE VENDA] O cliente gerou um pagamento (PIX/boleto) ou começou a compra e não finalizou. Lembre com gentileza que está quase concluído e ofereça ajuda pra terminar (reenviar o link, tirar uma dúvida). Sem pressão; não invente preço nem link que você não tem. Se ele não tiver mais interesse, agradeça e encerre com leveza."
+      : posvenda
       ? "[PÓS-VENDA] Este cliente JÁ fechou/foi atendido — não é mais uma venda em aberto. Faça um acompanhamento genuíno e caloroso: pergunte como foi a experiência e, se fizer sentido, convide a agendar o próximo serviço/retoque. Tom de cuidado e relacionamento, ZERO pressão de venda."
       : reativacao
         ? "[REATIVAÇÃO] Faz um tempo que este lead não fala com a gente. Reabra com leveza, como quem retoma um papo: traga uma novidade/dica/valor do nicho dele. NÃO tente vender direto — o objetivo é reaquecer o relacionamento."
@@ -150,7 +155,9 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
       role: "user",
       content: posvenda
         ? "(gerar agora a mensagem de pós-venda / acompanhamento para este cliente)"
-        : "(gerar agora a mensagem de follow-up para reengajar este lead)",
+        : recuperacao
+          ? "(gerar agora a mensagem para ajudar o cliente a finalizar a compra pendente)"
+          : "(gerar agora a mensagem de follow-up para reengajar este lead)",
     },
   ];
   if (messages[0].role !== "user") messages.unshift({ role: "user", content: "(retomar contato)" });

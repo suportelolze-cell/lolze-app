@@ -7,11 +7,15 @@
  * - CADÊNCIA (silêncio numa conversa ativa): 4 toques — +1h, +4h, +1d, +3d.
  * - REATIVAÇÃO (sumiu de vez): 3 toques longos — +15d, +30d, +45d.
  * - PÓS-VENDA (cliente fechou/ganho): 3 acompanhamentos — +7d, +45d, +120d.
+ * - RECUPERAÇÃO (venda pendente: PIX/boleto gerado ou carrinho abandonado):
+ *   3 toques curtos — +15min, +2h, +1d. A compra aprovada (lead vira 'ganho')
+ *   cancela a régua automaticamente (o guard de 'ganho' no envio para tudo).
  */
 
 export const CADENCIA_MIN = [60, 240, 1440, 4320]; // +1h, +4h, +1d, +3d
 export const REATIVACAO_MIN = [21600, 43200, 64800]; // +15d, +30d, +45d
 export const POSVENDA_MIN = [10080, 64800, 172800]; // +7d, +45d, +120d
+export const RECUPERACAO_MIN = [15, 120, 1440]; // +15min, +2h, +1d
 
 export function ts(minutos: number) {
   return new Date(Date.now() + minutos * 60000).toISOString();
@@ -32,6 +36,11 @@ export function enfileirarPosVenda() {
   return { proximo: ts(POSVENDA_MIN[0]), modo: "posvenda" as const, count: 0 };
 }
 
+/** Agenda a recuperação de uma venda pendente (PIX/boleto/carrinho abandonado). */
+export function agendarRecuperacao() {
+  return { proximo: ts(RECUPERACAO_MIN[0]), modo: "recuperacao" as const, count: 0 };
+}
+
 /** Calcula o próximo passo depois de enviar um toque em (modo, count). */
 export function avancar(
   modo: string | null,
@@ -49,6 +58,10 @@ export function avancar(
   if (modo === "posvenda") {
     if (novo < POSVENDA_MIN.length) return { proximo: ts(POSVENDA_MIN[novo]), modo: "posvenda", count: novo };
     return { proximo: null, modo: null, count: novo }; // fim do pós-venda
+  }
+  if (modo === "recuperacao") {
+    if (novo < RECUPERACAO_MIN.length) return { proximo: ts(RECUPERACAO_MIN[novo]), modo: "recuperacao", count: novo };
+    return { proximo: null, modo: null, count: novo }; // fim da recuperação
   }
   return { proximo: null, modo: null, count: novo };
 }
