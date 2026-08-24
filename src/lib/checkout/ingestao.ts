@@ -1,8 +1,12 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { registrarEvento } from "@/lib/eventos";
+import { agendarRecuperacao } from "@/lib/agent/followup-cadencia";
 import type { VendaCanonica } from "./core";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
+
+/** Eventos de venda pendente que disparam a régua de recuperação. */
+const EVENTOS_RECUPERAVEIS = new Set(["pix_gerado", "boleto_gerado", "checkout_abandonado"]);
 
 export type ResultadoIngestao =
   | { duplicado: true }
@@ -131,6 +135,9 @@ export async function ingerirVenda(
     const patch: Record<string, unknown> = {
       coluna: "ganho",
       temperatura: "quente",
+      // Compra concluída → cancela qualquer régua de recuperação pendente.
+      proximo_followup: null,
+      followup_modo: null,
       updated_at: new Date().toISOString(),
     };
     if (venda.valorCents > 0) patch.valor = venda.valorCents / 100;
@@ -152,6 +159,37 @@ export async function ingerirVenda(
       valorCents: venda.valorCents,
       dados: { plataforma, external_id: venda.externalId },
     });
+  }
+
+  // Venda pendente (PIX/boleto gerado, carrinho abandonado): agenda a régua de
+  // recuperação. Só para quem dá pra alcançar por um canal de mensagem
+  // (WhatsApp/Instagram) — um lead só-de-checkout, sem canal, não recebe e
+  // entraria em loop de reentrega. E nunca para quem já é cliente (ganho) ou
+  // perdido. Quando a compra_aprovada chegar, o lead vira 'ganho' e a régua para
+  // sozinha.
+  if (leadId && EVENTOS_RECUPERAVEIS.has(venda.evento)) {
+    const { data: l } = await admin
+      .from("app_leads")
+      .select("coluna,canal")
+      .eq("tenant_id", tenantId)
+      .eq("id", leadId)
+      .maybeSingle();
+    const coluna = (l?.coluna as string | undefined) ?? "entrada";
+    const canal = (l?.canal as string | undefined) ?? "";
+    const alcancavel = canal === "whatsapp" || canal === "instagram";
+    if (alcancavel && coluna !== "ganho" && coluna !== "perdido") {
+      const r = agendarRecuperacao();
+      await admin
+        .from("app_leads")
+        .update({
+          proximo_followup: r.proximo,
+          followup_modo: r.modo,
+          followup_count: r.count,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("tenant_id", tenantId)
+        .eq("id", leadId);
+    }
   }
 
   return { registrado: true, leadId };

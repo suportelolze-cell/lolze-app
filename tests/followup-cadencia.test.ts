@@ -5,9 +5,11 @@ import {
   primeiroFollowup,
   agendarReativacao,
   enfileirarPosVenda,
+  agendarRecuperacao,
   CADENCIA_MIN,
   REATIVACAO_MIN,
   POSVENDA_MIN,
+  RECUPERACAO_MIN,
 } from "../src/lib/agent/followup-cadencia.ts";
 
 test("primeiroFollowup começa a cadência no 1º gap", () => {
@@ -79,4 +81,25 @@ test("modo desconhecido/null encerra a régua (fail-safe)", () => {
     { proximo: null, modo: null }
   );
   assert.equal(avancar("qualquer", 5).proximo, null);
+});
+
+test("agendarRecuperacao começa a recuperação no 1º gap curto", () => {
+  const r = agendarRecuperacao();
+  assert.equal(r.modo, "recuperacao");
+  assert.equal(r.count, 0);
+  assert.ok(r.proximo);
+});
+
+test("recuperação avança nos gaps curtos e termina (não vira reativação)", () => {
+  // count 0→1, 1→2 seguem na recuperação
+  for (let c = 0; c < RECUPERACAO_MIN.length - 1; c++) {
+    const p = avancar("recuperacao", c);
+    assert.equal(p.modo, "recuperacao");
+    assert.equal(p.count, c + 1);
+    assert.ok(p.proximo);
+  }
+  // último toque → fim: proximo null, modo null
+  const fim = avancar("recuperacao", RECUPERACAO_MIN.length - 1);
+  assert.equal(fim.proximo, null);
+  assert.equal(fim.modo, null);
 });
