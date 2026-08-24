@@ -122,11 +122,20 @@ export async function carregarConfig(admin: Admin, tenantId: string): Promise<Pe
   // agente sem cérebro. Tenta com a coluna; se ela faltar, cai para o legado.
   let res = await admin
     .from("app_config")
-    .select(COLS + ",regua_qualificacao")
+    .select(COLS + ",regua_qualificacao,playbook")
     .eq("tenant_id", tenantId)
     .maybeSingle();
   if (res.error && colunaAusente(res.error)) {
-    res = await admin.from("app_config").select(COLS).eq("tenant_id", tenantId).maybeSingle();
+    // 'playbook' pode não existir ainda (migração pendente): tenta sem ela,
+    // sem perder a regua_qualificacao.
+    res = await admin
+      .from("app_config")
+      .select(COLS + ",regua_qualificacao")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    if (res.error && colunaAusente(res.error)) {
+      res = await admin.from("app_config").select(COLS).eq("tenant_id", tenantId).maybeSingle();
+    }
   }
   // Erro REAL de carga (timeout/RLS/5xx, não coluna-ausente): NÃO seguir com
   // persona vazia — isso responderia o lead com prompt genérico e agente_ativo
@@ -149,6 +158,7 @@ export async function carregarConfig(admin: Admin, tenantId: string): Promise<Pe
     faq: str("faq"),
     reguaQualificacao: str("regua_qualificacao"),
     agenteAtivo: c.agente_ativo === undefined ? true : Boolean(c.agente_ativo),
+    playbook: str("playbook") === "infoproduto" ? "infoproduto" : "servico_local",
   };
 }
 
