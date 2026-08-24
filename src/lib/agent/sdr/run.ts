@@ -249,7 +249,7 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
 
   // Leituras de pré-voo independentes em paralelo (cortam latência fixa antes do
   // 1º token): trava de custo, "catraca" (cliente da base), biblioteca e histórico.
-  const [limiteOk, catraca, arquivos, historico] = await Promise.all([
+  const [limiteOk, catraca, compras, arquivos, historico] = await Promise.all([
     dentroDoLimiteIA(tenantId),
     admin
       .from("app_agendamentos")
@@ -257,6 +257,14 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
       .eq("tenant_id", tenantId)
       .eq("lead_id", leadId)
       .in("status", ["confirmado", "concluido"]),
+    // Compras aprovadas deste lead (infoproduto): trata como suporte, não venda.
+    // Tolerante à tabela ausente (migração de checkout pode não estar aplicada).
+    admin
+      .from("app_vendas")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("lead_id", leadId)
+      .eq("evento", "compra_aprovada"),
     listarBibliotecaAtiva(tenantId),
     carregarHistorico(admin, tenantId, leadId),
   ]);
@@ -267,6 +275,7 @@ export async function executarSDR(tenantId: string, leadId: number): Promise<Res
   }
 
   const ehBase = (catraca.count ?? 0) > 0;
+  ctx.comprou = (compras.count ?? 0) > 0;
   const system = montarSystemSDR(
     cfg,
     ctx,

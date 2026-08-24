@@ -35,6 +35,8 @@ export type LeadContexto = {
   temperatura: Temperatura;
   coluna: ColunaId;
   diagnostico: string;
+  /** true se o contato já tem uma compra aprovada (trata como suporte, não venda). */
+  comprou?: boolean;
 };
 
 /** Mutações que o SDR pode aplicar no lead durante um turno. */

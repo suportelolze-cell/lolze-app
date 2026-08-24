@@ -101,6 +101,10 @@ Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
     ? '\n\nEste lead veio de um ANÚNCIO (tráfego pago): ele clicou no anúncio e chamou AGORA, então já tem interesse no tema. NÃO abra com um genérico "como posso te ajudar?": puxe pelo que o anúncio provavelmente prometia, confirme rapidinho o que ele procura e conduza direto pra qualificação/agendamento, sem enrolar (ele está quente).'
     : "";
 
+  const regraComprador = lead.comprou
+    ? "\n\nESTE CONTATO JÁ COMPROU de você. Trate as dúvidas dele como SUPORTE (acesso ao produto, senha, área de membros, link do grupo, reembolso), NÃO como uma nova venda. Se ele quiser cancelar ou reembolsar, acolha com respeito, explique o caminho e, se precisar de ação humana, use escalar_humano."
+    : "";
+
   const contexto = `# Lead atual
 - Data e hora agora (America/Sao_Paulo): ${agora}
 - Nome: ${lead.nome || "(desconhecido)"}
@@ -109,10 +113,11 @@ Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
 - Etapa no funil: ${lead.coluna}
 - Temperatura atual: ${lead.temperatura}
 - Tipo de cliente: ${tipoCliente}
+- Já comprou: ${lead.comprou ? "SIM (é cliente — dar suporte)" : "não"}
 - Diagnóstico até agora: ${lead.diagnostico || "(nenhum ainda)"}
 
 # Como tratar este contato
-${regraTom}${regraOrigem}
+${regraTom}${regraOrigem}${regraComprador}
 
 A seguir vem o histórico real da conversa. Continue de onde parou.`;
 

@@ -233,5 +233,18 @@ export async function ingerirVenda(
     }
   }
 
+  // Reembolso / chargeback: registra no ledger (visibilidade + métrica de refund).
+  // A ficha do lead NÃO é movida automaticamente — a decisão fica com o humano.
+  if ((venda.evento === "reembolso" || venda.evento === "chargeback") && leadId) {
+    await registrarEvento({
+      tenantId,
+      leadId,
+      tipo: "venda_reembolsada",
+      origem: plataforma,
+      valorCents: venda.valorCents,
+      dados: { plataforma, tipo: venda.evento, external_id: venda.externalId },
+    });
+  }
+
   return { registrado: true, leadId };
 }
