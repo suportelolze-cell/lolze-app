@@ -16,6 +16,8 @@ export type PersonaConfig = {
   /** Régua de qualificação por nicho: o que é quente/morno/frio neste negócio. */
   reguaQualificacao: string;
   agenteAtivo: boolean;
+  /** Playbook do tenant: 'servico_local' (padrão) ou 'infoproduto'. Troca o fluxo do SDR. */
+  playbook: string;
 };
 
 /** Uma mensagem do histórico da conversa. */

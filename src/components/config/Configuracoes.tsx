@@ -33,6 +33,7 @@ import { WhatsAppCard } from "./WhatsAppCard";
 import { IaSwitchCard } from "./IaSwitchCard";
 import { CaptacaoNumerosCard } from "./CaptacaoNumerosCard";
 import { CheckoutIntegracoes } from "./CheckoutIntegracoes";
+import { PlaybookCard } from "./PlaybookCard";
 import { desconectarGoogle } from "@/lib/google/actions";
 import type { GoogleStatus } from "@/lib/google/oauth";
 import { PageHeader, Acento, Button, Badge, StatusDot, buttonClasses } from "@/components/ui";
@@ -119,6 +120,14 @@ export function Configuracoes({
         <div className="min-w-0 flex-1">
           {aba === "identidade" && (
             <div className="flex flex-col gap-6">
+              {equipeInfo.podeGerenciar && (
+                <Painel
+                  titulo="Tipo de operação"
+                  micro="Serviço local ou produtor de infoproduto. Ajusta o roteiro do agente de IA."
+                >
+                  <PlaybookCard />
+                </Painel>
+              )}
               <Identidade cfg={cfg} setCfg={setCfg} />
               <RespostasRapidasPanel inicial={respostasRapidas} />
             </div>
