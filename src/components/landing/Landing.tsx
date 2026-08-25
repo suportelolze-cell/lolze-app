@@ -21,7 +21,6 @@ import {
   MessageCircle,
   Mail,
   Send,
-  Check,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { FAQ } from "./FAQ";
@@ -29,7 +28,6 @@ import { AplicarButton } from "./AplicarButton";
 import { Aplicacao } from "./Aplicacao";
 import { Diagnostico } from "./Diagnostico";
 import { ProvaReal } from "./ProvaReal";
-import type { PlanoPublico } from "@/lib/cadastro/data";
 import { ROTAS } from "@/lib/rotas";
 
 // CTA principal → WhatsApp (troque pelo número real da operação)
@@ -38,16 +36,16 @@ const WHATSAPP =
   encodeURIComponent("Quero aplicar para uma Sessão Estratégica Lolze.");
 
 const NICHOS = [
-  "Clínicas",
-  "Estética",
-  "Academias",
-  "Painel Solar",
-  "Advocacia",
-  "Odontologia",
-  "Pet Shops",
+  "Cursos",
+  "Mentorias",
+  "Comunidades",
+  "Ebooks",
+  "Lançamentos",
+  "Perpétuo",
+  "Negócios locais",
 ];
 
-export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
+export function Landing() {
   return (
     <div className="bg-bege-principal">
       {/* ===================== NAVBAR ===================== */}
@@ -58,7 +56,6 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             {[
               ["Início", "#topo"],
               ["Solução", "#solucao"],
-              ["Planos", "#planos"],
               ["Resultados", "#resultados"],
               ["Dúvidas", "#faq"],
             ].map(([t, h], i) => (
@@ -103,19 +100,19 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
         />
         <div className="relative mx-auto max-w-4xl">
           <h1 className="font-corpo text-5xl font-semibold leading-[1.04] tracking-tight text-texto sm:text-6xl lg:text-7xl">
-            Pare de <span className="font-display font-medium italic">perder vendas</span>{" "}
-            no WhatsApp e{" "}
-            <span className="font-display font-medium italic">sangrar o caixa</span> da sua
-            empresa.
+            Pare de <span className="font-display font-medium italic">perder venda</span>{" "}
+            no PIX gerado e no{" "}
+            <span className="font-display font-medium italic">carrinho abandonado</span>.
           </h1>
 
           <p className="mx-auto mt-7 max-w-3xl text-lg leading-relaxed text-texto-suave">
-            Implantamos uma infraestrutura de{" "}
-            <span className="font-display italic text-texto">IA comercial</span> que{" "}
+            A Lolze é a{" "}
+            <span className="font-display italic text-texto">central comercial de IA</span> do
+            produtor de infoproduto:{" "}
             <span className="font-semibold text-texto">
-              atende, qualifica e agenda clientes em menos de 7 segundos,
+              recupera o pagamento pendente, entrega o acesso na hora e atende seu comprador
             </span>{" "}
-            colocando cada lead em atendimento e no caminho do agendamento, sem fila e sem horário.
+            no WhatsApp e no e-mail. Do clique do anúncio ao pós-venda, sem você no operacional.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -155,7 +152,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
       {/* ===================== NICHOS (trust) ===================== */}
       <section className="px-6 py-12">
         <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-texto-suave/70">
-          Feito para negócios de serviço com agenda
+          Feito para quem vende infoproduto (e negócios locais também)
         </p>
         <div className="mx-auto mt-7 flex max-w-4xl flex-wrap items-center justify-center gap-x-10 gap-y-5">
           {NICHOS.map((n) => (
@@ -179,9 +176,9 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             </h2>
             <div className="lg:pb-2">
               <p className="text-texto-suave">
-                Enquanto você microgerencia o atendimento, a concorrência atende seu
-                lead mais rápido. Nós estancamos esse sangramento com uma linha de
-                montagem implacável:
+                Cada PIX que não é pago, cada carrinho abandonado e cada comprador
+                sem resposta é dinheiro saindo. Nós estancamos esse vazamento com uma
+                linha de montagem implacável:
               </p>
               <a
                 href="#como-trabalhamos"
@@ -215,18 +212,18 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
               <div className="mt-6 space-y-5">
                 <Recurso
                   icon={Bot}
-                  titulo="O Cão de Guarda (Filtro IA)"
-                  texto="Nossa IA atende em 2 segundos, quebra objeções e descarta curiosos. Só clientes quentes avançam."
+                  titulo="Recuperação de venda (IA)"
+                  texto="A IA cutuca quem gerou PIX ou boleto e não pagou, e quem abandonou o carrinho, trazendo a venda de volta sem você levantar um dedo."
                 />
                 <Recurso
                   icon={LayoutDashboard}
-                  titulo="O Centro de Comando (CRM)"
-                  texto="Um painel visual para sua equipe. Seu vendedor só entra no chat no momento decisivo para fechar a venda."
+                  titulo="Central de vendas e clientes (CRM)"
+                  texto="Todo comprador e lead num lugar só, com o que cada um comprou. Sua equipe entra só no momento decisivo."
                 />
                 <Recurso
                   icon={ShieldCheck}
-                  titulo="Agenda Blindada (Anti-faltas)"
-                  texto="Lembretes automáticos 24h e 2h antes. Reduzimos as faltas da sua clínica ou escritório a quase zero."
+                  titulo="Entrega e suporte no automático"
+                  texto="Compra aprovada, o acesso vai na hora. E a IA responde as dúvidas de acesso do seu comprador, no WhatsApp e no e-mail."
                 />
               </div>
               <a
@@ -261,9 +258,9 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
               texto="Sua equipe não perde mais tempo sendo 'tiradora de dúvidas'. Zero esforço com leads desqualificados."
             />
             <Stat
-              numero="85%"
+              numero="R$"
               titulo="Sala de máquinas transparente"
-              texto="Controle absoluto do seu custo por lead e agendamento confirmado em um dashboard focado apenas no lucro."
+              texto="Faturamento, quanto foi recuperado de PIX e carrinho, e custo por venda num painel focado só no lucro."
             />
           </div>
           <p className="mt-8 text-center text-xs italic text-texto-suave/70">
@@ -291,7 +288,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
 
           <div className="mt-10 grid items-center gap-8 lg:grid-cols-2">
             <div className="space-y-4">
-              <Passo icon={LayoutDashboard} n="01" titulo="Dashboard de Vaidade Zero" texto="Veja exatamente quanto você investiu e qual foi o custo exato de cada agendamento confirmado na semana." />
+              <Passo icon={LayoutDashboard} n="01" titulo="Dashboard de Vaidade Zero" texto="Veja exatamente quanto você faturou, quanto foi recuperado e o custo real de cada venda na semana." />
               <Passo icon={KanbanSquare} n="02" titulo="Pipeline Visual (Kanban)" texto="Arraste e solte clientes até o fechamento. Chega de esquecer quem precisava de um retorno financeiro." />
               <Passo icon={GraduationCap} n="03" titulo="Onboarding guiado" texto="Um passo a passo dentro da plataforma leva você e sua equipe a dominar o painel desde o primeiro dia." />
             </div>
@@ -299,9 +296,6 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           </div>
         </div>
       </section>
-
-      {/* ===================== PLANOS ===================== */}
-      <Planos planos={planos} />
 
       {/* ===================== FAQ ===================== */}
       <FAQ />
@@ -355,7 +349,7 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
             </span>
           </div>
           <h2 className="mx-auto max-w-4xl font-corpo text-3xl font-semibold leading-tight text-bege-principal sm:text-4xl lg:text-5xl">
-            Sua agenda vai se lotar. A questão é: com a{" "}
+            Sua operação vai vender no automático. A questão é: com a{" "}
             <span className="font-display font-medium italic">Lolze</span> ou com a{" "}
             <span className="font-display font-medium italic">sorte</span>?
           </h2>
@@ -381,8 +375,8 @@ export function Landing({ planos = [] }: { planos?: PlanoPublico[] }) {
           <div className="sm:col-span-2 lg:col-span-1">
             <Logo variante="lockup" tom="branco" height={26} />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-bege-principal/50">
-              A infraestrutura de aquisição que atende cada lead na hora e conduz
-              a conversa até o agendamento.
+              A central comercial que atende cada lead na hora e conduz da venda
+              até a entrega e o pós-venda.
             </p>
           </div>
           <FooterCol titulo="Navegação" links={[["Solução", "#solucao"], ["Resultados", "#resultados"], ["Como funciona", "#funciona"], ["Dúvidas", "#faq"]]} />
@@ -506,126 +500,6 @@ function FooterCol({ titulo, links }: { titulo: string; links: string[][] }) {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-/* ----- Planos ----- */
-function moeda(cents: number) {
-  return "R$ " + Math.round(cents / 100).toLocaleString("pt-BR");
-}
-
-function Planos({ planos }: { planos: PlanoPublico[] }) {
-  if (!planos.length) return null;
-  return (
-    <section id="planos" className="px-6 py-20">
-      <div className="mx-auto max-w-6xl">
-        <div className="mx-auto max-w-2xl text-center">
-          <Selo center>Planos</Selo>
-          <h2 className="font-display text-3xl font-medium italic text-texto sm:text-4xl">
-            Escolha o tamanho da sua máquina.
-          </h2>
-          <p className="mt-4 text-texto-suave">
-            Sem fidelidade no piloto · 1º mês de carência · cancele quando quiser.
-          </p>
-        </div>
-
-        <div
-          className={`mt-12 grid gap-5 ${
-            planos.length <= 2
-              ? "mx-auto max-w-3xl sm:grid-cols-2"
-              : planos.length === 3
-                ? "md:grid-cols-3"
-                : "md:grid-cols-2 lg:grid-cols-4"
-          }`}
-        >
-          {planos.map((p) => (
-            <PlanoCard key={p.id} p={p} destaque={p.id === "growth"} />
-          ))}
-        </div>
-
-        <p className="mt-6 text-center text-xs text-texto-suave">
-          Valores mensais. A implementação é cobrada uma única vez. Precisa de mais volume?
-          Fale com a gente no plano Enterprise.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function PlanoCard({ p, destaque }: { p: PlanoPublico; destaque?: boolean }) {
-  // "Consulta" = Advanced (sob_consulta, com piso "a partir de") ou plano sem preço.
-  const consulta = p.sobConsulta || p.mensalCents <= 0;
-  const temMensal = p.mensalCents > 0;
-  const temOferta = p.setupCentsDe > p.setupCents; // preço oficial > cobrado → lançamento
-  return (
-    <div
-      className={`relative flex flex-col rounded-2xl bg-superficie p-6 ${
-        destaque ? "border-2 border-marca" : "border border-borda"
-      }`}
-    >
-      {destaque && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-marca px-3 py-1 text-[11px] font-bold text-bege-principal">
-          Mais escolhido
-        </span>
-      )}
-      <h3 className="font-corpo text-lg font-bold text-texto">{p.nome}</h3>
-
-      {consulta ? (
-        <div className="mt-2">
-          {temMensal ? (
-            <div className="flex items-baseline gap-1">
-              <span className="text-xs text-texto-suave">a partir de</span>
-              <span className="text-3xl font-semibold text-texto">{moeda(p.mensalCents)}</span>
-              <span className="text-sm text-texto-suave">/mês</span>
-            </div>
-          ) : (
-            <div className="font-display text-2xl font-medium italic text-texto">Sob consulta</div>
-          )}
-        </div>
-      ) : (
-        <div className="mt-2 flex items-baseline gap-1">
-          <span className="text-3xl font-semibold text-texto">{moeda(p.mensalCents)}</span>
-          <span className="text-sm text-texto-suave">/mês</span>
-        </div>
-      )}
-      {!consulta && p.setupCents > 0 && (
-        <p className="mt-1 text-xs text-texto-suave">
-          Implantação:{" "}
-          {temOferta && <span className="text-texto-suave/60 line-through">{moeda(p.setupCentsDe)}</span>}{" "}
-          <strong className="text-texto">{moeda(p.setupCents)}</strong>{" "}
-          {temOferta ? <span className="font-semibold text-marca">(lançamento)</span> : "(única)"}
-        </p>
-      )}
-      {consulta && p.setupCents > 0 && (
-        <p className="mt-1 text-xs text-texto-suave">
-          Implantação a partir de {moeda(p.setupCents)}
-        </p>
-      )}
-
-      <ul className="mt-5 flex-1 space-y-2.5 text-sm">
-        {p.recursos.map((r, i) => (
-          <li key={i} className="flex gap-2 text-texto">
-            <Check size={16} className="mt-0.5 shrink-0 text-marca" />
-            <span>{r}</span>
-          </li>
-        ))}
-      </ul>
-
-      {consulta ? (
-        <AplicarButton className="mt-6 flex items-center justify-center gap-2 rounded-full border border-borda bg-fundo px-5 py-3 text-sm font-bold text-texto transition-colors hover:border-marca hover:text-marca">
-          Falar com a gente
-        </AplicarButton>
-      ) : (
-        <Link
-          href={`${ROTAS.auth.register}?plano=${p.id}`}
-          className={`mt-6 flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-transform hover:scale-[1.02] ${
-            destaque ? "bg-marca text-bege-principal" : "bg-escuro-quente text-bege-principal"
-          }`}
-        >
-          Começar agora <ArrowRight size={16} />
-        </Link>
-      )}
     </div>
   );
 }
