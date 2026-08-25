@@ -21,7 +21,9 @@ export type TipoEvento =
   | "appointment_attended"
   | "sale_won"
   | "revenue_confirmed"
-  | "lead_reactivated";
+  | "lead_reactivated"
+  | "entrega_enviada"
+  | "venda_reembolsada";
 
 export async function registrarEvento(e: {
   tenantId: string;

@@ -1,6 +1,9 @@
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { registrarEvento } from "@/lib/eventos";
+import { registrarErro } from "@/lib/observability/erros";
+import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { agendarRecuperacao } from "@/lib/agent/followup-cadencia";
+import { buscarMensagemEntrega } from "./entrega";
 import type { VendaCanonica } from "./core";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
@@ -159,6 +162,44 @@ export async function ingerirVenda(
       valorCents: venda.valorCents,
       dados: { plataforma, external_id: venda.externalId },
     });
+
+    // Entrega automática do acesso: só se houver mensagem configurada e o lead
+    // for alcançável por canal de mensagem (WhatsApp/Instagram). Best-effort:
+    // nunca quebra a ingestão. Roda uma vez por compra (o bloco é idempotente).
+    try {
+      const { data: l } = await admin
+        .from("app_leads")
+        .select("canal")
+        .eq("tenant_id", tenantId)
+        .eq("id", leadId)
+        .maybeSingle();
+      const canal = (l?.canal as string | undefined) ?? "";
+      if (canal === "whatsapp" || canal === "instagram") {
+        const mensagem = await buscarMensagemEntrega(admin, tenantId, venda.oferta);
+        if (mensagem) {
+          const { data: msgRow } = await admin
+            .from("app_mensagens")
+            .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto: mensagem })
+            .select("id")
+            .single();
+          const entrega = await dispatchOutbound(
+            tenantId,
+            leadId,
+            mensagem,
+            (msgRow?.id as number | undefined) ?? undefined
+          );
+          await registrarEvento({
+            tenantId,
+            leadId,
+            tipo: "entrega_enviada",
+            origem: plataforma,
+            dados: { plataforma, oferta: venda.oferta, entregue: entrega.ok },
+          });
+        }
+      }
+    } catch (e) {
+      await registrarErro({ tenantId, leadId, contexto: "checkout.entrega", erro: e, severidade: "media" });
+    }
   }
 
   // Venda pendente (PIX/boleto gerado, carrinho abandonado): agenda a régua de
@@ -190,6 +231,19 @@ export async function ingerirVenda(
         .eq("tenant_id", tenantId)
         .eq("id", leadId);
     }
+  }
+
+  // Reembolso / chargeback: registra no ledger (visibilidade + métrica de refund).
+  // A ficha do lead NÃO é movida automaticamente — a decisão fica com o humano.
+  if ((venda.evento === "reembolso" || venda.evento === "chargeback") && leadId) {
+    await registrarEvento({
+      tenantId,
+      leadId,
+      tipo: "venda_reembolsada",
+      origem: plataforma,
+      valorCents: venda.valorCents,
+      dados: { plataforma, tipo: venda.evento, external_id: venda.externalId },
+    });
   }
 
   return { registrado: true, leadId };
