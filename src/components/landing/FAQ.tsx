@@ -9,12 +9,12 @@ const ITENS: { q: string; a: string }[] = [
     a: "A Lolze é um multiplicador de resultados. Se você já tem fluxo de leads chegando, nós vamos garantir que nenhum deles esfrie ou seja perdido por lentidão.",
   },
   {
-    q: "2. Você tem um serviço validado e de alto valor?",
-    a: "Nosso ecossistema foi desenhado para negócios onde cada agendamento perdido representa milhares de reais deixados na mesa (Clínicas, Advocacia, Serviços Premium).",
+    q: "2. Você tem um produto ou oferta que já vende?",
+    a: "Nosso ecossistema foi desenhado para quem já tem um produto validado (curso, mentoria, comunidade, ebook) e quer parar de perder venda no pagamento pendente e no carrinho abandonado.",
   },
   {
-    q: "3. Você tem capacidade para atender mais clientes?",
-    a: "A automação vai acelerar a entrada de clientes quentes. Sua equipe de especialistas precisa ter agenda e estrutura para entregar o serviço quando a demanda escalar.",
+    q: "3. Você quer sair do operacional?",
+    a: "A IA assume o repetitivo: recuperar venda, entregar o acesso e responder as dúvidas do comprador. Você e seu time focam em criar e vender, não em apagar incêndio no direct.",
   },
 ];
 
