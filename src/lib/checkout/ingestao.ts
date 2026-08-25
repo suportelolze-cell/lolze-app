@@ -4,6 +4,7 @@ import { registrarErro } from "@/lib/observability/erros";
 import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { agendarRecuperacao } from "@/lib/agent/followup-cadencia";
 import { buscarMensagemEntrega } from "./entrega";
+import { enviarEmail, emailConfigurado } from "@/lib/email/client";
 import type { VendaCanonica } from "./core";
 
 type Admin = ReturnType<typeof getCrmAdmin>;
@@ -163,20 +164,22 @@ export async function ingerirVenda(
       dados: { plataforma, external_id: venda.externalId },
     });
 
-    // Entrega automática do acesso: só se houver mensagem configurada e o lead
-    // for alcançável por canal de mensagem (WhatsApp/Instagram). Best-effort:
-    // nunca quebra a ingestão. Roda uma vez por compra (o bloco é idempotente).
+    // Entrega automática do acesso, se houver mensagem configurada. Prefere o
+    // canal de mensagem (WhatsApp/Instagram); se o lead não é alcançável por lá
+    // mas tem e-mail, cai no e-mail (dark até o provedor estar configurado).
+    // Best-effort: nunca quebra a ingestão. Roda uma vez por compra.
     try {
       const { data: l } = await admin
         .from("app_leads")
-        .select("canal")
+        .select("canal,email")
         .eq("tenant_id", tenantId)
         .eq("id", leadId)
         .maybeSingle();
       const canal = (l?.canal as string | undefined) ?? "";
-      if (canal === "whatsapp" || canal === "instagram") {
-        const mensagem = await buscarMensagemEntrega(admin, tenantId, venda.oferta);
-        if (mensagem) {
+      const emailLead = (l?.email as string | undefined) ?? "";
+      const mensagem = await buscarMensagemEntrega(admin, tenantId, venda.oferta);
+      if (mensagem) {
+        if (canal === "whatsapp" || canal === "instagram") {
           const { data: msgRow } = await admin
             .from("app_mensagens")
             .insert({ tenant_id: tenantId, lead_id: leadId, autor: "ia", texto: mensagem })
@@ -193,7 +196,17 @@ export async function ingerirVenda(
             leadId,
             tipo: "entrega_enviada",
             origem: plataforma,
-            dados: { plataforma, oferta: venda.oferta, entregue: entrega.ok },
+            dados: { plataforma, oferta: venda.oferta, via: "whatsapp", entregue: entrega.ok },
+          });
+        } else if (emailLead && emailConfigurado()) {
+          const assunto = venda.produtoNome ? `Seu acesso: ${venda.produtoNome}` : "Seu acesso";
+          const r = await enviarEmail({ para: emailLead, assunto, texto: mensagem });
+          await registrarEvento({
+            tenantId,
+            leadId,
+            tipo: "entrega_enviada",
+            origem: plataforma,
+            dados: { plataforma, oferta: venda.oferta, via: "email", entregue: r.ok },
           });
         }
       }
