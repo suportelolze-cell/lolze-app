@@ -164,13 +164,29 @@ export async function setIaAtiva(ativo: boolean): Promise<{ ok: boolean; erro?: 
   return { ok: true };
 }
 
+/** Mensagem clara para cada motivo de não-envio do toque manual de reativação. */
+const MOTIVO_REATIVAR: Record<string, string> = {
+  parado: "Não enviei: este contato está com um humano no atendimento, foi marcado como perdido, ou não está numa régua ativa.",
+  ia_off: "Não enviei: a IA está pausada (ou sem chave configurada).",
+  limite: "Não enviei: o limite de IA do mês foi atingido.",
+  entrega_falhou: "Não consegui entregar no canal do contato agora. Tente de novo em instantes.",
+  erro_ia: "A IA não conseguiu gerar a mensagem agora. Tente de novo.",
+  sem_texto: "A IA não gerou uma mensagem para enviar.",
+  sem_lead: "Contato não encontrado.",
+};
+
 /** Reativa um cliente da base com a IA (manda um toque de reativação na hora). */
 export async function reativarClienteIA(leadId: number): Promise<{ ok: boolean; erro?: string }> {
   const tid = await getTenantId();
   if (!tid) return { ok: false, erro: "Sem empresa ativa." };
   try {
     const { enviarFollowup } = await import("@/lib/agent/followup");
-    await enviarFollowup(tid, leadId);
+    const r = await enviarFollowup(tid, leadId);
+    // Só é sucesso se um toque REAL saiu — senão devolve o motivo (sem gravar
+    // evento fantasma nem mostrar "feito" falso na UI).
+    if (!r.enviado) {
+      return { ok: false, erro: MOTIVO_REATIVAR[r.motivo ?? ""] ?? "Não foi possível reativar agora." };
+    }
   } catch (e) {
     return { ok: false, erro: (e as Error).message };
   }

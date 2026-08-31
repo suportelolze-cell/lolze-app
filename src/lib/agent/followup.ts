@@ -46,11 +46,16 @@ type LeadFu = {
   followup_count: number | null;
 };
 
+/** Resultado de um toque: se uma mensagem REAL saiu, e por que não (se não). */
+export type ResultadoFollowup = { enviado: boolean; motivo?: string };
+
 /**
- * Gera e envia UM toque de follow-up para um lead (chamado pelo cron).
- * Best-effort: nunca lança; sempre reprograma ou encerra a régua.
+ * Gera e envia UM toque de follow-up para um lead (chamado pelo cron e pela
+ * ação manual "reativar"). Best-effort: nunca lança; sempre reprograma ou
+ * encerra a régua. Retorna se um toque REAL foi enviado — o cron ignora esse
+ * retorno (retrocompatível), a ação manual usa para não mostrar sucesso falso.
  */
-export async function enviarFollowup(tenantId: string, leadId: number): Promise<void> {
+export async function enviarFollowup(tenantId: string, leadId: number): Promise<ResultadoFollowup> {
   const admin = getCrmAdmin();
 
   const { data } = await admin
@@ -60,7 +65,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
     .eq("id", leadId)
     .maybeSingle();
   const lead = data as LeadFu | null;
-  if (!lead) return;
+  if (!lead) return { enviado: false, motivo: "sem_lead" };
 
   const parar = async () => {
     await admin
@@ -85,7 +90,8 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
     (lead.coluna === "ganho" && !posvenda) ||
     (posvenda && lead.coluna !== "ganho")
   ) {
-    return parar();
+    await parar();
+    return { enviado: false, motivo: "parado" };
   }
 
   const { data: cfg } = await admin
@@ -98,12 +104,13 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   if (!ativo || !temChaveIA()) {
     // IA desligada: PAUSA a pós-venda (não destrói a trilha de um cliente que já
     // pagou — retoma quando religar). Follow-up/reativação normais param mesmo.
-    if (posvenda) return;
-    return parar();
+    if (posvenda) return { enviado: false, motivo: "ia_off" };
+    await parar();
+    return { enviado: false, motivo: "ia_off" };
   }
   // Trava de custo por plano: estourou o teto de IA do mês → pula o toque agora
   // (não encerra a régua; retoma quando o mês virar ou o teto aumentar).
-  if (!(await dentroDoLimiteIA(tenantId))) return;
+  if (!(await dentroDoLimiteIA(tenantId))) return { enviado: false, motivo: "limite" };
 
   // Histórico recente para dar contexto ao toque.
   const { data: msgs } = await admin
@@ -184,7 +191,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   } catch (e) {
     // falha de IA: reprograma pra tentar no próximo ciclo (não consome o toque)
     await registrarErro({ tenantId, leadId, contexto: "followup", erro: e });
-    return;
+    return { enviado: false, motivo: "erro_ia" };
   }
 
   if (texto) {
@@ -217,7 +224,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
         .update({ proximo_followup: ts(60), updated_at: new Date().toISOString() })
         .eq("tenant_id", tenantId)
         .eq("id", leadId);
-      return;
+      return { enviado: false, motivo: "entrega_falhou" };
     }
   }
 
@@ -235,4 +242,7 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
     })
     .eq("tenant_id", tenantId)
     .eq("id", leadId);
+
+  // Chegou aqui: mandou de verdade (texto + entrega ok) ou não gerou texto.
+  return texto ? { enviado: true } : { enviado: false, motivo: "sem_texto" };
 }
