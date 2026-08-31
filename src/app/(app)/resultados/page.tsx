@@ -8,6 +8,7 @@ import {
   Inbox,
   Zap,
   ShieldCheck,
+  Workflow,
 } from "lucide-react";
 import { getResultados } from "@/lib/resultados";
 import { getSessao } from "@/lib/supabase/tenant";
@@ -115,9 +116,17 @@ export default async function ResultadosPage({
 
           {/* Funil por eventos */}
           <section className="rounded-xl border border-borda bg-superficie p-6">
-            <h2 className="mb-1 flex items-center gap-2 font-corpo text-lg font-bold text-texto">
-              <Zap size={18} className="text-marca" /> Funil de conversão
-            </h2>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 font-corpo text-lg font-bold text-texto">
+                <Zap size={18} className="text-marca" /> Funil de conversão
+              </h2>
+              <Link
+                href="/funil"
+                className="inline-flex items-center gap-1.5 rounded-md border border-borda px-3 py-1.5 text-xs font-semibold text-texto-suave transition-colors hover:border-marca hover:text-marca"
+              >
+                <Workflow size={14} /> Ver Raio-X visual
+              </Link>
+            </div>
             <p className="mb-5 text-sm text-texto-suave">
               Quantos leads distintos chegaram a cada etapa, e quanto converteu da etapa anterior.
             </p>
