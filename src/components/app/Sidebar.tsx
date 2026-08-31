@@ -11,7 +11,6 @@ import {
   CalendarDays,
   Workflow,
   TrendingUp,
-  Radar,
   Users,
   Settings,
   LogOut,
@@ -45,7 +44,6 @@ const grupos: Grupo[] = [
     itens: [
       { href: "/resultados", label: "Resultados", icon: TrendingUp },
       { href: "/funil", label: "Raio-X do Funil", icon: Workflow },
-      { href: "/captacao", label: "Captação & Disparos", icon: Radar, gestorOnly: true },
     ],
   },
   {
