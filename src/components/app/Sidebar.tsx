@@ -12,6 +12,7 @@ import {
   Workflow,
   TrendingUp,
   Users,
+  Receipt,
   Settings,
   LogOut,
   Shield,
@@ -37,6 +38,7 @@ const grupos: Grupo[] = [
       { href: "/atendimento", label: "Central de Atendimento", icon: MessagesSquare },
       { href: "/agenda", label: "Agenda Mágica", icon: CalendarDays },
       { href: "/contatos", label: "Contatos", icon: Users },
+      { href: "/vendas", label: "Vendas", icon: Receipt },
     ],
   },
   {
