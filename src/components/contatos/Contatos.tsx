@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, Download, Loader2, MessageSquare, Mail, RefreshCw, Sparkles } from "lucide-react";
 import { exportarLeadsCsv, reativarClienteIA } from "@/lib/supabase/crm-actions";
 import type { Contato } from "@/lib/contatos/data";
-import { PageHeader, Button, Badge, buttonClasses } from "@/components/ui";
+import { PageHeader, Button, Badge, buttonClasses, Paginacao, usePaginado } from "@/components/ui";
 
 const CANAL_LABEL: Record<string, string> = {
   whatsapp: "WhatsApp",
@@ -93,6 +93,8 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
       return porCanal && porSituacao && porContato && porBusca;
     });
   }, [contatos, filtro, situacao, contato, busca]);
+
+  const pag = usePaginado(lista, 25, `${filtro}|${situacao}|${contato}|${busca}`);
 
   const resumoClientes = useMemo(() => {
     const clientes = contatos.filter((c) => c.compras > 0);
@@ -254,7 +256,7 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
                   </td>
                 </tr>
               ) : (
-                lista.map((c) => {
+                pag.visiveis.map((c) => {
                   const f = friezaDe(c.ultimoContato);
                   return (
                     <tr key={c.id} className="hover:bg-fundo-2">
@@ -348,8 +350,17 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
           </table>
         </div>
 
-        <p className="text-xs text-texto-suave">
-          Mostrando {lista.length} de {contatos.length} contatos. A exportação respeita o filtro de canal selecionado.
+        <Paginacao
+          pagina={pag.pagina}
+          totalPaginas={pag.totalPaginas}
+          inicio={pag.inicio}
+          fim={pag.fim}
+          total={pag.total}
+          onPagina={pag.setPagina}
+          rotulo="contatos"
+        />
+        <p className="text-[11px] text-texto-suave">
+          {contatos.length} contatos carregados. A exportação respeita o filtro de canal selecionado.
         </p>
       </div>
     </div>
