@@ -100,7 +100,21 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
     return { qtd: clientes.length, totalCents };
   }, [contatos]);
 
+  // A exportação só respeita o filtro de CANAL (não situação/último-contato/busca),
+  // então o botão desabilita com base nisso — não na lista visível filtrada.
+  const totalExportavel = useMemo(
+    () => (filtro === "todos" ? contatos.length : contatos.filter((c) => c.canal === filtro).length),
+    [contatos, filtro]
+  );
+
   async function reativar(id: number) {
+    const alvo = contatos.find((c) => c.id === id);
+    if (
+      !window.confirm(
+        `Enviar agora uma mensagem de reativação da IA para ${alvo?.nome || "este contato"}? A IA gera o texto e dispara no canal dele. Isso não dá para desfazer.`
+      )
+    )
+      return;
     setReativando(id);
     const r = await reativarClienteIA(id);
     setReativando(null);
@@ -138,7 +152,7 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
         titulo="Contatos"
         descricao="Todos os seus contatos e clientes, de todos os canais, num lugar só. Filtre por situação e por quem faz tempo que não fala com você."
         acao={
-          <Button variant="primary" onClick={exportar} disabled={exportando || lista.length === 0}>
+          <Button variant="primary" onClick={exportar} disabled={exportando || totalExportavel === 0}>
             {exportando ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             Exportar planilha
           </Button>
