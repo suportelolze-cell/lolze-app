@@ -9,3 +9,4 @@ export { Badge, StatusDot, type BadgeTom } from "./Badge";
 export { PageHeader, Acento } from "./PageHeader";
 export { EmptyState } from "./EmptyState";
 export { MetricCard } from "./MetricCard";
+export { Paginacao, usePaginado } from "./Paginacao";

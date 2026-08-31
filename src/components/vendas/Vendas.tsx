@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import type { VendasDados } from "@/lib/vendas/data";
-import { PageHeader, Acento, Badge, type BadgeTom } from "@/components/ui";
+import { PageHeader, Acento, Badge, Paginacao, usePaginado, type BadgeTom } from "@/components/ui";
 
 const EVENTO_META: Record<string, { label: string; tom: BadgeTom }> = {
   compra_aprovada: { label: "Aprovada", tom: "menta" },
@@ -56,6 +56,8 @@ export function Vendas({ dados }: { dados: VendasDados }) {
       return porTipo && porBusca;
     });
   }, [vendas, filtro, busca]);
+
+  const pag = usePaginado(lista, 25, `${filtro}|${busca}`);
 
   const cards: { label: string; valor: string; forte?: boolean }[] = [
     { label: "Faturado (aprovado)", valor: brl(resumo.faturadoCents), forte: true },
@@ -139,7 +141,7 @@ export function Vendas({ dados }: { dados: VendasDados }) {
                   </td>
                 </tr>
               ) : (
-                lista.map((v) => {
+                pag.visiveis.map((v) => {
                   const m = metaEvento(v.evento);
                   return (
                     <tr key={v.id} className="hover:bg-fundo-2">
@@ -161,9 +163,15 @@ export function Vendas({ dados }: { dados: VendasDados }) {
           </table>
         </div>
 
-        <p className="text-xs text-texto-suave">
-          Mostrando {lista.length} de {vendas.length} vendas.
-        </p>
+        <Paginacao
+          pagina={pag.pagina}
+          totalPaginas={pag.totalPaginas}
+          inicio={pag.inicio}
+          fim={pag.fim}
+          total={pag.total}
+          onPagina={pag.setPagina}
+          rotulo="vendas"
+        />
       </div>
     </div>
   );
