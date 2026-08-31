@@ -91,3 +91,37 @@ export async function getVendas(limit = 500): Promise<VendasDados> {
 
   return { vendas, resumo, migracaoPendente: false };
 }
+
+/**
+ * Só o resumo de vendas de um período (para o painel). Mesmo recorte de dias das
+ * demais métricas do painel, para não misturar "faturado total" com "leads de 30
+ * dias". Tolerante à tabela ausente.
+ */
+export async function getResumoVendas(
+  dias = 30
+): Promise<{ resumo: VendasResumo; migracaoPendente: boolean }> {
+  const tid = await getTenantId();
+  if (!tid) return { resumo: { ...RESUMO_ZERO }, migracaoPendente: false };
+
+  const desde = new Date(Date.now() - dias * 86400000).toISOString();
+  const sb = getCrmAdmin();
+  const { data, error } = await sb
+    .from("app_vendas")
+    .select("evento,valor_cents")
+    .eq("tenant_id", tid)
+    .gte("criado_em", desde);
+
+  if (error) return { resumo: { ...RESUMO_ZERO }, migracaoPendente: true };
+
+  const rows = (data ?? []) as Array<{ evento: string | null; valor_cents: number | null }>;
+  const resumo: VendasResumo = {
+    faturadoCents: rows
+      .filter((r) => r.evento === "compra_aprovada")
+      .reduce((s, r) => s + Number(r.valor_cents ?? 0), 0),
+    aprovadas: rows.filter((r) => r.evento === "compra_aprovada").length,
+    pendentes: rows.filter((r) => r.evento === "pix_gerado" || r.evento === "boleto_gerado").length,
+    abandonados: rows.filter((r) => r.evento === "checkout_abandonado").length,
+    reembolsos: rows.filter((r) => r.evento === "reembolso" || r.evento === "chargeback").length,
+  };
+  return { resumo, migracaoPendente: false };
+}
