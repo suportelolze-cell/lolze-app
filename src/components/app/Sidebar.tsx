@@ -15,6 +15,7 @@ import {
   Settings,
   LogOut,
   Shield,
+  PanelLeftClose,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -59,11 +60,15 @@ const grupos: Grupo[] = [
 export function Sidebar({
   aberto = false,
   onClose = () => {},
+  recolhido = false,
+  onRecolher = () => {},
   papel = "owner",
   impersonating = false,
 }: {
   aberto?: boolean;
   onClose?: () => void;
+  recolhido?: boolean;
+  onRecolher?: () => void;
   papel?: string;
   impersonating?: boolean;
 }) {
@@ -79,13 +84,21 @@ export function Sidebar({
 
   return (
     <aside
-      className={`no-print fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-escuro-quente transition-transform duration-200 lg:translate-x-0 ${
+      className={`no-print fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-escuro-quente transition-transform duration-200 ${
         aberto ? "translate-x-0" : "-translate-x-full"
-      }`}
+      } ${recolhido ? "lg:-translate-x-full" : "lg:translate-x-0"}`}
     >
-      {/* Logo */}
-      <div className="flex h-20 items-center px-6">
+      {/* Logo + recolher (desktop) */}
+      <div className="flex h-20 items-center justify-between px-6">
         <Logo variante="lockup" tom="branco" height={30} />
+        <button
+          onClick={onRecolher}
+          aria-label="Recolher menu"
+          title="Recolher menu"
+          className="hidden rounded-md p-1.5 text-bege-principal/50 transition-colors hover:bg-white/10 hover:text-bege-principal lg:block"
+        >
+          <PanelLeftClose size={18} />
+        </button>
       </div>
 
       {/* Navegação */}
