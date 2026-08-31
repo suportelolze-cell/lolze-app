@@ -486,51 +486,92 @@ export async function urlsAssinadasMidia(paths: string[]): Promise<Map<string, s
   return mapa;
 }
 
-/** Extrai o texto de uma mensagem crua da Evolution (vários formatos). */
-function extrairTextoMsg(m: any): string {
+/** Tipo de mídia de uma mensagem crua da Evolution (null se for só texto). */
+function tipoMidiaMsg(m: any): "imagem" | "audio" | "documento" | "video" | null {
   const msg = m?.message ?? m ?? {};
-  const t =
-    msg.conversation ??
-    msg.extendedTextMessage?.text ??
-    msg.imageMessage?.caption ??
-    msg.videoMessage?.caption ??
-    msg.documentMessage?.caption ??
-    (msg.audioMessage ? "[áudio]" : "");
-  return String(t || "").trim();
+  if (msg.imageMessage) return "imagem";
+  if (msg.audioMessage) return "audio";
+  if (msg.videoMessage) return "video";
+  if (msg.documentMessage) return "documento";
+  return null;
 }
 
-/** Lista os chats individuais da instância (tolerante a versão). */
-async function buscarChats(instancia: string): Promise<{ jid: string; nome: string }[]> {
+/**
+ * Extrai o texto de uma mensagem crua da Evolution (vários formatos). Mensagem
+ * de mídia SEM legenda vira um marcador ("[imagem]" etc.) em vez de ficar vazia
+ * — assim ela NÃO é descartada na importação (o arquivo em si é baixado à parte).
+ */
+function extrairTextoMsg(m: any): string {
+  const msg = m?.message ?? m ?? {};
+  if (msg.conversation) return String(msg.conversation).trim();
+  if (msg.extendedTextMessage?.text) return String(msg.extendedTextMessage.text).trim();
+  const cap = (k: string) => {
+    const c = msg[k]?.caption ? String(msg[k].caption).trim() : "";
+    return c ? c + " " : "";
+  };
+  if (msg.imageMessage) return (cap("imageMessage") + "[imagem]").trim();
+  if (msg.videoMessage) return (cap("videoMessage") + "[vídeo]").trim();
+  if (msg.documentMessage) {
+    const nome = msg.documentMessage?.fileName ? ` ${msg.documentMessage.fileName}` : "";
+    return (cap("documentMessage") + "[documento" + nome + "]").trim();
+  }
+  if (msg.audioMessage) return "[áudio]";
+  if (msg.stickerMessage) return "[figurinha]";
+  return "";
+}
+
+/** Lista os chats individuais da instância (tolerante a versão). Reporta o erro
+ * real da API quando nenhuma tentativa retorna a lista (para diagnóstico). */
+async function buscarChats(
+  instancia: string
+): Promise<{ chats: { jid: string; nome: string }[]; erroApi?: string }> {
   const tentativas: (RequestInit | undefined)[] = [
     { method: "POST", body: JSON.stringify({}) },
+    { method: "POST", body: JSON.stringify({ where: {} }) },
     undefined, // GET
   ];
+  let ultimoStatus = 0;
   for (const init of tentativas) {
     const r = await evo(`/chat/findChats/${encodeURIComponent(instancia)}`, init);
+    ultimoStatus = r.status ?? 0;
     const arr: any[] | null = Array.isArray(r.json)
       ? r.json
       : Array.isArray(r.json?.chats)
         ? r.json.chats
-        : null;
+        : Array.isArray(r.json?.records)
+          ? r.json.records
+          : null;
     if (r.ok && arr) {
-      return arr
-        .map((c: any) => ({
-          jid: c.remoteJid || c.id || c.jid || c.chatId || "",
-          nome: c.pushName || c.name || c.subject || c.contact?.pushName || "",
-        }))
-        .filter((c) => typeof c.jid === "string" && c.jid.endsWith("@s.whatsapp.net")); // só pessoas, não grupos
+      return {
+        chats: arr
+          .map((c: any) => ({
+            jid: c.remoteJid || c.id || c.jid || c.chatId || "",
+            nome: c.pushName || c.name || c.subject || c.contact?.pushName || "",
+          }))
+          .filter((c) => typeof c.jid === "string" && c.jid.endsWith("@s.whatsapp.net")), // só pessoas, não grupos
+      };
     }
   }
-  return [];
+  return {
+    chats: [],
+    erroApi: `A API do WhatsApp não retornou as conversas (findChats, status ${ultimoStatus || "sem resposta"}).`,
+  };
 }
 
-/** Busca as últimas mensagens de um chat (tolerante a versão). */
-async function buscarMensagens(
-  instancia: string,
-  jid: string,
-  limite: number
-): Promise<{ fromMe: boolean; texto: string; ts: number }[]> {
+type MsgHistorico = {
+  fromMe: boolean;
+  texto: string;
+  ts: number;
+  raw: any;
+  midiaTipo: "imagem" | "audio" | "documento" | "video" | null;
+};
+
+/** Busca as últimas mensagens de um chat (tolerante a versão). Mantém mídia
+ * (não descarta mensagem sem legenda) e carrega a mensagem crua para o download. */
+async function buscarMensagens(instancia: string, jid: string, limite: number): Promise<MsgHistorico[]> {
   const bodies = [
+    { where: { key: { remoteJid: jid } }, limit: limite },
+    { where: { remoteJid: jid }, limit: limite },
     { where: { key: { remoteJid: jid } } },
     { where: { remoteJid: jid } },
   ];
@@ -552,8 +593,10 @@ async function buscarMensagens(
           fromMe: Boolean(m.key?.fromMe ?? m.fromMe),
           texto: extrairTextoMsg(m),
           ts: Number(m.messageTimestamp ?? m.timestamp ?? 0),
+          raw: m,
+          midiaTipo: tipoMidiaMsg(m),
         }))
-        .filter((m) => m.texto)
+        .filter((m) => m.texto) // mídia agora tem marcador, então não some
         .sort((a, b) => a.ts - b.ts)
         .slice(-limite);
     }
@@ -576,12 +619,17 @@ export async function importarHistoricoWhatsapp(tenantId: string): Promise<Impor
   if (!instancia) return { ok: false, contatos: 0, mensagens: 0, erro: "WhatsApp não conectado." };
 
   const admin = getCrmAdmin();
-  const chats = (await buscarChats(instancia)).slice(0, 40); // limita p/ não demorar demais
+  const { chats: todosChats, erroApi } = await buscarChats(instancia);
+  if (erroApi) return { ok: false, contatos: 0, mensagens: 0, erro: erroApi };
+  const chats = todosChats.slice(0, 60);
   if (chats.length === 0)
     return { ok: false, contatos: 0, mensagens: 0, erro: "Nenhuma conversa encontrada (o WhatsApp sincroniza só o histórico recente)." };
 
+  const MAX_MIDIA = 60; // teto de arquivos baixados por import (evita estourar o tempo)
   let contatos = 0;
   let mensagens = 0;
+  let midiasBaixadas = 0;
+  let chatsComMsg = 0;
   for (const c of chats) {
     const numero = c.jid.replace(/@.*/, "");
     if (!numero) continue;
@@ -624,17 +672,64 @@ export async function importarHistoricoWhatsapp(tenantId: string): Promise<Impor
       .eq("lead_id", leadId);
     if ((count ?? 0) > 0) continue;
 
-    const msgs = await buscarMensagens(instancia, c.jid, 15);
-    const rows = msgs.map((m) => ({
-      tenant_id: tenantId,
-      lead_id: leadId,
-      autor: m.fromMe ? "atendente" : "lead",
-      texto: m.texto,
-    }));
+    const msgs = await buscarMensagens(instancia, c.jid, 100);
+    if (msgs.length > 0) chatsComMsg++;
+
+    const rows: Record<string, unknown>[] = [];
+    for (const m of msgs) {
+      const row: Record<string, unknown> = {
+        tenant_id: tenantId,
+        lead_id: leadId,
+        autor: m.fromMe ? "atendente" : "lead",
+        texto: m.texto,
+      };
+      // Baixa e guarda a mídia real (imagem/áudio/documento), até o teto. Vídeo
+      // fica só com o marcador. Best-effort: falha no download não perde a mensagem.
+      if (m.midiaTipo && m.midiaTipo !== "video" && midiasBaixadas < MAX_MIDIA) {
+        try {
+          const mid = await baixarMidiaBase64(instancia, m.raw);
+          if (mid?.base64) {
+            const ext = mid.mime.includes("png")
+              ? "png"
+              : mid.mime.includes("webp")
+                ? "webp"
+                : m.midiaTipo === "audio"
+                  ? "ogg"
+                  : m.midiaTipo === "documento"
+                    ? "pdf"
+                    : "jpg";
+            const path = await uploadMidia(
+              `${tenantId}/${numero}/${m.ts || Date.now()}-${midiasBaixadas}.${ext}`,
+              mid.base64,
+              mid.mime
+            );
+            if (path) {
+              row.midia_url = path;
+              row.midia_tipo = m.midiaTipo;
+              midiasBaixadas++;
+            }
+          }
+        } catch {
+          /* best-effort: fica só o marcador de texto */
+        }
+      }
+      rows.push(row);
+    }
+
     if (rows.length > 0) {
       const { error } = await admin.from("app_mensagens").insert(rows);
       if (!error) mensagens += rows.length;
     }
+  }
+
+  // Achou conversas mas nenhuma mensagem veio: sinaliza (em vez de "ok" mudo com 0).
+  if (mensagens === 0 && chatsComMsg === 0 && chats.length > 0) {
+    return {
+      ok: false,
+      contatos,
+      mensagens: 0,
+      erro: "Encontrei suas conversas, mas a API do WhatsApp não devolveu as mensagens (pode ser a versão da integração). Nada foi importado.",
+    };
   }
 
   return { ok: true, contatos, mensagens };
