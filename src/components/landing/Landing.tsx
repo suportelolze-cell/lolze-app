@@ -20,7 +20,6 @@ import {
   Flame,
   MessageCircle,
   Mail,
-  Send,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { FAQ } from "./FAQ";
@@ -156,7 +155,7 @@ export function Landing() {
         </p>
         <div className="mx-auto mt-7 flex max-w-4xl flex-wrap items-center justify-center gap-x-10 gap-y-5">
           {NICHOS.map((n) => (
-            <span key={n} className="flex items-center gap-2.5 text-base font-bold text-texto-suave/45">
+            <span key={n} className="flex items-center gap-2.5 text-base font-bold text-texto-suave/70">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-texto-suave/10 text-sm font-bold text-texto-suave/55">
                 {n.charAt(0)}
               </span>
@@ -386,14 +385,28 @@ export function Landing() {
 
         <div className="mx-auto mt-12 flex max-w-5xl flex-wrap items-center justify-between gap-4 border-t border-white/10 py-6">
           <p className="text-xs text-bege-principal/40">
-            © 2026 Lolze · Sistema de Escala · suporte.lolze@gmail.com
+            © 2026 Lolze · Sistema de Escala ·{" "}
+            <a href="mailto:suporte.lolze@gmail.com" className="underline hover:text-bege-principal">
+              suporte.lolze@gmail.com
+            </a>
           </p>
           <div className="flex gap-3">
-            {[MessageCircle, Mail, Send].map((Icon, i) => (
-              <span key={i} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-bege-principal/60 hover:text-bege-principal">
-                <Icon size={15} />
-              </span>
-            ))}
+            <a
+              href={WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Falar no WhatsApp"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-bege-principal/60 transition-colors hover:text-bege-principal"
+            >
+              <MessageCircle size={15} />
+            </a>
+            <a
+              href="mailto:suporte.lolze@gmail.com"
+              aria-label="Enviar e-mail"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-bege-principal/60 transition-colors hover:text-bege-principal"
+            >
+              <Mail size={15} />
+            </a>
           </div>
         </div>
 
