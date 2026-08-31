@@ -9,7 +9,6 @@ import {
   KanbanSquare,
   MessagesSquare,
   CalendarDays,
-  Workflow,
   TrendingUp,
   Users,
   Receipt,
@@ -44,8 +43,10 @@ const grupos: Grupo[] = [
   {
     titulo: "Crescimento",
     itens: [
+      // Resultados é a porta única do funil. O Raio-X visual (canvas de Ads,
+      // pesado) virou um detalhamento acessível de dentro de Resultados, então
+      // saiu daqui pra não duplicar destino.
       { href: "/resultados", label: "Resultados", icon: TrendingUp },
-      { href: "/funil", label: "Raio-X do Funil", icon: Workflow },
     ],
   },
   {

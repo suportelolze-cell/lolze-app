@@ -11,6 +11,7 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { ChevronLeft } from "lucide-react";
 import { PERIODOS, real, num, type DadosFunil, type Periodo } from "@/lib/funil";
 import { FunilNode } from "./FunilNode";
 
@@ -109,6 +110,12 @@ export function Funil({ dados }: { dados: Record<Periodo, DadosFunil> }) {
       {/* Cabeçalho */}
       <header className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <div>
+          <a
+            href="/resultados"
+            className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold text-texto-suave transition-colors hover:text-marca"
+          >
+            <ChevronLeft size={14} /> Resultados
+          </a>
           <h1 className="font-display text-2xl font-medium italic tracking-tight text-texto">
             Raio-X do Funil
           </h1>
