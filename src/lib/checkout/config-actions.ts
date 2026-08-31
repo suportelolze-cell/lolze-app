@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getSessao } from "@/lib/supabase/tenant";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { PLATAFORMAS, type Plataforma, type IntegracaoCheckoutView } from "./core";
+import { cifrar } from "./cripto";
 
 const ehGestor = (papel: string) => papel === "owner" || papel === "superadmin";
 const novoToken = () => crypto.randomBytes(32).toString("hex");
@@ -74,7 +75,7 @@ export async function salvarIntegracaoCheckout(input: {
 
   if (atual) {
     const patch: Record<string, unknown> = { ativo };
-    if (secretNovo) patch.secret = secretNovo;
+    if (secretNovo) patch.secret = cifrar(secretNovo);
     const { error } = await admin
       .from("app_checkout_integracoes")
       .update(patch)
@@ -86,7 +87,7 @@ export async function salvarIntegracaoCheckout(input: {
       tenant_id: s.tenantId,
       plataforma: input.plataforma,
       ingest_token: novoToken(),
-      secret: secretNovo || null,
+      secret: secretNovo ? cifrar(secretNovo) : null,
       ativo,
     });
     if (error) return { ok: false, erro: error.message };
