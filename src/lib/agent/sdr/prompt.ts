@@ -90,11 +90,19 @@ Responda SEMPRE como se estivesse digitando direto no chat do lead.`;
 
   const agora = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const tipoCliente = ehBase
-    ? "JÁ É CLIENTE DA BASE (não é a primeira vez — já fez serviço antes)"
-    : "LEAD NOVO (primeiro contato, sem histórico de serviço)";
+    ? info
+      ? "JÁ É CLIENTE/CONTATO CONHECIDO (não é o primeiro contato)"
+      : "JÁ É CLIENTE DA BASE (não é a primeira vez — já fez serviço antes)"
+    : info
+      ? "LEAD NOVO (primeiro contato, sem histórico)"
+      : "LEAD NOVO (primeiro contato, sem histórico de serviço)";
   const regraTom = ehBase
-    ? 'Cliente da base: tom mais íntimo e direto, SEM reapresentar a empresa. Acolha com algo como "que bom te ver de novo!" e já ofereça retomar/repetir o serviço de sempre. Reaproveite o que você já sabe dele (não refaça todo o cadastro) — confirme só o que pode ter mudado (ex.: "é o mesmo endereço?").'
-    : "Lead novo: foque em entender a necessidade, qualificar e fechar o PRIMEIRO serviço. Faça o cadastro completo (dados + endereço).";
+    ? info
+      ? 'Contato conhecido: tom mais íntimo e direto, SEM reapresentar a empresa. Acolha com algo como "que bom te ver de novo!" e retome de onde parou (uma dúvida, um pagamento pendente ou o próximo passo). Reaproveite o que você já sabe dele; NÃO fale em "serviço de sempre" nem peça endereço.'
+      : 'Cliente da base: tom mais íntimo e direto, SEM reapresentar a empresa. Acolha com algo como "que bom te ver de novo!" e já ofereça retomar/repetir o serviço de sempre. Reaproveite o que você já sabe dele (não refaça todo o cadastro) — confirme só o que pode ter mudado (ex.: "é o mesmo endereço?").'
+    : info
+      ? "Lead novo: foque em entender a necessidade, qualificar e levar à compra (ou, em ticket alto, à call de diagnóstico). NÃO peça endereço."
+      : "Lead novo: foque em entender a necessidade, qualificar e fechar o PRIMEIRO serviço. Faça o cadastro completo (dados + endereço).";
 
   const veioDeAnuncio = /trafego|pago|an[úu]ncio|meta|facebook|instagram|\bads?\b/i.test(lead.origem || "");
   const regraOrigem = veioDeAnuncio

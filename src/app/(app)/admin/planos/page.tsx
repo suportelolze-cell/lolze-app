@@ -78,8 +78,8 @@ export default async function PlanosPage() {
 
       <p className="mt-6 text-xs text-texto-suave">
         Para alterar nomes, preços ou recursos, edite a tabela{" "}
-        <code className="rounded bg-fundo px-1">app_plans</code> no Supabase. Em breve dá para
-        editar por aqui.
+        <code className="rounded bg-fundo px-1">app_plans</code> no Supabase. Ao mudar um preço,
+        gere o preço correspondente no Stripe pelo botão acima.
       </p>
     </>
   );

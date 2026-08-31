@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { AplicarButton } from "./AplicarButton";
 import { registrarDiagnosticoLanding } from "@/lib/landing/funil-actions";
@@ -37,13 +37,18 @@ function Linha({
   step: number;
   onChange: (v: number) => void;
 }) {
+  const id = useId();
   return (
     <div>
       <div className="flex items-end justify-between gap-3">
-        <label className="text-sm text-texto-suave">{label}</label>
+        <label htmlFor={id} className="text-sm text-texto-suave">
+          {label}
+        </label>
         <span className="font-corpo text-lg font-bold text-texto">{valor}</span>
       </div>
       <input
+        id={id}
+        aria-valuetext={valor}
         type="range"
         min={min}
         max={max}

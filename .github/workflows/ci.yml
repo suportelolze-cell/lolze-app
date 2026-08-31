@@ -1,0 +1,27 @@
+name: CI
+
+# Roda em cada PR e no push pra main: testes + build (o build já faz o
+# type-check do app). Antes disso, nenhum PR era verificado automaticamente.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Testes
+        run: npm test
+      - name: Build (inclui type-check do app)
+        run: npm run build
+        env:
+          # O build não executa páginas dinâmicas nem toca o banco; estas ficam
+          # aqui só para satisfazer imports que leem env em tempo de módulo.
+          NEXT_TELEMETRY_DISABLED: "1"
