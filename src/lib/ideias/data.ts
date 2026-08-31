@@ -30,10 +30,20 @@ export async function listarIdeias(): Promise<MuralDados> {
   const s = await getSessao();
   const admin = getCrmAdmin();
 
-  const { data: rows } = await admin
+  // Isolamento por tenant: cada cliente vê só as ideias do próprio tenant.
+  // O superadmin (fora de impersonação) vê todas, para curar o roadmap.
+  // Sem isso, o mural vazaria nomes reais de clientes de outros tenants.
+  const verTudo = s.papel === "superadmin" && !s.impersonating;
+  if (!verTudo && !s.tenantId) {
+    return { ideias: [], souAdmin: s.papel === "superadmin", logado: !!s.userId };
+  }
+
+  let q = admin
     .from("app_ideias")
     .select("id,titulo,descricao,status,autor_id,autor_nome,created_at")
     .order("created_at", { ascending: false });
+  if (!verTudo) q = q.eq("tenant_id", s.tenantId as string);
+  const { data: rows } = await q;
 
   const base = (rows ?? []) as Array<{
     id: string;

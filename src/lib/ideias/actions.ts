@@ -14,6 +14,22 @@ async function nomeDoUsuario(admin: Admin, userId: string): Promise<string> {
   return ((data?.nome as string | null) ?? "").trim() || "Cliente Lolze";
 }
 
+/**
+ * A ideia está no escopo de quem chama? Superadmin (fora de impersonação) vê
+ * tudo; qualquer outro só age em ideia do próprio tenant. Fecha o acesso por
+ * id adivinhado a ideias de outro tenant (curtir/comentar/ler comentários).
+ */
+async function ideiaNoEscopo(
+  admin: Admin,
+  ideiaId: string,
+  s: { papel: string; impersonating: boolean; tenantId: string | null }
+): Promise<boolean> {
+  if (s.papel === "superadmin" && !s.impersonating) return true;
+  if (!s.tenantId) return false;
+  const { data } = await admin.from("app_ideias").select("tenant_id").eq("id", ideiaId).maybeSingle();
+  return !!data && (data.tenant_id as string | null) === s.tenantId;
+}
+
 /** Cria uma nova ideia (qualquer usuário logado). Entra sempre em "análise". */
 export async function criarIdeia(
   titulo: string,
@@ -44,6 +60,7 @@ export async function curtirIdeia(ideiaId: string): Promise<{ ok: boolean; curti
   const s = await getSessao();
   if (!s.userId) return { ok: false };
   const admin = getCrmAdmin();
+  if (!(await ideiaNoEscopo(admin, ideiaId, s))) return { ok: false };
 
   const { data: ja } = await admin
     .from("app_ideia_likes")
@@ -73,6 +90,7 @@ export async function comentarIdeia(
   if (!txt) return { ok: false, erro: "Escreva algo antes de enviar." };
 
   const admin = getCrmAdmin();
+  if (!(await ideiaNoEscopo(admin, ideiaId, s))) return { ok: false, erro: "Sem permissão." };
   const nome = await nomeDoUsuario(admin, s.userId);
   const { error } = await admin.from("app_ideia_comentarios").insert({
     ideia_id: ideiaId,
@@ -116,6 +134,7 @@ export type Comentario = {
 export async function listarComentarios(ideiaId: string): Promise<Comentario[]> {
   const s = await getSessao();
   const admin = getCrmAdmin();
+  if (!(await ideiaNoEscopo(admin, ideiaId, s))) return [];
   const { data } = await admin
     .from("app_ideia_comentarios")
     .select("id,autor_nome,texto,created_at,user_id,autor_admin")
