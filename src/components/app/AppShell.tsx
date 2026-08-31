@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, Eye, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu, Eye, LogOut, PanelLeftOpen } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { SuporteWidget } from "./SuporteWidget";
 import { Logo } from "@/components/Logo";
 import { sairImpersonacao } from "@/lib/admin/actions";
+
+const CHAVE_RECOLHIDA = "lolze:sidebar-recolhida";
 
 export function AppShell({
   children,
@@ -19,12 +21,37 @@ export function AppShell({
   clienteNome?: string;
 }) {
   const [aberto, setAberto] = useState(false);
+  // Recolher a barra lateral no desktop. Preferência do usuário, guardada no
+  // navegador (por isso lê no efeito, evitando divergência com o SSR).
+  const [recolhido, setRecolhido] = useState(false);
+
+  useEffect(() => {
+    try {
+      setRecolhido(localStorage.getItem(CHAVE_RECOLHIDA) === "1");
+    } catch {
+      /* localStorage indisponível: segue com a barra visível */
+    }
+  }, []);
+
+  function alternarRecolhido() {
+    setRecolhido((v) => {
+      const proximo = !v;
+      try {
+        localStorage.setItem(CHAVE_RECOLHIDA, proximo ? "1" : "0");
+      } catch {
+        /* ignora */
+      }
+      return proximo;
+    });
+  }
 
   return (
     <div className="min-h-screen bg-fundo">
       <Sidebar
         aberto={aberto}
         onClose={() => setAberto(false)}
+        recolhido={recolhido}
+        onRecolher={alternarRecolhido}
         papel={papel}
         impersonating={impersonating}
       />
@@ -37,7 +64,22 @@ export function AppShell({
         />
       )}
 
-      <div className="lg:pl-64 print-reset-pad">
+      {/* Botão flutuante para reabrir a barra quando recolhida (só desktop) */}
+      {recolhido && (
+        <button
+          onClick={alternarRecolhido}
+          aria-label="Mostrar menu lateral"
+          className="no-print fixed left-3 top-3 z-40 hidden rounded-md border border-borda bg-superficie p-2 text-texto shadow-card transition-colors hover:bg-fundo lg:block"
+        >
+          <PanelLeftOpen size={18} />
+        </button>
+      )}
+
+      <div
+        className={`print-reset-pad transition-[padding] duration-200 ${
+          recolhido ? "lg:pl-0" : "lg:pl-64"
+        }`}
+      >
         {/* Banner de impersonação + topbar mobile empilhados num único sticky
             (senão ambos grudam em top-0 e o banner cobre o hambúrguer). */}
         <div className="no-print sticky top-0 z-20">
@@ -71,7 +113,11 @@ export function AppShell({
           </div>
         </div>
 
-        <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8 sm:py-8">{children}</div>
+        <div
+          className={`w-full px-5 py-6 sm:px-8 sm:py-8 ${recolhido ? "lg:pl-14" : ""}`}
+        >
+          {children}
+        </div>
       </div>
 
       {/* Suporte flutuante — assistente de IA (1ª linha) + escala p/ humano */}
