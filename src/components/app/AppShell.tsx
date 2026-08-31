@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Menu, Eye, LogOut, PanelLeftOpen } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { SuporteWidget } from "./SuporteWidget";
+import { ReporterErros } from "./ReporterErros";
 import { Logo } from "@/components/Logo";
 import { sairImpersonacao } from "@/lib/admin/actions";
 
@@ -47,6 +48,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-fundo">
+      <ReporterErros />
       <Sidebar
         aberto={aberto}
         onClose={() => setAberto(false)}
