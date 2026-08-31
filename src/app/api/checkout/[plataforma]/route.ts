@@ -3,6 +3,7 @@ import { getCrmAdmin } from "@/lib/supabase/admin";
 import { registrarErro } from "@/lib/observability/erros";
 import { getAdapter } from "@/lib/checkout";
 import { ingerirVenda } from "@/lib/checkout/ingestao";
+import { decifrar } from "@/lib/checkout/cripto";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ plataforma
     headers,
     query,
     payload,
-    secret: (integ.secret as string | null) ?? "",
+    secret: decifrar(integ.secret as string | null),
   });
   if (!autentico) return NextResponse.json({ erro: "assinatura invalida" }, { status: 401 });
 
