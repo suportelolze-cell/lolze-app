@@ -2,13 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ROTAS, ROTAS_PUBLICAS, ROTAS_LEGAIS, ehRotaAdmin } from "@/lib/rotas";
 
+// Convenção do Next 16: este arquivo é o "proxy" (antigo middleware). Mesmo
+// comportamento; só o nome do arquivo e da função mudaram (o matcher segue igual).
+//
 // Split por subdomínio (só vale nestes hosts de produção). Em localhost e nos
 // previews *.vercel.app o app roda "tudo junto", como antes.
 const HOST_APP = "app.lolze.com.br";
 const HOST_ADMIN = "admin.lolze.com.br";
 const HOSTS_RAIZ = ["lolze.com.br", "www.lolze.com.br"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   let res = NextResponse.next({ request: req });
 
   const supabase = createServerClient(
