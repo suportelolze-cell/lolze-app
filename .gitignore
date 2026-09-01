@@ -17,3 +17,6 @@ next-env.d.ts
 
 # logs locais
 *.log
+
+# Estado local da CLI do Supabase (nunca versionar)
+supabase/.temp/
