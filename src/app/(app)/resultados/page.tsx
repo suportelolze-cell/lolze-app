@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { getResultados } from "@/lib/resultados";
 import { getSessao } from "@/lib/supabase/tenant";
+import { lerPlaybook } from "@/lib/playbook";
+import { descricaoSecao } from "@/lib/copy/secoes";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,7 @@ export default async function ResultadosPage({
 
   const sp = await searchParams;
   const dias = Number(sp?.d) === 7 || Number(sp?.d) === 90 ? Number(sp.d) : 30;
-  const r = await getResultados(dias);
+  const [r, playbook] = await Promise.all([getResultados(dias), lerPlaybook()]);
 
   return (
     <>
@@ -48,7 +50,7 @@ export default async function ResultadosPage({
           </h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-texto-suave">
             <ShieldCheck size={14} className="text-marca" />
-            Cada número é um evento real registrado. Nada estimado.
+            {descricaoSecao("resultados", playbook)}
           </p>
         </div>
 

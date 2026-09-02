@@ -17,13 +17,16 @@ import { Column } from "./Column";
 import { LeadCard } from "./LeadCard";
 import { LeadDetail } from "./LeadDetail";
 import { PageHeader, Acento } from "@/components/ui";
+import { descricaoSecao, type PlaybookCopy } from "@/lib/copy/secoes";
 
 export function Board({
   initialLeads,
   podeGerir = false,
+  playbook = "servico_local",
 }: {
   initialLeads: Lead[];
   podeGerir?: boolean;
+  playbook?: PlaybookCopy;
 }) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [busca, setBusca] = useState("");
@@ -79,7 +82,7 @@ export function Board({
             Pipeline de <Acento>Vendas</Acento>
           </>
         }
-        descricao="Acompanhe o fluxo e feche negócios. Arraste os cards para avançar."
+        descricao={descricaoSecao("pipeline", playbook)}
         acao={
           <div className="relative">
             <Search

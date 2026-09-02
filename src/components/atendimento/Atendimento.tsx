@@ -20,6 +20,7 @@ import { ChatWindow } from "./ChatWindow";
 import { LeadPanel } from "./LeadPanel";
 import { IaSwitchPill } from "@/components/config/IaSwitchCard";
 import { PageHeader, Acento, Badge, StatusDot } from "@/components/ui";
+import { descricaoSecao, type PlaybookCopy } from "@/lib/copy/secoes";
 
 function agora() {
   return new Date().toLocaleTimeString("pt-BR", {
@@ -61,6 +62,7 @@ export function Atendimento({
   respostasRapidas = [],
   conversaInicial = null,
   iaAtiva = true,
+  playbook = "servico_local",
 }: {
   initialConversas: Conversa[];
   currentUserId: string;
@@ -68,6 +70,7 @@ export function Atendimento({
   respostasRapidas?: string[];
   conversaInicial?: number | null;
   iaAtiva?: boolean;
+  playbook?: PlaybookCopy;
 }) {
   const [conversas, setConversas] = useState<Conversa[]>(initialConversas);
   const [selecionadaId, setSelecionadaId] = useState<number | null>(
@@ -339,7 +342,7 @@ export function Atendimento({
             Central de <Acento>Atendimento</Acento>
           </>
         }
-        descricao="Assuma a conversa no momento certo e transforme o lead aquecido em cliente pagante."
+        descricao={descricaoSecao("atendimento", playbook)}
         acao={
           <div className="flex flex-wrap items-center justify-end gap-2">
             {podeOverride && <IaSwitchPill inicial={iaAtiva} />}

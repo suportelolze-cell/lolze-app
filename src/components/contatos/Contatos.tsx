@@ -6,6 +6,7 @@ import { Search, Download, Loader2, MessageSquare, Mail, RefreshCw, Sparkles } f
 import { exportarLeadsCsv, reativarClienteIA } from "@/lib/supabase/crm-actions";
 import type { Contato } from "@/lib/contatos/data";
 import { PageHeader, Button, Badge, buttonClasses, Paginacao, usePaginado } from "@/components/ui";
+import { descricaoSecao, type PlaybookCopy } from "@/lib/copy/secoes";
 
 const CANAL_LABEL: Record<string, string> = {
   whatsapp: "WhatsApp",
@@ -72,7 +73,15 @@ const dataBr = (iso: string) =>
   iso ? new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—";
 const soDigitos = (s: string) => s.replace(/\D/g, "");
 
-export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: string[] }) {
+export function Contatos({
+  contatos,
+  canais,
+  playbook = "servico_local",
+}: {
+  contatos: Contato[];
+  canais: string[];
+  playbook?: PlaybookCopy;
+}) {
   const router = useRouter();
   const [filtro, setFiltro] = useState("todos");
   const [situacao, setSituacao] = useState<"todas" | Situacao>("todas");
@@ -152,7 +161,7 @@ export function Contatos({ contatos, canais }: { contatos: Contato[]; canais: st
     <div className="flex flex-col">
       <PageHeader
         titulo="Contatos"
-        descricao="Todos os seus contatos e clientes, de todos os canais, num lugar só. Filtre por situação e por quem faz tempo que não fala com você."
+        descricao={descricaoSecao("contatos", playbook)}
         acao={
           <Button variant="primary" onClick={exportar} disabled={exportando || totalExportavel === 0}>
             {exportando ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}

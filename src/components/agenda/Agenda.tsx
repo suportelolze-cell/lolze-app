@@ -11,6 +11,7 @@ import { AntiFaltasPanel } from "./AntiFaltasPanel";
 import { CompromissoDetail } from "./CompromissoDetail";
 import { AgendaFormModal, type ModoModal } from "./AgendaFormModal";
 import { PageHeader, Acento, Button, Badge, buttonClasses } from "@/components/ui";
+import { descricaoSecao, type PlaybookCopy } from "@/lib/copy/secoes";
 
 type View = "dia" | "semana" | "mes";
 
@@ -50,11 +51,13 @@ export function Agenda({
   googleConectado = false,
   refISO,
   antifaltas,
+  playbook = "servico_local",
 }: {
   agendamentos: Agendamento[];
   googleConectado?: boolean;
   refISO: string;
   antifaltas: AntiFaltas;
+  playbook?: PlaybookCopy;
 }) {
   const router = useRouter();
   useEffect(() => {
@@ -115,7 +118,7 @@ export function Agenda({
             Agenda <Acento>Mágica</Acento>
           </>
         }
-        descricao="Sua agenda lotada e blindada contra faltas. Deixe a IA cuidar dos lembretes."
+        descricao={descricaoSecao("agenda", playbook)}
         acao={
           <div className="flex flex-wrap items-center justify-end gap-2">
             {googleConectado ? (
