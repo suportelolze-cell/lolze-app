@@ -21,7 +21,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { crmBrowser } from "@/lib/supabase/browser";
 
-type Item = { href: string; label: string; icon: LucideIcon; gestorOnly?: boolean };
+type Item = { href: string; label: string; icon: LucideIcon; gestorOnly?: boolean; infoprodutoOnly?: boolean };
 type Grupo = { titulo?: string; itens: Item[] };
 
 const grupos: Grupo[] = [
@@ -38,7 +38,7 @@ const grupos: Grupo[] = [
       { href: "/atendimento", label: "Central de Atendimento", icon: MessagesSquare },
       { href: "/agenda", label: "Agenda Mágica", icon: CalendarDays },
       { href: "/contatos", label: "Contatos", icon: Users },
-      { href: "/vendas", label: "Vendas", icon: Receipt },
+      { href: "/vendas", label: "Vendas", icon: Receipt, infoprodutoOnly: true },
     ],
   },
   {
@@ -64,6 +64,7 @@ export function Sidebar({
   onRecolher = () => {},
   papel = "owner",
   impersonating = false,
+  playbook = "servico_local",
 }: {
   aberto?: boolean;
   onClose?: () => void;
@@ -71,10 +72,12 @@ export function Sidebar({
   onRecolher?: () => void;
   papel?: string;
   impersonating?: boolean;
+  playbook?: "servico_local" | "infoproduto";
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const ehSuper = papel === "superadmin";
+  const ehInfoproduto = playbook === "infoproduto";
 
   async function sair() {
     await crmBrowser.auth.signOut();
@@ -118,7 +121,11 @@ export function Sidebar({
           </Link>
         )}
         {grupos.map((grupo, gi) => {
-          const visiveis = grupo.itens.filter((it) => !it.gestorOnly || ehSuper || papel === "owner");
+          const visiveis = grupo.itens.filter(
+            (it) =>
+              (!it.gestorOnly || ehSuper || papel === "owner") &&
+              (!it.infoprodutoOnly || ehInfoproduto)
+          );
           if (visiveis.length === 0) return null;
           return (
             <div key={gi}>

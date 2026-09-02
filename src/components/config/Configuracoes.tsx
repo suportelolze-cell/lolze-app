@@ -61,6 +61,7 @@ export function Configuracoes({
   numerosCaptacao,
   docsKb = [],
   biblioteca = [],
+  playbook = "servico_local",
 }: {
   config: Config;
   equipeInfo: EquipeInfo;
@@ -72,6 +73,7 @@ export function Configuracoes({
   numerosCaptacao?: { instancias: string[]; max: number };
   docsKb?: KbFile[];
   biblioteca?: ItemBiblioteca[];
+  playbook?: "servico_local" | "infoproduto";
 }) {
   const [aba, setAba] = useState<Aba>("identidade");
   const [cfg, setCfg] = useState<Config>(config);
@@ -140,6 +142,7 @@ export function Configuracoes({
               iaAtiva={iaAtiva}
               numerosCaptacao={numerosCaptacao}
               podeGerenciar={equipeInfo.podeGerenciar}
+              infoproduto={playbook === "infoproduto"}
             />
           )}
           {aba === "equipe" && (
@@ -255,11 +258,13 @@ function Integracoes({
   iaAtiva = true,
   numerosCaptacao,
   podeGerenciar = false,
+  infoproduto = false,
 }: {
   google?: GoogleStatus;
   iaAtiva?: boolean;
   numerosCaptacao?: { instancias: string[]; max: number };
   podeGerenciar?: boolean;
+  infoproduto?: boolean;
 }) {
   const googleConfigurado = google?.configurado ?? false;
   const googleConectado = google?.conectado ?? false;
@@ -282,13 +287,14 @@ function Integracoes({
           <WhatsAppCard />
         </CardIntegracao>
 
-        {podeGerenciar && (
+        {/* Só infoproduto: negócio local não vende por checkout nem entrega acesso. */}
+        {podeGerenciar && infoproduto && (
           <CardIntegracao icon={ShoppingCart} titulo="Vendas e Checkout">
             <CheckoutIntegracoes />
           </CardIntegracao>
         )}
 
-        {podeGerenciar && (
+        {podeGerenciar && infoproduto && (
           <CardIntegracao icon={PackageCheck} titulo="Entrega automática">
             <EntregaCard />
           </CardIntegracao>

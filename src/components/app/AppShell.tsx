@@ -15,11 +15,13 @@ export function AppShell({
   papel = "owner",
   impersonating = false,
   clienteNome = "",
+  playbook = "servico_local",
 }: {
   children: React.ReactNode;
   papel?: string;
   impersonating?: boolean;
   clienteNome?: string;
+  playbook?: "servico_local" | "infoproduto";
 }) {
   const [aberto, setAberto] = useState(false);
   // Recolher a barra lateral no desktop. Preferência do usuário, guardada no
@@ -56,6 +58,7 @@ export function AppShell({
         onRecolher={alternarRecolhido}
         papel={papel}
         impersonating={impersonating}
+        playbook={playbook}
       />
 
       {/* Backdrop (mobile, quando o drawer está aberto) */}
