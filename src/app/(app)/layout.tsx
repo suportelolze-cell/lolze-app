@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { getSessao } from "@/lib/supabase/tenant";
 import { getCrmServer } from "@/lib/supabase/server";
 import { statusCobrancaCacheado } from "@/lib/billing/paywall";
+import { lerPlaybook } from "@/lib/playbook";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +31,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     clienteNome = data?.nome ?? "";
   }
 
+  const playbook = await lerPlaybook();
+
   return (
-    <AppShell papel={s.papel} impersonating={s.impersonating} clienteNome={clienteNome}>
+    <AppShell
+      papel={s.papel}
+      impersonating={s.impersonating}
+      clienteNome={clienteNome}
+      playbook={playbook}
+    >
       {children}
     </AppShell>
   );

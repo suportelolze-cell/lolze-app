@@ -8,12 +8,13 @@ import { getGoogleStatus } from "@/lib/google/oauth";
 import { getTenantId } from "@/lib/supabase/tenant";
 import { listarDocs } from "@/lib/kb/data";
 import { listarBiblioteca } from "@/lib/biblioteca/data";
+import { lerPlaybook } from "@/lib/playbook";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracoesPage() {
   const tid = await getTenantId();
-  const [config, equipeInfo, respostas, billing, google, atendimento, iaAtiva, numerosCaptacao, docsKb, biblioteca] =
+  const [config, equipeInfo, respostas, billing, google, atendimento, iaAtiva, numerosCaptacao, docsKb, biblioteca, playbook] =
     await Promise.all([
       getConfig(),
       getEquipeInfo(),
@@ -25,6 +26,7 @@ export default async function ConfiguracoesPage() {
       getNumerosCaptacaoInfo(),
       tid ? listarDocs(tid) : Promise.resolve([]),
       listarBiblioteca(),
+      lerPlaybook(),
     ]);
   return (
     <Configuracoes
@@ -38,6 +40,7 @@ export default async function ConfiguracoesPage() {
       numerosCaptacao={numerosCaptacao}
       docsKb={docsKb}
       biblioteca={biblioteca}
+      playbook={playbook}
     />
   );
 }
