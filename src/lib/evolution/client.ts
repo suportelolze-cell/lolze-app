@@ -728,7 +728,11 @@ export async function importarHistoricoWhatsapp(tenantId: string): Promise<Impor
       ok: false,
       contatos,
       mensagens: 0,
-      erro: "Encontrei suas conversas, mas a API do WhatsApp não devolveu as mensagens (pode ser a versão da integração). Nada foi importado.",
+      erro:
+        "Encontrei suas conversas, mas o WhatsApp não devolveu as mensagens. " +
+        "Quase sempre é porque a API (Evolution) não está guardando o histórico: " +
+        "ligue o armazenamento de mensagens na API e reconecte o número. Mensagens " +
+        "antigas, de antes de conectar, o WhatsApp não reenvia.",
     };
   }
 
