@@ -2,14 +2,51 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Loader2, Check, Upload, Sparkles, MessageSquare, Rocket, Download, FileText } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, Check, Upload, Sparkles, MessageSquare, Rocket, Download, FileText, Store, GraduationCap } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { WhatsAppCard } from "@/components/config/WhatsAppCard";
 import { PERSONA_TEMPLATES } from "@/lib/admin/persona-templates";
 import { salvarIdentidade, salvarPersonaOnboarding, concluirOnboarding } from "@/lib/onboarding/actions";
+import { salvarPlaybook } from "@/lib/agent/playbook-actions";
 import { subirDocumentoCliente } from "@/lib/kb/actions";
 import type { OnboardingData } from "@/lib/onboarding/data";
+import type { PlaybookCopy } from "@/lib/copy/secoes";
 import { Button, buttonClasses } from "@/components/ui";
+
+// Exemplos e dicas que mudam conforme o tipo de operação. É o que faz o
+// onboarding falar a língua do cliente (lojista/serviço x infoproduto).
+const DICAS: Record<PlaybookCopy, {
+  intro1: string; enderecoDica: string; horarioDica: string;
+  intro2: string; oferta: string; publico: string; tom: string; objecoes: string; faq: string; regras: string;
+  conclusao: string;
+}> = {
+  servico_local: {
+    intro1: "Vamos configurar sua IA em poucos passos. Começando pelo básico do seu negócio.",
+    enderecoDica: "A IA envia isso quando o cliente pedir.",
+    horarioDica: "Ex.: Seg a Sáb, 8h às 18h.",
+    intro2: "Escolha um modelo do seu nicho para preencher rápido e ajuste o que quiser.",
+    oferta: "Seus serviços ou produtos, em linguagem simples. Ex.: 'corte e barba', 'bolos por encomenda', 'conserto de celular'.",
+    publico: "Quem é o seu cliente típico. Ex.: 'moradores do bairro', 'mães da região', 'quem quebrou a tela'.",
+    tom: "Como a IA deve falar. Ex.: 'próximo e simpático, como no balcão', 'sem gírias, direto ao ponto'.",
+    objecoes: "O que o cliente costuma questionar e a melhor resposta. Ex.: 'Tá caro → explico que inclui X e faço em Y'.",
+    faq: "As perguntas que você mais recebe no WhatsApp, com a resposta. Ex.: 'Tem estacionamento? Sim, na frente.'",
+    regras: "Limites claros. Ex.: 'nunca dar desconto sem eu autorizar', 'não confirmar horário fora do funcionamento'.",
+    conclusao: "Ao concluir, sua IA fica ligada e começa a atender. Você ainda pode conectar o Google Calendar e definir o especialista em Configurações → Integrações / Equipe quando quiser.",
+  },
+  infoproduto: {
+    intro1: "Vamos configurar sua IA em poucos passos. Começando pelo básico da sua operação.",
+    enderecoDica: "Se você atende só online, pode deixar em branco.",
+    horarioDica: "O horário em que você (ou seu time) responde. Ex.: Seg a Sex, 9h às 18h.",
+    intro2: "Preencha sobre o seu produto e a sua audiência, e ajuste o que quiser.",
+    oferta: "Seu produto digital, em linguagem simples. Ex.: 'curso de tráfego pago', 'mentoria de emagrecimento', 'ebook de finanças'.",
+    publico: "Quem é o seu comprador típico. Ex.: 'quem quer aprender a investir', 'donas de loja online', 'iniciantes em inglês'.",
+    tom: "Como a IA deve falar. Ex.: 'motivador e direto, de quem já teve o resultado', 'leve e didático'.",
+    objecoes: "A dúvida que trava a compra e a melhor resposta. Ex.: 'Será que funciona pra mim? → mostro casos e a garantia de 7 dias'.",
+    faq: "As perguntas que mais aparecem antes de comprar, com a resposta. Ex.: 'Tem garantia? 7 dias.', 'Recebo o acesso na hora? Sim, por e-mail.'",
+    regras: "Limites claros. Ex.: 'nunca prometer resultado garantido', 'não dar suporte técnico do produto por aqui'.",
+    conclusao: "Ao concluir, sua IA fica ligada e começa a atender. Você ainda pode conectar suas plataformas de checkout e escrever a mensagem de entrega em Configurações → Integrações quando quiser.",
+  },
+};
 
 const inputCls =
   "w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-sm text-texto outline-none transition-colors focus:border-marca";
@@ -30,11 +67,19 @@ function Campo({ label, valor, onChange, textarea, dica }: { label: string; valo
   );
 }
 
-export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
+export function OnboardingWizard({
+  dados,
+  playbookInicial = "servico_local",
+}: {
+  dados: OnboardingData;
+  playbookInicial?: PlaybookCopy;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
+  const [playbook, setPlaybook] = useState<PlaybookCopy>(playbookInicial);
+  const t = DICAS[playbook];
 
   // Passo 1 — identidade
   const [nomeNegocio, setNomeNegocio] = useState(dados.nomeNegocio);
@@ -68,6 +113,9 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
   async function avancar1() {
     setSalvando(true);
     setErro("");
+    // Salva o tipo de operação junto (best-effort: se a coluna não existir ainda,
+    // segue mesmo assim — não trava o onboarding).
+    await salvarPlaybook(playbook).catch(() => {});
     const r = await salvarIdentidade({ nomeNegocio, endereco, horario });
     setSalvando(false);
     if (r.ok) setStep(1);
@@ -140,11 +188,33 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
           <div className="space-y-4">
             <div>
               <h1 className="font-corpo text-xl font-bold text-texto">Bem-vindo à Lolze! 👋</h1>
-              <p className="mt-1 text-sm text-texto-suave">Vamos configurar sua IA em poucos passos. Começando pelo básico do seu negócio.</p>
+              <p className="mt-1 text-sm text-texto-suave">{t.intro1}</p>
             </div>
+
+            {/* Tipo de operação: define a linguagem e as telas do resto do app. */}
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-texto">Você trabalha com</label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <OpcaoOperacao
+                  ativa={playbook === "servico_local"}
+                  onClick={() => setPlaybook("servico_local")}
+                  icon={Store}
+                  titulo="Negócio local / serviço"
+                  desc="Loja, clínica, salão, prestador. Foco em atender e agendar."
+                />
+                <OpcaoOperacao
+                  ativa={playbook === "infoproduto"}
+                  onClick={() => setPlaybook("infoproduto")}
+                  icon={GraduationCap}
+                  titulo="Produtor de infoproduto"
+                  desc="Curso, mentoria, ebook. Foco em vender e entregar."
+                />
+              </div>
+            </div>
+
             <Campo label="Nome do negócio" valor={nomeNegocio} onChange={setNomeNegocio} />
-            <Campo label="Endereço" valor={endereco} onChange={setEndereco} dica="A IA envia isso quando o cliente pedir." />
-            <Campo label="Horário de funcionamento" valor={horario} onChange={setHorario} dica="Ex.: Seg a Sáb, 8h às 18h." />
+            <Campo label="Endereço" valor={endereco} onChange={setEndereco} dica={t.enderecoDica} />
+            <Campo label="Horário de funcionamento" valor={horario} onChange={setHorario} dica={t.horarioDica} />
           </div>
         )}
 
@@ -155,21 +225,23 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
               <h1 className="flex items-center gap-2 font-corpo text-xl font-bold text-texto">
                 <Sparkles size={18} className="text-marca" /> Ensine a sua IA
               </h1>
-              <p className="mt-1 text-sm text-texto-suave">Escolha um modelo do seu nicho para preencher rápido e ajuste o que quiser.</p>
+              <p className="mt-1 text-sm text-texto-suave">{t.intro2}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {PERSONA_TEMPLATES.map((t) => (
-                <button key={t.id} onClick={() => aplicarTemplate(t.id)} className="rounded-pill border border-borda bg-fundo-2 px-3 py-1.5 text-xs font-semibold text-texto transition-colors hover:border-marca hover:text-marca">
-                  {t.nome}
-                </button>
-              ))}
-            </div>
-            <Campo label="O que você oferece" valor={oferta} onChange={setOferta} textarea dica="Seus serviços ou produtos, em linguagem simples. Ex.: 'corte e barba', 'bolos por encomenda', 'conserto de celular'." />
-            <Campo label="Público-alvo" valor={publico} onChange={setPublico} textarea dica="Quem é o seu cliente típico. Ex.: 'moradores do bairro', 'mães da região', 'quem quebrou a tela'." />
-            <Campo label="Tom de voz" valor={tom} onChange={setTom} textarea dica="Como a IA deve falar. Ex.: 'próximo e simpático, como no balcão', 'sem gírias, direto ao ponto'." />
-            <Campo label="Objeções comuns (e como responder)" valor={objecoes} onChange={setObjecoes} textarea dica="O que o cliente costuma questionar e a melhor resposta. Ex.: 'Tá caro → explico que inclui X e faço em Y'." />
-            <Campo label="Perguntas frequentes" valor={faq} onChange={setFaq} textarea dica="As perguntas que você mais recebe no WhatsApp, com a resposta. Ex.: 'Tem estacionamento? Sim, na frente.'" />
-            <Campo label="Regras (o que a IA deve/não deve fazer)" valor={regras} onChange={setRegras} textarea dica="Limites claros. Ex.: 'nunca dar desconto sem eu autorizar', 'não confirmar horário fora do funcionamento'." />
+            {playbook === "servico_local" && (
+              <div className="flex flex-wrap gap-2">
+                {PERSONA_TEMPLATES.map((tpl) => (
+                  <button key={tpl.id} onClick={() => aplicarTemplate(tpl.id)} className="rounded-pill border border-borda bg-fundo-2 px-3 py-1.5 text-xs font-semibold text-texto transition-colors hover:border-marca hover:text-marca">
+                    {tpl.nome}
+                  </button>
+                ))}
+              </div>
+            )}
+            <Campo label="O que você oferece" valor={oferta} onChange={setOferta} textarea dica={t.oferta} />
+            <Campo label="Público-alvo" valor={publico} onChange={setPublico} textarea dica={t.publico} />
+            <Campo label="Tom de voz" valor={tom} onChange={setTom} textarea dica={t.tom} />
+            <Campo label="Objeções comuns (e como responder)" valor={objecoes} onChange={setObjecoes} textarea dica={t.objecoes} />
+            <Campo label="Perguntas frequentes" valor={faq} onChange={setFaq} textarea dica={t.faq} />
+            <Campo label="Regras (o que a IA deve/não deve fazer)" valor={regras} onChange={setRegras} textarea dica={t.regras} />
           </div>
         )}
 
@@ -240,9 +312,7 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
               <Rocket size={26} />
             </div>
             <h1 className="font-corpo text-2xl font-bold text-texto">Tudo pronto! 🎉</h1>
-            <p className="mx-auto max-w-md text-sm text-texto-suave">
-              Ao concluir, sua IA fica <b>ligada</b> e começa a atender. Você ainda pode conectar o Google Calendar e definir o especialista em <b>Configurações → Integrações / Equipe</b> quando quiser.
-            </p>
+            <p className="mx-auto max-w-md text-sm text-texto-suave">{t.conclusao}</p>
           </div>
         )}
 
@@ -282,6 +352,39 @@ export function OnboardingWizard({ dados }: { dados: OnboardingData }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function OpcaoOperacao({
+  ativa,
+  onClick,
+  icon: Icon,
+  titulo,
+  desc,
+}: {
+  ativa: boolean;
+  onClick: () => void;
+  icon: typeof Store;
+  titulo: string;
+  desc: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={ativa}
+      className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
+        ativa ? "border-marca bg-marca-suave/40" : "border-borda bg-fundo-2 hover:border-marca/50"
+      }`}
+    >
+      <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md ${ativa ? "bg-marca text-bege-principal" : "bg-superficie text-texto-suave"}`}>
+        <Icon size={17} />
+      </span>
+      <span>
+        <span className="block text-sm font-bold text-texto">{titulo}</span>
+        <span className="mt-0.5 block text-xs text-texto-suave">{desc}</span>
+      </span>
+    </button>
   );
 }
 

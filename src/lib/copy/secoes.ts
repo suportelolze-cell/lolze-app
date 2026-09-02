@@ -51,6 +51,14 @@ const COPY: Record<string, Record<PlaybookCopy, string>> = {
     infoproduto:
       "O coração da sua operação: conexões, equipe e as regras que a IA segue. Ajuste uma vez e deixe rodar no automático.",
   },
+  // Empty state do Resultados: a tela vazia que acolhe o cliente novo e explica
+  // que ela se preenche sozinha conforme a operação roda.
+  resultados_vazio: {
+    servico_local:
+      "Esta tela se preenche sozinha conforme a operação roda: cada lead recebido, resposta da IA, agendamento, comparecimento e serviço fechado vira um fato datado aqui. Assim que os primeiros leads chegarem, os resultados aparecem, sem você lançar nada à mão.",
+    infoproduto:
+      "Esta tela se preenche sozinha conforme a operação roda: cada lead recebido, resposta da IA, venda aprovada e receita confirmada vira um fato datado aqui. Assim que as primeiras vendas entrarem, os resultados aparecem, sem você lançar nada à mão.",
+  },
 };
 
 /** Descrição da seção para o playbook do tenant. Cai em servico_local se faltar. */

@@ -75,10 +75,7 @@ export default async function ResultadosPage({
           <Inbox size={32} className="mx-auto mb-3 text-texto-suave" />
           <h2 className="font-corpo text-lg font-bold text-texto">Ainda sem eventos neste período</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-texto-suave">
-            Esta tela se preenche sozinha conforme a operação roda: cada lead recebido,
-            resposta da IA, agendamento, comparecimento e venda vira um fato datado aqui.
-            Assim que os primeiros leads chegarem, os resultados aparecem, sem você
-            precisar lançar nada à mão.
+            {descricaoSecao("resultados_vazio", playbook)}
           </p>
           <Link
             href="/hoje"

@@ -1,6 +1,7 @@
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { getOnboarding } from "@/lib/onboarding/data";
 import { getSessao } from "@/lib/supabase/tenant";
+import { lerPlaybook } from "@/lib/playbook";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,6 @@ export default async function OnboardingPage() {
       </div>
     );
   }
-  const dados = await getOnboarding();
-  return <OnboardingWizard dados={dados} />;
+  const [dados, playbook] = await Promise.all([getOnboarding(), lerPlaybook()]);
+  return <OnboardingWizard dados={dados} playbookInicial={playbook} />;
 }
