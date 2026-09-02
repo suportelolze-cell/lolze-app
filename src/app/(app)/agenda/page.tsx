@@ -2,6 +2,7 @@ import { Agenda } from "@/components/agenda/Agenda";
 import { getAgendamentosApp, getOcupadosGoogle, getAntiFaltas } from "@/lib/supabase/agenda-app";
 import { getGoogleStatus } from "@/lib/google/oauth";
 import { getTenantId } from "@/lib/supabase/tenant";
+import { lerPlaybook } from "@/lib/playbook";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,12 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   max.setDate(max.getDate() + 7);
 
   const tid = await getTenantId();
-  const [agendamentos, google, status, antifaltas] = await Promise.all([
+  const [agendamentos, google, status, antifaltas, playbook] = await Promise.all([
     getAgendamentosApp(),
     getOcupadosGoogle(min.toISOString(), max.toISOString()),
     getGoogleStatus(tid),
     getAntiFaltas(),
+    lerPlaybook(),
   ]);
   return (
     <Agenda
@@ -35,6 +37,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
       googleConectado={status.conectado}
       refISO={refISO}
       antifaltas={antifaltas}
+      playbook={playbook}
     />
   );
 }

@@ -34,6 +34,7 @@ import { WhatsAppCard } from "./WhatsAppCard";
 import { IaSwitchCard } from "./IaSwitchCard";
 import { CaptacaoNumerosCard } from "./CaptacaoNumerosCard";
 import { CheckoutIntegracoes } from "./CheckoutIntegracoes";
+import { descricaoSecao } from "@/lib/copy/secoes";
 import { EntregaCard } from "./EntregaCard";
 import { PlaybookCard } from "./PlaybookCard";
 import { desconectarGoogle } from "@/lib/google/actions";
@@ -93,7 +94,7 @@ export function Configuracoes({
             Sala de <Acento>Máquinas</Acento>
           </>
         }
-        descricao="Gerencie suas integrações, permissões de equipe e o coração da sua operação."
+        descricao={descricaoSecao("configuracoes", playbook)}
         acao={
           <Button variant={salvo ? "verde" : "primary"} onClick={salvar}>
             {salvo ? <Check size={16} /> : <Save size={16} />}

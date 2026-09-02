@@ -18,6 +18,7 @@ import { getSessao } from "@/lib/supabase/tenant";
 import { planoTemFeature } from "@/lib/planos/features";
 import { lerPlaybook } from "@/lib/playbook";
 import { getResumoVendas } from "@/lib/vendas/data";
+import { descricaoSecao } from "@/lib/copy/secoes";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,7 @@ export default async function PainelPage() {
             Bem-vindo, <Acento>{cliente}</Acento>
           </>
         }
-        descricao="Sua máquina de vendas operando em tempo real."
+        descricao={descricaoSecao("painel", playbook)}
         acao={
           <>
             <ExportarBotao />
