@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
+import { ehPedidoParada } from "@/lib/agent/optout";
+import { pararContato } from "@/lib/agent/parada";
 import { baixarMidiaBase64, uploadMidia, puxarHistoricoContato } from "@/lib/evolution/client";
 import { midiaParaTexto, type TipoMidia } from "@/lib/evolution/media";
 import { registrarErro } from "@/lib/observability/erros";
@@ -276,6 +278,13 @@ async function processarInboundWhatsapp(
     // 23505 = corrida com outra execução do mesmo evento → já processado, para.
     if ((errM as { code?: string }).code === "23505") return;
     throw new Error("gravar mensagem: " + errM.message);
+  }
+
+  // Opt-out determinístico: se o contato pediu pra parar, para a automação na
+  // hora (independe da IA estar ligada) e não roda o SDR.
+  if (ehPedidoParada(texto)) {
+    await pararContato(admin, tenantId, lead!.id);
+    return;
   }
 
   // Dispara o SDR (ele respeita handoff/agente_ativo e entrega a resposta).

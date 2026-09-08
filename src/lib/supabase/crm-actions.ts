@@ -169,6 +169,7 @@ const MOTIVO_REATIVAR: Record<string, string> = {
   parado: "Não enviei: este contato está com um humano no atendimento, foi marcado como perdido, ou não está numa régua ativa.",
   ia_off: "Não enviei: a IA está pausada (ou sem chave configurada).",
   limite: "Não enviei: o limite de IA do mês foi atingido.",
+  cadencia: "Não enviei: muitos envios automáticos neste último período. Tente de novo daqui a pouco (é a proteção contra bloqueio do número).",
   entrega_falhou: "Não consegui entregar no canal do contato agora. Tente de novo em instantes.",
   erro_ia: "A IA não conseguiu gerar a mensagem agora. Tente de novo.",
   sem_texto: "A IA não gerou uma mensagem para enviar.",

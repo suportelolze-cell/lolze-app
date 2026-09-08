@@ -4,8 +4,14 @@ import { dispatchOutbound } from "@/lib/integracoes/outbound";
 import { getAnthropic, temChaveIA, SDR_MODEL } from "./anthropic";
 import { registrarUsoIA } from "./uso";
 import { dentroDoLimiteIA } from "./limite";
+import { dentroDoLimite } from "@/lib/seguranca/rate";
 import { registrarErro } from "@/lib/observability/erros";
 import { conteudoMensagem } from "./sdr/historico-core";
+
+// Cadência anti-ban: teto de toques automáticos por tenant por hora. Espaça o
+// envio no tempo (mesmo com muitos leads vencidos) para não parecer robô/rajada,
+// que é o que derruba número não-oficial. Fail-open (erro de infra não trava).
+const MAX_FOLLOWUP_POR_HORA = 40;
 
 /**
  * Sistema de follow-up automático (cadência + reativação).
@@ -111,6 +117,11 @@ export async function enviarFollowup(tenantId: string, leadId: number): Promise<
   // Trava de custo por plano: estourou o teto de IA do mês → pula o toque agora
   // (não encerra a régua; retoma quando o mês virar ou o teto aumentar).
   if (!(await dentroDoLimiteIA(tenantId))) return { enviado: false, motivo: "limite" };
+  // Cadência por tenant: se já mandou muitos toques automáticos na última hora,
+  // segura este (o lead continua na régua; volta no próximo ciclo do cron).
+  if (!(await dentroDoLimite("wa_followup", tenantId, MAX_FOLLOWUP_POR_HORA, 3600))) {
+    return { enviado: false, motivo: "cadencia" };
+  }
 
   // Histórico recente para dar contexto ao toque.
   const { data: msgs } = await admin
