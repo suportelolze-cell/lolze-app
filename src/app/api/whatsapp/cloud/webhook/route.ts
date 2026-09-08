@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { getCrmAdmin } from "@/lib/supabase/admin";
 import { executarSDR } from "@/lib/agent/sdr/run";
+import { ehPedidoParada } from "@/lib/agent/optout";
+import { pararContato } from "@/lib/agent/parada";
 import {
   tenantPorPhoneNumberId,
   credenciaisWaCloud,
@@ -329,6 +331,12 @@ async function processarMensagemWaCloud(
   if (errM) {
     if ((errM as { code?: string }).code === "23505") return; // corrida: já processada
     throw new Error("gravar mensagem: " + errM.message);
+  }
+
+  // Opt-out determinístico (mesmo guarda da Evolution): pediu pra parar, para já.
+  if (ehPedidoParada(texto)) {
+    await pararContato(admin, tenantId, lead!.id);
+    return;
   }
 
   if (!lead!.atendente_id) {
